@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Órdenes{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        background: white;
+        border-radius: 14px;
+        padding: 25px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 {
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        vertical-align: middle;
+    }
+    th {
+        background: #f5f7fa;
+    }
+    .badge {
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: white;
+        display: inline-block;
+    }
+    .pendiente { background: #7f8c8d; }
+    .proceso { background: #f39c12; }
+    .terminado { background: #27ae60; }
+
+    .flujo {
+        font-size: 12px;
+        color: #555;
+        margin-top: 4px;
+    }
+
+    .acciones {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .acciones a {
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 8px;
+        color: white;
+        font-size: 12px;
+    }
+    .btn-pendiente { background: #7f8c8d; }
+    .btn-proceso { background: #f39c12; }
+    .btn-terminado { background: #27ae60; }
+    .btn-editar { background: #2c3e50; }
+    .btn-detalle { background: #16a085; }
+</style>
+
+<div class="contenedor">
+    <h1>Seguimiento de Órdenes de Producción</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Folio</th>
+                <th>Cliente</th>
+                <th>Materia Prima</th>
+                <th>Línea</th>
+                <th>Peso usado</th>
+                <th>Peso producido</th>
+                <th>Estado / Flujo</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in ordenes %}
+            <tr>
+                <td>{{ o.folio_orden }}</td>
+                <td>{{ o.cliente }}</td>
+                <td>{{ o.mp }}</td>
+                <td>{{ o.linea }}</td>
+                <td>{{ o.peso_usado }}</td>
+                <td>{{ o.peso_producido }}</td>
+                <td>
+                    {% if o.estado == 'pendiente' %}
+                        <span class="badge pendiente">Pendiente</span>
+                    {% elif o.estado == 'proceso' %}
+                        <span class="badge proceso">En Proceso</span>
+                    {% elif o.estado == 'terminado' %}
+                        <span class="badge terminado">Terminado</span>
+                    {% endif %}
+                    <div class="flujo">Pendiente → En proceso → Terminado</div>
+                </td>
+                <td>{{ o.fecha }}</td>
+                <td>
+                    <div class="acciones">
+                        <a class="btn-detalle" href="{% url 'detalle_orden' o.id %}">Detalle</a>
+                        <a class="btn-editar" href="{% url 'editar_orden' o.id %}">Editar</a>
+                        <a class="btn-pendiente" href="{% url 'cambiar_estado' o.id 'pendiente' %}">Pendiente</a>
+                        <a class="btn-proceso" href="{% url 'cambiar_estado' o.id 'proceso' %}">En proceso</a>
+                        <a class="btn-terminado" href="{% url 'cambiar_estado' o.id 'terminado' %}">Terminado</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9">No hay órdenes registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

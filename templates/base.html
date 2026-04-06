@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema de Producción{% endblock %}</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+        .navbar {
+            background: #1f2d3d;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar .logo {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .navbar .links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.08);
+        }
+        .navbar a:hover {
+            background: rgba(255,255,255,0.18);
+        }
+        .usuario {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .contenido {
+            padding: 24px;
+        }
+    </style>
+</head>
+<body>
+
+{% if request.user.is_authenticated %}
+<div class="navbar">
+    <div class="logo">Sistema Control de Producción</div>
+
+    <div class="links">
+        <span class="usuario">{{ request.user.username }}</span>
+        <a href="/">Dashboard</a>
+        <a href="/captura-mp/">Captura MP</a>
+        <a href="/lista-mp/">Lista MP</a>
+        <a href="/captura/">Captura Orden</a>
+        <a href="/ordenes/">Órdenes</a>
+        <a href="/admin/">Admin</a>
+        <a href="/logout/">Cerrar sesión</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="contenido">
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

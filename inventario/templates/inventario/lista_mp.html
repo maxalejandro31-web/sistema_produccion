@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista MP{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        background: white;
+        border-radius: 14px;
+        padding: 25px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 {
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    .filtros {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .filtros input,
+    .filtros select,
+    .filtros button,
+    .filtros a {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        text-decoration: none;
+    }
+    .filtros button {
+        background: #2c3e50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        vertical-align: top;
+    }
+    th {
+        background: #f5f7fa;
+    }
+    .badge {
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: white;
+        display: inline-block;
+    }
+    .rollo { background: #2980b9; }
+    .cinta { background: #27ae60; }
+    .placa { background: #8e44ad; }
+
+    .disponible { background: #27ae60; }
+    .enproceso { background: #f39c12; }
+    .terminado { background: #7f8c8d; }
+
+    .bajo {
+        color: #c0392b;
+        font-weight: bold;
+    }
+    .tiempo-verde {
+        color: #27ae60;
+        font-weight: bold;
+    }
+    .tiempo-amarillo {
+        color: #f39c12;
+        font-weight: bold;
+    }
+    .tiempo-rojo {
+        color: #c0392b;
+        font-weight: bold;
+    }
+    .btn-pdf, .btn-editar, .btn-detalle {
+        display: inline-block;
+        padding: 6px 10px;
+        color: white;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 12px;
+        margin-right: 5px;
+        margin-bottom: 4px;
+    }
+    .btn-pdf { background: #c0392b; }
+    .btn-editar { background: #2c3e50; }
+    .btn-detalle { background: #16a085; }
+</style>
+
+<div class="contenedor">
+    <h1>Lista de Materia Prima</h1>
+
+    <form method="get" class="filtros">
+        <input type="text" name="q" placeholder="Buscar número MP" value="{{ busqueda }}">
+
+        <select name="tipo">
+            <option value="">Todos los tipos</option>
+            <option value="Rollo" {% if tipo == 'Rollo' %}selected{% endif %}>Rollo</option>
+            <option value="Cinta" {% if tipo == 'Cinta' %}selected{% endif %}>Cinta</option>
+            <option value="Placa" {% if tipo == 'Placa' %}selected{% endif %}>Placa</option>
+        </select>
+
+        <select name="estado">
+            <option value="">Todos los estados</option>
+            <option value="Disponible" {% if estado == 'Disponible' %}selected{% endif %}>Disponible</option>
+            <option value="En Proceso" {% if estado == 'En Proceso' %}selected{% endif %}>En Proceso</option>
+            <option value="Terminado" {% if estado == 'Terminado' %}selected{% endif %}>Terminado</option>
+        </select>
+
+        <button type="submit">Filtrar</button>
+        <a href="/lista-mp/">Limpiar</a>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Número MP</th>
+                <th>Tipo</th>
+                <th>Material</th>
+                <th>Descripción</th>
+                <th>Espesor</th>
+                <th>Peso restante</th>
+                <th>Tiempo en planta</th>
+                <th>PDF</th>
+                <th>Acciones</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mp in materias_primas %}
+            <tr>
+                <td>{{ mp.numero_mp }}</td>
+                <td>
+                    {% if mp.tipo_mp == 'Rollo' %}
+                        <span class="badge rollo">Rollo</span>
+                    {% elif mp.tipo_mp == 'Cinta' %}
+                        <span class="badge cinta">Cinta</span>
+                    {% elif mp.tipo_mp == 'Placa' %}
+                        <span class="badge placa">Placa</span>
+                    {% endif %}
+                </td>
+                <td>{{ mp.material }}</td>
+                <td>{{ mp.descripcion }}</td>
+                <td>
+                    {{ mp.espesor_valor }} {{ mp.unidad_espesor }}<br>
+                    <small>{{ mp.espesor_mm }} mm / Cal {{ mp.calibre }}</small>
+                </td>
+                <td class="{% if mp.peso_restante < 1000 %}bajo{% endif %}">
+                    {{ mp.peso_restante }}
+                </td>
+                <td>
+                    {% with tiempo=mp.tiempo_en_fabrica %}
+                        {% if 'día' in tiempo or 'días' in tiempo %}
+                            <span class="tiempo-verde">{{ tiempo }}</span>
+                        {% elif 'semana' in tiempo or 'semanas' in tiempo %}
+                            <span class="tiempo-amarillo">{{ tiempo }}</span>
+                        {% else %}
+                            <span class="tiempo-rojo">{{ tiempo }}</span>
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% if mp.archivo_pdf %}
+                        <a class="btn-pdf" href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
+                    {% else %}
+                        Sin archivo
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
+                    <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
+                </td>
+                <td>{{ mp.ubicacion }}</td>
+                <td>
+                    {% if mp.estado == 'Disponible' %}
+                        <span class="badge disponible">Disponible</span>
+                    {% elif mp.estado == 'En Proceso' %}
+                        <span class="badge enproceso">En Proceso</span>
+                    {% elif mp.estado == 'Terminado' %}
+                        <span class="badge terminado">Terminado</span>
+                    {% else %}
+                        {{ mp.estado }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="11">No hay materia prima registrada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

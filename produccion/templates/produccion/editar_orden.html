@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Orden{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    form p {
+        margin-bottom: 15px;
+    }
+    input, select, textarea {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+    .acciones {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+    }
+    button, a {
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: none;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    button {
+        background: #2c3e50;
+        color: white;
+    }
+    .volver {
+        background: #95a5a6;
+        color: white;
+    }
+</style>
+
+<div class="contenedor">
+    <h1>Editar Orden: {{ orden.folio_orden }}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <div class="acciones">
+            <button type="submit">Guardar cambios</button>
+            <a class="volver" href="/ordenes/">Volver</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

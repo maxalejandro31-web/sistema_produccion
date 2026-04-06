@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle Orden{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 {
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+    .card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 14px;
+    }
+    .card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #2c3e50;
+    }
+    .acciones {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    a {
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: white;
+    }
+    .btn-volver { background: #7f8c8d; }
+    .btn-editar { background: #2c3e50; }
+</style>
+
+<div class="contenedor">
+    <h1>Detalle de Orden: {{ orden.folio_orden }}</h1>
+
+    <div class="grid">
+        <div class="card">
+            <strong>Cliente</strong>
+            {{ orden.cliente }}
+        </div>
+
+        <div class="card">
+            <strong>Materia Prima</strong>
+            {{ orden.mp }}
+        </div>
+
+        <div class="card">
+            <strong>Línea</strong>
+            {{ orden.linea }}
+        </div>
+
+        <div class="card">
+            <strong>Estado</strong>
+            {{ orden.estado }}
+        </div>
+
+        <div class="card">
+            <strong>Peso usado</strong>
+            {{ orden.peso_usado }}
+        </div>
+
+        <div class="card">
+            <strong>Peso producido</strong>
+            {{ orden.peso_producido }}
+        </div>
+
+        <div class="card">
+            <strong>Fecha</strong>
+            {{ orden.fecha }}
+        </div>
+
+        <div class="card">
+            <strong>Observaciones</strong>
+            {{ orden.observaciones }}
+        </div>
+    </div>
+
+    <div class="acciones">
+        <a class="btn-volver" href="/ordenes/">Volver</a>
+        <a class="btn-editar" href="{% url 'editar_orden' orden.id %}">Editar</a>
+    </div>
+</div>
+{% endblock %}

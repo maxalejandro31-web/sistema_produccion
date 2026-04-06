@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Materia Prima{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        max-width: 1000px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .campo {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .campo-completo {
+        grid-column: span 2;
+    }
+
+    label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    input, select, textarea {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+    }
+
+    .acciones {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+    }
+
+    button, a {
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: none;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    button {
+        background: #2c3e50;
+        color: white;
+    }
+
+    .volver {
+        background: #95a5a6;
+        color: white;
+    }
+</style>
+
+<div class="contenedor">
+    <h1>Editar Materia Prima: {{ mp.numero_mp }}</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="grid">
+
+            <div class="campo">
+                <label>Número MP</label>
+                {{ form.numero_mp }}
+            </div>
+
+            <div class="campo">
+                <label>Tipo MP</label>
+                {{ form.tipo_mp }}
+            </div>
+
+            <div class="campo">
+                <label>Lote</label>
+                {{ form.lote }}
+            </div>
+
+            <div class="campo">
+                <label>Código</label>
+                {{ form.codigo }}
+            </div>
+
+            <div class="campo campo-completo">
+                <label>Descripción</label>
+                {{ form.descripcion }}
+            </div>
+
+            <div class="campo">
+                <label>Material</label>
+                {{ form.material }}
+            </div>
+
+            <div class="campo">
+                <label>Grado</label>
+                {{ form.grado }}
+            </div>
+
+            <div class="campo">
+                <label>Acabado</label>
+                {{ form.acabado }}
+            </div>
+
+            <div class="campo">
+                <label>Espesor</label>
+                {{ form.espesor_valor }}
+            </div>
+
+            <div class="campo">
+                <label>Unidad</label>
+                {{ form.unidad_espesor }}
+            </div>
+
+            <div class="campo">
+                <label>Ancho</label>
+                {{ form.ancho }}
+            </div>
+
+            <div class="campo">
+                <label>Largo</label>
+                {{ form.largo }}
+            </div>
+
+            <div class="campo">
+                <label>Peso</label>
+                {{ form.peso }}
+            </div>
+
+            <div class="campo">
+                <label>Diámetro Interior</label>
+                {{ form.diametro_interior }}
+            </div>
+
+            <div class="campo">
+                <label>Diámetro Exterior</label>
+                {{ form.diametro_exterior }}
+            </div>
+
+            <div class="campo">
+                <label>Proveedor</label>
+                {{ form.proveedor }}
+            </div>
+
+            <div class="campo">
+                <label>Ubicación</label>
+                {{ form.ubicacion }}
+            </div>
+
+            <div class="campo">
+                <label>Estado</label>
+                {{ form.estado }}
+            </div>
+
+            <div class="campo campo-completo">
+                <label>Archivo PDF</label>
+                {{ form.archivo_pdf }}
+            </div>
+
+            <div class="campo campo-completo">
+                <label>Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+
+        </div>
+
+        <div class="acciones">
+            <button type="submit">Guardar cambios</button>
+            <a class="volver" href="/lista-mp/">Volver</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

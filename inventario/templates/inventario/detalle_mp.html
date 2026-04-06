@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="background:white; padding:20px; border-radius:10px;">
+    <h2>Detalle de Materia Prima</h2>
+
+    <p><strong>MP:</strong> {{ mp.numero_mp }}</p>
+    <p><strong>Tipo:</strong> {{ mp.tipo_mp }}</p>
+    <p><strong>Material:</strong> {{ mp.material }}</p>
+    <p><strong>Descripción:</strong> {{ mp.descripcion }}</p>
+    <p><strong>Espesor:</strong> {{ mp.espesor_valor }} {{ mp.unidad_espesor }}</p>
+    <p><strong>Peso:</strong> {{ mp.peso }}</p>
+    <p><strong>Peso restante:</strong> {{ mp.peso_restante }}</p>
+    <p><strong>Estado:</strong> {{ mp.estado }}</p>
+    <p><strong>Ubicación:</strong> {{ mp.ubicacion }}</p>
+
+    {% if mp.archivo_pdf %}
+        <h3>PDF</h3>
+        <iframe src="{{ mp.archivo_pdf.url }}" width="100%" height="500"></iframe>
+    {% endif %}
+</div>
+{% endblock %}
