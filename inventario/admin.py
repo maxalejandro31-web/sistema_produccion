@@ -14,15 +14,9 @@ class MateriaPrimaAdmin(admin.ModelAdmin):
     list_display = (
         'numero_mp',
         'tipo_mp',
+        'cliente',
+        'origen_mp',
         'material',
-        'grado',
-        'acabado',
-        'espesor_valor',
-        'unidad_espesor',
-        'espesor_mm',
-        'calibre',
-        'ancho',
-        'largo',
         'peso',
         'peso_restante',
         'ubicacion',
@@ -31,17 +25,15 @@ class MateriaPrimaAdmin(admin.ModelAdmin):
     )
     search_fields = (
         'numero_mp',
-        'lote',
-        'codigo',
-        'descripcion',
+        'cliente__nombre',
         'material',
-        'grado',
-        'acabado',
+        'descripcion',
     )
     list_filter = (
         'tipo_mp',
+        'origen_mp',
         'material',
         'estado',
         'ubicacion',
-        'acabado',
+        'fecha_entrada',
     )

@@ -2,3 +2,5 @@ Django
 gunicorn
 whitenoise
 psycopg2-binary
+cloudinary
+django-cloudinary-storage
