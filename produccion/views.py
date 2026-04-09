@@ -65,18 +65,23 @@ def editar_orden(request, orden_id):
 
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
 
-    if request.method == 'POST':
-        form = OrdenProduccionForm(request.POST, instance=orden)
-        if form.is_valid():
-            form.save()
-            return redirect('lista_ordenes')
-    else:
-        form = OrdenProduccionForm(instance=orden)
+    try:
+        if request.method == 'POST':
+            form = OrdenProduccionForm(request.POST, instance=orden)
+            if form.is_valid():
+                orden_actualizada = form.save(commit=False)
+                orden_actualizada.save()
+                return redirect('lista_ordenes')
+        else:
+            form = OrdenProduccionForm(instance=orden)
 
-    return render(request, 'produccion/editar_orden.html', {
-        'form': form,
-        'orden': orden,
-    })
+        return render(request, 'produccion/editar_orden.html', {
+            'form': form,
+            'orden': orden,
+        })
+
+    except Exception as e:
+        return HttpResponse(f"Error al editar orden: {e}")
 
 
 @login_required
