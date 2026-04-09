@@ -46,14 +46,14 @@ def cambiar_estado(request, orden_id, nuevo_estado):
     if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
         return HttpResponse("No tienes permiso para cambiar el estado de la orden.")
 
-    orden = get_object_or_404(OrdenProduccion, id=orden_id)
-
     estados_validos = ['pendiente', 'proceso', 'terminado']
     if nuevo_estado not in estados_validos:
         return HttpResponse("Estado no válido.")
 
-    orden.estado = nuevo_estado
-    orden.save()
+    orden = get_object_or_404(OrdenProduccion, id=orden_id)
+
+    # Actualiza solo el estado, sin volver a ejecutar lógica completa del save
+    OrdenProduccion.objects.filter(id=orden.id).update(estado=nuevo_estado)
 
     return redirect('lista_ordenes')
 
