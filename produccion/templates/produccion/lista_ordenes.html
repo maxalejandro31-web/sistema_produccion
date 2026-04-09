@@ -23,7 +23,7 @@
         padding: 10px;
         border-bottom: 1px solid #ddd;
         text-align: left;
-        vertical-align: middle;
+        vertical-align: top;
     }
     th {
         background: #f5f7fa;
@@ -35,85 +35,103 @@
         color: white;
         display: inline-block;
     }
-    .pendiente { background: #7f8c8d; }
-    .proceso { background: #f39c12; }
+    .pendiente { background: #f39c12; }
+    .proceso { background: #2980b9; }
     .terminado { background: #27ae60; }
 
-    .flujo {
-        font-size: 12px;
-        color: #555;
-        margin-top: 4px;
-    }
-
-    .acciones {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-    }
-    .acciones a {
-        text-decoration: none;
+    .btn {
+        display: inline-block;
         padding: 6px 10px;
-        border-radius: 8px;
         color: white;
+        border-radius: 6px;
+        text-decoration: none;
         font-size: 12px;
+        margin-right: 5px;
+        margin-bottom: 4px;
     }
-    .btn-pendiente { background: #7f8c8d; }
-    .btn-proceso { background: #f39c12; }
-    .btn-terminado { background: #27ae60; }
-    .btn-editar { background: #2c3e50; }
     .btn-detalle { background: #16a085; }
+    .btn-editar { background: #2c3e50; }
+    .btn-iniciar { background: #2980b9; }
+    .btn-finalizar { background: #27ae60; }
+    .btn-pendiente { background: #f39c12; }
+
+    .acciones-superior {
+        margin-bottom: 20px;
+    }
+    .acciones-superior a {
+        background: #2c3e50;
+        color: white;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+    }
 </style>
 
 <div class="contenedor">
-    <h1>Seguimiento de Órdenes de Producción</h1>
+    <h1>Lista de Órdenes de Producción</h1>
+
+    <div class="acciones-superior">
+        <a href="{% url 'captura_orden' %}">+ Nueva orden</a>
+    </div>
 
     <table>
         <thead>
             <tr>
                 <th>Folio</th>
+                <th>Proceso</th>
                 <th>Cliente</th>
-                <th>Materia Prima</th>
+                <th>MP</th>
                 <th>Línea</th>
+                <th>Operador</th>
+                <th>Turno</th>
+                <th>Prioridad</th>
                 <th>Peso usado</th>
                 <th>Peso producido</th>
-                <th>Estado / Flujo</th>
+                <th>Estado</th>
                 <th>Fecha</th>
                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
-            {% for o in ordenes %}
+            {% for orden in ordenes %}
             <tr>
-                <td>{{ o.folio_orden }}</td>
-                <td>{{ o.cliente }}</td>
-                <td>{{ o.mp }}</td>
-                <td>{{ o.linea }}</td>
-                <td>{{ o.peso_usado }}</td>
-                <td>{{ o.peso_producido }}</td>
+                <td>{{ orden.folio_orden|default:"Sin folio" }}</td>
+                <td>{{ orden.get_tipo_proceso_display }}</td>
+                <td>{{ orden.cliente|default:"-" }}</td>
+                <td>{{ orden.mp|default:"-" }}</td>
+                <td>{{ orden.linea }}</td>
+                <td>{{ orden.operador|default:"-" }}</td>
+                <td>{{ orden.get_turno_display|default:"-" }}</td>
+                <td>{{ orden.get_prioridad_display }}</td>
+                <td>{{ orden.peso_usado|default:"-" }}</td>
+                <td>{{ orden.peso_producido|default:"-" }}</td>
                 <td>
-                    {% if o.estado == 'pendiente' %}
+                    {% if orden.estado == 'pendiente' %}
                         <span class="badge pendiente">Pendiente</span>
-                    {% elif o.estado == 'proceso' %}
+                    {% elif orden.estado == 'proceso' %}
                         <span class="badge proceso">En Proceso</span>
-                    {% elif o.estado == 'terminado' %}
+                    {% elif orden.estado == 'terminado' %}
                         <span class="badge terminado">Terminado</span>
                     {% endif %}
-                    <div class="flujo">Pendiente → En proceso → Terminado</div>
                 </td>
-                <td>{{ o.fecha }}</td>
+                <td>{{ orden.fecha }}</td>
                 <td>
-                    <div class="acciones">
-                        <a class="btn-detalle" href="{% url 'detalle_orden' o.id %}">Detalle</a>
-                        <a class="btn-editar" href="{% url 'editar_orden' o.id %}">Editar</a>
-                        <a class="btn-pendiente" href="{% url 'cambiar_estado' o.id 'pendiente' %}">Pendiente</a>
-                        <a class="btn-proceso" href="{% url 'cambiar_estado' o.id 'proceso' %}">En proceso</a>
-                        <a class="btn-terminado" href="{% url 'cambiar_estado' o.id 'terminado' %}">Terminado</a>
-                    </div>
+                    <a class="btn btn-detalle" href="{% url 'detalle_orden' orden.id %}">Detalle</a>
+                    <a class="btn btn-editar" href="{% url 'editar_orden' orden.id %}">Editar</a>
+
+                    {% if orden.estado == 'pendiente' %}
+                        <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}">Iniciar</a>
+                    {% elif orden.estado == 'proceso' %}
+                        <a class="btn btn-finalizar" href="{% url 'cambiar_estado' orden.id 'terminado' %}">Finalizar</a>
+                        <a class="btn btn-pendiente" href="{% url 'cambiar_estado' orden.id 'pendiente' %}">Regresar</a>
+                    {% elif orden.estado == 'terminado' %}
+                        <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}">Reabrir</a>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9">No hay órdenes registradas.</td>
+                <td colspan="13">No hay órdenes registradas.</td>
             </tr>
             {% endfor %}
         </tbody>

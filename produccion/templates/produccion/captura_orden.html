@@ -5,107 +5,86 @@
 {% block content %}
 <style>
     .contenedor {
-        max-width: 1000px;
-        margin: auto;
         background: white;
-        padding: 25px;
         border-radius: 14px;
+        padding: 25px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        max-width: 1000px;
     }
     .grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
+        gap: 14px;
     }
     .campo {
         display: flex;
         flex-direction: column;
     }
-    .campo-completo {
-        grid-column: span 2;
-    }
-    label {
+    .campo label {
         font-weight: bold;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
     }
-    input, select, textarea {
+    .campo input,
+    .campo select,
+    .campo textarea {
         padding: 10px;
         border-radius: 8px;
         border: 1px solid #ccc;
     }
+    .mensaje {
+        background: #dff0d8;
+        color: #2e7d32;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
     .acciones {
         margin-top: 20px;
-        display: flex;
-        gap: 10px;
     }
-    button, a {
+    .acciones button,
+    .acciones a {
+        display: inline-block;
         padding: 10px 14px;
         border-radius: 8px;
-        border: none;
         text-decoration: none;
+        border: none;
         cursor: pointer;
+        margin-right: 10px;
     }
-    button {
+    .acciones button {
         background: #2c3e50;
         color: white;
     }
-    .volver {
+    .acciones a {
         background: #95a5a6;
         color: white;
     }
 </style>
 
 <div class="contenedor">
-    <h1>Captura de Orden de Producción</h1>
+    <h1>Captura de Orden</h1>
 
     {% if mensaje %}
-        <div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:20px;">
-            {{ mensaje }}
-        </div>
+        <div class="mensaje">{{ mensaje }}</div>
     {% endif %}
 
     <form method="post">
         {% csrf_token %}
-
         <div class="grid">
-            <div class="campo"><label>Folio orden</label>{{ form.folio_orden }}</div>
-            <div class="campo"><label>Cliente</label>{{ form.cliente }}</div>
-
-            <div class="campo"><label>Materia Prima</label>{{ form.mp }}</div>
-            <div class="campo"><label>Línea</label>{{ form.linea }}</div>
-
-            <div class="campo"><label>Operador</label>{{ form.operador }}</div>
-            <div class="campo"><label>Turno</label>{{ form.turno }}</div>
-
-            <div class="campo"><label>Prioridad</label>{{ form.prioridad }}</div>
-            <div class="campo"><label>Estado</label>{{ form.estado }}</div>
-
-            <div class="campo"><label>Hora inicio</label>{{ form.hora_inicio }}</div>
-            <div class="campo"><label>Hora fin</label>{{ form.hora_fin }}</div>
-
-            <div class="campo"><label>Tiempo preparación (min)</label>{{ form.tiempo_preparacion_min }}</div>
-            <div class="campo"><label>Tiempo proceso (min)</label>{{ form.tiempo_proceso_min }}</div>
-
-            <div class="campo"><label>Tiempo muerto (min)</label>{{ form.tiempo_muerto_min }}</div>
-            <div class="campo"><label>Peso usado</label>{{ form.peso_usado }}</div>
-
-            <div class="campo"><label>Peso producido</label>{{ form.peso_producido }}</div>
-            <div class="campo"><label>Cantidad paquetes</label>{{ form.cantidad_paquetes }}</div>
-
-            <div class="campo"><label>Cantidad piezas</label>{{ form.cantidad_piezas }}</div>
-            <div class="campo"><label>Rendimiento %</label>{{ form.rendimiento_porcentaje }}</div>
-
-            <div class="campo"><label>Merma kg</label>{{ form.merma_kg }}</div>
-
-            <div class="campo campo-completo">
-                <label>Observaciones</label>
-                {{ form.observaciones }}
-            </div>
+            {% for field in form %}
+                <div class="campo">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <small style="color:red;">{{ field.errors }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
         </div>
 
         <div class="acciones">
             <button type="submit">Guardar orden</button>
-            <a class="volver" href="/ordenes/">Ver órdenes</a>
+            <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
         </div>
     </form>
 </div>

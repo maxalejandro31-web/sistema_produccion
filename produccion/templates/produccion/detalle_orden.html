@@ -1,100 +1,121 @@
 {% extends 'base.html' %}
 
-{% block title %}Detalle Orden{% endblock %}
+{% block title %}Detalle de Orden{% endblock %}
 
 {% block content %}
 <style>
     .contenedor {
-        max-width: 900px;
-        margin: auto;
         background: white;
-        padding: 25px;
         border-radius: 14px;
+        padding: 25px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    }
-    h1 {
-        margin-top: 0;
-        margin-bottom: 20px;
     }
     .grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
+        grid-template-columns: repeat(2, minmax(250px, 1fr));
+        gap: 14px;
+        margin-bottom: 25px;
     }
     .card {
-        background: #f8f9fa;
+        background: #f8f9fb;
         border-radius: 10px;
         padding: 14px;
     }
-    .card strong {
-        display: block;
-        margin-bottom: 6px;
-        color: #2c3e50;
+    h1, h2 {
+        margin-top: 0;
     }
-    .acciones {
-        margin-top: 20px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 10px;
     }
-    a {
-        padding: 10px 14px;
-        border-radius: 8px;
-        text-decoration: none;
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+    th {
+        background: #f5f7fa;
+    }
+    .acciones a {
+        display: inline-block;
+        margin-right: 8px;
+        padding: 8px 12px;
+        background: #2c3e50;
         color: white;
+        text-decoration: none;
+        border-radius: 8px;
     }
-    .btn-volver { background: #7f8c8d; }
-    .btn-editar { background: #2c3e50; }
 </style>
 
 <div class="contenedor">
-    <h1>Detalle de Orden: {{ orden.folio_orden }}</h1>
-
-    <div class="grid">
-        <div class="card">
-            <strong>Cliente</strong>
-            {{ orden.cliente }}
-        </div>
-
-        <div class="card">
-            <strong>Materia Prima</strong>
-            {{ orden.mp }}
-        </div>
-
-        <div class="card">
-            <strong>Línea</strong>
-            {{ orden.linea }}
-        </div>
-
-        <div class="card">
-            <strong>Estado</strong>
-            {{ orden.estado }}
-        </div>
-
-        <div class="card">
-            <strong>Peso usado</strong>
-            {{ orden.peso_usado }}
-        </div>
-
-        <div class="card">
-            <strong>Peso producido</strong>
-            {{ orden.peso_producido }}
-        </div>
-
-        <div class="card">
-            <strong>Fecha</strong>
-            {{ orden.fecha }}
-        </div>
-
-        <div class="card">
-            <strong>Observaciones</strong>
-            {{ orden.observaciones }}
-        </div>
-    </div>
+    <h1>Detalle de Orden</h1>
 
     <div class="acciones">
-        <a class="btn-volver" href="/ordenes/">Volver</a>
-        <a class="btn-editar" href="{% url 'editar_orden' orden.id %}">Editar</a>
+        <a href="{% url 'lista_ordenes' %}">Volver</a>
+        <a href="{% url 'editar_orden' orden.id %}">Editar</a>
     </div>
+
+    <br>
+
+    <div class="grid">
+        <div class="card"><strong>Folio:</strong> {{ orden.folio_orden|default:"Sin folio" }}</div>
+        <div class="card"><strong>Proceso:</strong> {{ orden.get_tipo_proceso_display }}</div>
+        <div class="card"><strong>Cliente:</strong> {{ orden.cliente|default:"-" }}</div>
+        <div class="card"><strong>MP:</strong> {{ orden.mp|default:"-" }}</div>
+        <div class="card"><strong>Línea:</strong> {{ orden.linea }}</div>
+        <div class="card"><strong>Operador:</strong> {{ orden.operador|default:"-" }}</div>
+        <div class="card"><strong>Turno:</strong> {{ orden.get_turno_display|default:"-" }}</div>
+        <div class="card"><strong>Prioridad:</strong> {{ orden.get_prioridad_display }}</div>
+        <div class="card"><strong>Hora inicio:</strong> {{ orden.hora_inicio|default:"-" }}</div>
+        <div class="card"><strong>Hora fin:</strong> {{ orden.hora_fin|default:"-" }}</div>
+        <div class="card"><strong>Tiempo preparación:</strong> {{ orden.tiempo_preparacion_min|default:"-" }} min</div>
+        <div class="card"><strong>Tiempo proceso:</strong> {{ orden.tiempo_proceso_min|default:"-" }} min</div>
+        <div class="card"><strong>Tiempo muerto:</strong> {{ orden.tiempo_muerto_min|default:"-" }} min</div>
+        <div class="card"><strong>Peso usado:</strong> {{ orden.peso_usado|default:"-" }}</div>
+        <div class="card"><strong>Peso producido:</strong> {{ orden.peso_producido|default:"-" }}</div>
+        <div class="card"><strong>Scrap total:</strong> {{ orden.scrap_total|default:"-" }}</div>
+        <div class="card"><strong>Merma:</strong> {{ orden.merma_kg|default:"-" }}</div>
+        <div class="card"><strong>Rendimiento:</strong> {{ orden.rendimiento_porcentaje|default:"-" }} %</div>
+        <div class="card"><strong>Estado:</strong> {{ orden.get_estado_display }}</div>
+        <div class="card"><strong>Fecha:</strong> {{ orden.fecha }}</div>
+        <div class="card"><strong>Observaciones:</strong> {{ orden.observaciones|default:"-" }}</div>
+    </div>
+
+    <h2>Detalle Slitter</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No. corte</th>
+                <th>Ancho</th>
+                <th>Espesor</th>
+                <th>Rebaba</th>
+                <th>Peso</th>
+                <th>Camber</th>
+                <th>Material OK</th>
+                <th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in detalles %}
+            <tr>
+                <td>{{ d.no_corte }}</td>
+                <td>{{ d.ancho|default:"-" }}</td>
+                <td>{{ d.espesor|default:"-" }}</td>
+                <td>{{ d.rebaba|default:"-" }}</td>
+                <td>{{ d.peso|default:"-" }}</td>
+                <td>{{ d.camber|default:"-" }}</td>
+                <td>{% if d.material_ok %}Sí{% else %}No{% endif %}</td>
+                <td>{{ d.observaciones|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8">No hay cortes registrados para esta orden.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

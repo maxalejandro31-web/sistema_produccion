@@ -1,5 +1,11 @@
 from django.urls import path
-from .views import captura_orden, lista_ordenes, cambiar_estado, editar_orden, detalle_orden
+from .views import (
+    captura_orden,
+    lista_ordenes,
+    cambiar_estado,
+    editar_orden,
+    detalle_orden,
+)
 
 urlpatterns = [
     path('captura/', captura_orden, name='captura_orden'),

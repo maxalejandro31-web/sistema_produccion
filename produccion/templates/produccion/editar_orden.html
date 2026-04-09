@@ -5,55 +5,75 @@
 {% block content %}
 <style>
     .contenedor {
-        max-width: 800px;
-        margin: auto;
         background: white;
-        padding: 25px;
         border-radius: 14px;
+        padding: 25px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        max-width: 1000px;
     }
-    form p {
-        margin-bottom: 15px;
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
     }
-    input, select, textarea {
-        width: 100%;
+    .campo {
+        display: flex;
+        flex-direction: column;
+    }
+    .campo label {
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+    .campo input,
+    .campo select,
+    .campo textarea {
         padding: 10px;
         border-radius: 8px;
         border: 1px solid #ccc;
-        box-sizing: border-box;
     }
     .acciones {
         margin-top: 20px;
-        display: flex;
-        gap: 10px;
     }
-    button, a {
+    .acciones button,
+    .acciones a {
+        display: inline-block;
         padding: 10px 14px;
         border-radius: 8px;
-        border: none;
         text-decoration: none;
+        border: none;
         cursor: pointer;
+        margin-right: 10px;
     }
-    button {
+    .acciones button {
         background: #2c3e50;
         color: white;
     }
-    .volver {
+    .acciones a {
         background: #95a5a6;
         color: white;
     }
 </style>
 
 <div class="contenedor">
-    <h1>Editar Orden: {{ orden.folio_orden }}</h1>
+    <h1>Editar Orden</h1>
 
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        <div class="grid">
+            {% for field in form %}
+                <div class="campo">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <small style="color:red;">{{ field.errors }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
 
         <div class="acciones">
             <button type="submit">Guardar cambios</button>
-            <a class="volver" href="/ordenes/">Volver</a>
+            <a href="{% url 'lista_ordenes' %}">Cancelar</a>
         </div>
     </form>
 </div>
