@@ -25,6 +25,7 @@ class DetalleSlitterInline(admin.TabularInline):
 class OrdenProduccionAdmin(admin.ModelAdmin):
     list_display = (
         'folio_orden',
+        'tipo_proceso',
         'cliente',
         'mp',
         'linea',
@@ -33,6 +34,9 @@ class OrdenProduccionAdmin(admin.ModelAdmin):
         'prioridad',
         'peso_usado',
         'peso_producido',
+        'scrap_total',
+        'merma_kg',
+        'rendimiento_porcentaje',
         'estado',
         'fecha',
     )
@@ -44,6 +48,7 @@ class OrdenProduccionAdmin(admin.ModelAdmin):
         'operador__nombre',
     )
     list_filter = (
+        'tipo_proceso',
         'estado',
         'turno',
         'prioridad',

@@ -1,4 +1,5 @@
 from django import forms
+from django.forms import inlineformset_factory
 from .models import OrdenProduccion, DetalleSlitter
 
 
@@ -7,6 +8,7 @@ class OrdenProduccionForm(forms.ModelForm):
         model = OrdenProduccion
         fields = [
             'folio_orden',
+            'tipo_proceso',
             'cliente',
             'mp',
             'linea',
@@ -20,17 +22,18 @@ class OrdenProduccionForm(forms.ModelForm):
             'tiempo_muerto_min',
             'peso_usado',
             'peso_producido',
+            'scrap_total',
+            'merma_kg',
+            'rendimiento_porcentaje',
             'cantidad_paquetes',
             'cantidad_piezas',
-            'rendimiento_porcentaje',
-            'merma_kg',
             'observaciones',
             'estado',
         ]
         widgets = {
-            'observaciones': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Observaciones de la orden'}),
             'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'type': 'time'}),
+            'observaciones': forms.Textarea(attrs={'rows': 4}),
         }
 
 
@@ -47,3 +50,12 @@ class DetalleSlitterForm(forms.ModelForm):
             'material_ok',
             'observaciones',
         ]
+
+
+DetalleSlitterFormSet = inlineformset_factory(
+    OrdenProduccion,
+    DetalleSlitter,
+    form=DetalleSlitterForm,
+    extra=5,
+    can_delete=True
+)
