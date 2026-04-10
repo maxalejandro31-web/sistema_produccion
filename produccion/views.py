@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from .models import OrdenProduccion
-from .forms import OrdenProduccionForm
+from .forms import OrdenProduccionForm, DetalleSlitterFormSet
 
 
 @login_required
@@ -14,15 +14,29 @@ def captura_orden(request):
 
     if request.method == 'POST':
         form = OrdenProduccionForm(request.POST)
-        if form.is_valid():
-            form.save()
-            mensaje = 'Orden registrada correctamente.'
+        formset = DetalleSlitterFormSet(request.POST, prefix='detalles')
+
+        if form.is_valid() and formset.is_valid():
+            orden = form.save()
+
+            detalles = formset.save(commit=False)
+            for detalle in detalles:
+                detalle.orden = orden
+                detalle.save()
+
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            mensaje = 'Orden Slitter registrada correctamente.'
             form = OrdenProduccionForm()
+            formset = DetalleSlitterFormSet(prefix='detalles')
     else:
         form = OrdenProduccionForm()
+        formset = DetalleSlitterFormSet(prefix='detalles')
 
     return render(request, 'produccion/captura_orden.html', {
         'form': form,
+        'formset': formset,
         'mensaje': mensaje,
     })
 

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Captura Orden{% endblock %}
+{% block title %}Captura Orden Slitter{% endblock %}
 
 {% block content %}
 <style>
@@ -9,12 +9,13 @@
         border-radius: 14px;
         padding: 25px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        max-width: 1000px;
+        max-width: 1200px;
     }
     .grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 14px;
+        margin-bottom: 25px;
     }
     .campo {
         display: flex;
@@ -59,10 +60,43 @@
         background: #95a5a6;
         color: white;
     }
+    .tabla-detalles {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 14px;
+    }
+    .tabla-detalles th,
+    .tabla-detalles td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+    }
+    .tabla-detalles th {
+        background: #f5f7fa;
+    }
+    .tabla-detalles input,
+    .tabla-detalles select {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+    h2 {
+        margin-top: 30px;
+    }
+    .errorlist {
+        color: red;
+        margin: 0;
+        padding-left: 18px;
+        font-size: 12px;
+    }
 </style>
 
 <div class="contenedor">
-    <h1>Captura de Orden</h1>
+    <h1>Captura de Orden Slitter</h1>
 
     {% if mensaje %}
         <div class="mensaje">{{ mensaje }}</div>
@@ -70,6 +104,7 @@
 
     <form method="post">
         {% csrf_token %}
+
         <div class="grid">
             {% for field in form %}
                 <div class="campo">
@@ -82,8 +117,74 @@
             {% endfor %}
         </div>
 
+        <h2>Detalle de Cortes Slitter</h2>
+
+        {{ formset.management_form }}
+
+        <table class="tabla-detalles">
+            <thead>
+                <tr>
+                    <th>No. corte</th>
+                    <th>Ancho</th>
+                    <th>Espesor</th>
+                    <th>Rebaba</th>
+                    <th>Peso</th>
+                    <th>Camber</th>
+                    <th>Material OK</th>
+                    <th>Observaciones</th>
+                    <th>Eliminar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle_form in formset %}
+                <tr>
+                    <td>
+                        {{ detalle_form.no_corte }}
+                        {{ detalle_form.id }}
+                        {% if detalle_form.no_corte.errors %}{{ detalle_form.no_corte.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {{ detalle_form.ancho }}
+                        {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {{ detalle_form.espesor }}
+                        {% if detalle_form.espesor.errors %}{{ detalle_form.espesor.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {{ detalle_form.rebaba }}
+                        {% if detalle_form.rebaba.errors %}{{ detalle_form.rebaba.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {{ detalle_form.peso }}
+                        {% if detalle_form.peso.errors %}{{ detalle_form.peso.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {{ detalle_form.camber }}
+                        {% if detalle_form.camber.errors %}{{ detalle_form.camber.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {{ detalle_form.material_ok }}
+                        {% if detalle_form.material_ok.errors %}{{ detalle_form.material_ok.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {{ detalle_form.observaciones }}
+                        {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
+                    </td>
+                    <td>
+                        {% if detalle_form.DELETE %}
+                            {{ detalle_form.DELETE }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
         <div class="acciones">
-            <button type="submit">Guardar orden</button>
+            <button type="submit">Guardar orden slitter</button>
             <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
         </div>
     </form>
