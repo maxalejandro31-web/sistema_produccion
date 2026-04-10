@@ -262,23 +262,34 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const lineaSelect = document.getElementById('id_linea');
+    const tipoProcesoSelect = document.getElementById('id_tipo_proceso');
     const bloqueSlitter = document.getElementById('bloque-slitter');
     const totalForms = document.getElementById('id_detalles-TOTAL_FORMS');
     const tablaBody = document.getElementById('tabla-detalles-body');
     const btnAgregarFila = document.getElementById('agregarFila');
 
-    function esLineaSlitter() {
-        if (!lineaSelect) return false;
+    function esSlitter() {
+        let porLinea = false;
+        let porProceso = false;
 
-        const opcion = lineaSelect.options[lineaSelect.selectedIndex];
-        if (!opcion) return false;
+        if (lineaSelect && lineaSelect.selectedIndex >= 0) {
+            const opcion = lineaSelect.options[lineaSelect.selectedIndex];
+            if (opcion) {
+                const textoLinea = opcion.text.trim().toLowerCase();
+                porLinea = textoLinea.includes('slitter');
+            }
+        }
 
-        const texto = opcion.text.trim().toLowerCase();
-        return texto.includes('slitter');
+        if (tipoProcesoSelect) {
+            const valorProceso = (tipoProcesoSelect.value || '').trim().toLowerCase();
+            porProceso = valorProceso === 'slitter';
+        }
+
+        return porLinea || porProceso;
     }
 
     function toggleBloqueSlitter() {
-        if (esLineaSlitter()) {
+        if (esSlitter()) {
             bloqueSlitter.classList.remove('oculto');
         } else {
             bloqueSlitter.classList.add('oculto');
@@ -389,7 +400,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (lineaSelect) {
         lineaSelect.addEventListener('change', toggleBloqueSlitter);
-        toggleBloqueSlitter();
+    }
+
+    if (tipoProcesoSelect) {
+        tipoProcesoSelect.addEventListener('change', toggleBloqueSlitter);
     }
 
     if (btnAgregarFila) {
@@ -401,6 +415,8 @@ document.addEventListener('DOMContentLoaded', function () {
             quitarFila(e.target);
         }
     });
+
+    toggleBloqueSlitter();
 });
 </script>
 {% endblock %}
