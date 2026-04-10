@@ -9,22 +9,26 @@
         border-radius: 14px;
         padding: 25px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        max-width: 1200px;
+        max-width: 1280px;
     }
+
     .grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 14px;
         margin-bottom: 25px;
     }
+
     .campo {
         display: flex;
         flex-direction: column;
     }
+
     .campo label {
         font-weight: bold;
         margin-bottom: 6px;
     }
+
     .campo input,
     .campo select,
     .campo textarea {
@@ -32,6 +36,7 @@
         border-radius: 8px;
         border: 1px solid #ccc;
     }
+
     .mensaje {
         background: #dff0d8;
         color: #2e7d32;
@@ -39,11 +44,14 @@
         border-radius: 8px;
         margin-bottom: 15px;
     }
+
     .acciones {
         margin-top: 20px;
     }
+
     .acciones button,
-    .acciones a {
+    .acciones a,
+    .btn-secundario {
         display: inline-block;
         padding: 10px 14px;
         border-radius: 8px;
@@ -51,21 +59,42 @@
         border: none;
         cursor: pointer;
         margin-right: 10px;
+        font-size: 14px;
     }
+
     .acciones button {
         background: #2c3e50;
         color: white;
     }
-    .acciones a {
+
+    .acciones a,
+    .btn-secundario {
         background: #95a5a6;
         color: white;
     }
+
+    .btn-agregar {
+        background: #16a085;
+        color: white;
+    }
+
+    .btn-eliminar-fila {
+        background: #c0392b;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 10px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
     .tabla-detalles {
         width: 100%;
         border-collapse: collapse;
         margin-top: 15px;
         font-size: 14px;
     }
+
     .tabla-detalles th,
     .tabla-detalles td {
         border: 1px solid #ddd;
@@ -73,42 +102,75 @@
         text-align: left;
         vertical-align: top;
     }
+
     .tabla-detalles th {
         background: #f5f7fa;
     }
+
     .tabla-detalles input,
-    .tabla-detalles select {
+    .tabla-detalles select,
+    .tabla-detalles textarea {
         width: 100%;
         padding: 8px;
         box-sizing: border-box;
         border-radius: 6px;
         border: 1px solid #ccc;
+        font-size: 13px;
     }
-    h2 {
-        margin-top: 30px;
+
+    .tabla-detalles textarea {
+        min-height: 42px;
+        resize: vertical;
     }
+
     .errorlist {
         color: red;
         margin: 0;
         padding-left: 18px;
         font-size: 12px;
     }
+
+    .oculto {
+        display: none;
+    }
+
+    .bloque-slitter {
+        margin-top: 28px;
+        padding: 18px;
+        border: 1px solid #dfe6e9;
+        border-radius: 12px;
+        background: #fafcfd;
+    }
+
+    .fila-acciones {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .nota {
+        font-size: 13px;
+        color: #666;
+    }
 </style>
 
 <div class="contenedor">
-    <h1>Captura de Orden Slitter</h1>
+    <h1>Captura de Orden de Producción</h1>
 
     {% if mensaje %}
         <div class="mensaje">{{ mensaje }}</div>
     {% endif %}
 
-    <form method="post">
+    <form method="post" id="ordenForm">
         {% csrf_token %}
 
         <div class="grid">
             {% for field in form %}
                 <div class="campo">
-                    <label>{{ field.label }}</label>
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
                     {% if field.errors %}
                         <small style="color:red;">{{ field.errors }}</small>
@@ -117,76 +179,220 @@
             {% endfor %}
         </div>
 
-        <h2>Detalle de Cortes Slitter</h2>
+        <div id="bloque-slitter" class="bloque-slitter oculto">
+            <div class="fila-acciones">
+                <div>
+                    <h2 style="margin:0;">Detalle de Cortes Slitter</h2>
+                    <div class="nota">Agrega los cortes necesarios solo cuando la máquina/proceso sea Slitter.</div>
+                </div>
+                <button type="button" class="acciones btn-agregar" id="agregarFila">+ Agregar corte</button>
+            </div>
 
-        {{ formset.management_form }}
+            {{ formset.management_form }}
 
-        <table class="tabla-detalles">
-            <thead>
-                <tr>
-                    <th>No. corte</th>
-                    <th>Ancho</th>
-                    <th>Espesor</th>
-                    <th>Rebaba</th>
-                    <th>Peso</th>
-                    <th>Camber</th>
-                    <th>Material OK</th>
-                    <th>Observaciones</th>
-                    <th>Eliminar</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for detalle_form in formset %}
-                <tr>
-                    <td>
-                        {{ detalle_form.no_corte }}
-                        {{ detalle_form.id }}
-                        {% if detalle_form.no_corte.errors %}{{ detalle_form.no_corte.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {{ detalle_form.ancho }}
-                        {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {{ detalle_form.espesor }}
-                        {% if detalle_form.espesor.errors %}{{ detalle_form.espesor.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {{ detalle_form.rebaba }}
-                        {% if detalle_form.rebaba.errors %}{{ detalle_form.rebaba.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {{ detalle_form.peso }}
-                        {% if detalle_form.peso.errors %}{{ detalle_form.peso.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {{ detalle_form.camber }}
-                        {% if detalle_form.camber.errors %}{{ detalle_form.camber.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {{ detalle_form.material_ok }}
-                        {% if detalle_form.material_ok.errors %}{{ detalle_form.material_ok.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {{ detalle_form.observaciones }}
-                        {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
-                    </td>
-                    <td>
-                        {% if detalle_form.DELETE %}
-                            {{ detalle_form.DELETE }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <table class="tabla-detalles">
+                <thead>
+                    <tr>
+                        <th>No. corte</th>
+                        <th>Ancho</th>
+                        <th>Espesor</th>
+                        <th>Rebaba</th>
+                        <th>Peso</th>
+                        <th>Camber</th>
+                        <th>Material OK</th>
+                        <th>Observaciones</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-detalles-body">
+                    {% for detalle_form in formset %}
+                    <tr class="detalle-row">
+                        <td>
+                            {{ detalle_form.id }}
+                            {{ detalle_form.no_corte }}
+                            {% if detalle_form.no_corte.errors %}{{ detalle_form.no_corte.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.ancho }}
+                            {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.espesor }}
+                            {% if detalle_form.espesor.errors %}{{ detalle_form.espesor.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.rebaba }}
+                            {% if detalle_form.rebaba.errors %}{{ detalle_form.rebaba.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.peso }}
+                            {% if detalle_form.peso.errors %}{{ detalle_form.peso.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.camber }}
+                            {% if detalle_form.camber.errors %}{{ detalle_form.camber.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.material_ok }}
+                            {% if detalle_form.material_ok.errors %}{{ detalle_form.material_ok.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.observaciones }}
+                            {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {% if detalle_form.DELETE %}
+                                <div style="display:none;">{{ detalle_form.DELETE }}</div>
+                            {% endif %}
+                            <button type="button" class="btn-eliminar-fila">Quitar</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div class="acciones">
-            <button type="submit">Guardar orden slitter</button>
+            <button type="submit">Guardar orden</button>
             <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tipoProceso = document.getElementById('id_tipo_proceso');
+    const bloqueSlitter = document.getElementById('bloque-slitter');
+    const totalForms = document.getElementById('id_detalles-TOTAL_FORMS');
+    const tablaBody = document.getElementById('tabla-detalles-body');
+    const btnAgregarFila = document.getElementById('agregarFila');
+
+    function toggleBloqueSlitter() {
+        if (!tipoProceso) return;
+        const valor = tipoProceso.value;
+        if (valor === 'slitter') {
+            bloqueSlitter.classList.remove('oculto');
+        } else {
+            bloqueSlitter.classList.add('oculto');
+        }
+    }
+
+    function limpiarValoresFila(row) {
+        const inputs = row.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            const name = input.name || '';
+            const type = input.type || '';
+
+            if (name.endsWith('-id')) {
+                input.value = '';
+                return;
+            }
+
+            if (type === 'checkbox') {
+                if (name.endsWith('-material_ok')) {
+                    input.checked = true;
+                } else {
+                    input.checked = false;
+                }
+            } else {
+                input.value = '';
+            }
+        });
+    }
+
+    function actualizarIndicesFila(row, newIndex) {
+        const elementos = row.querySelectorAll('input, select, textarea, label');
+        elementos.forEach(el => {
+            if (el.name) {
+                el.name = el.name.replace(/detalles-\d+-/g, `detalles-${newIndex}-`);
+            }
+            if (el.id) {
+                el.id = el.id.replace(/detalles-\d+-/g, `detalles-${newIndex}-`);
+            }
+            if (el.htmlFor) {
+                el.htmlFor = el.htmlFor.replace(/detalles-\d+-/g, `detalles-${newIndex}-`);
+            }
+        });
+    }
+
+    function crearNuevaFila() {
+        const filas = tablaBody.querySelectorAll('.detalle-row');
+        if (filas.length === 0) return;
+
+        const ultimaFila = filas[filas.length - 1];
+        const nuevaFila = ultimaFila.cloneNode(true);
+        const nuevoIndice = parseInt(totalForms.value, 10);
+
+        actualizarIndicesFila(nuevaFila, nuevoIndice);
+        limpiarValoresFila(nuevaFila);
+
+        const noCorteInput = nuevaFila.querySelector(`input[name="detalles-${nuevoIndice}-no_corte"]`);
+        if (noCorteInput) {
+            noCorteInput.value = nuevoIndice + 1;
+        }
+
+        const deleteInput = nuevaFila.querySelector(`input[name="detalles-${nuevoIndice}-DELETE"]`);
+        if (deleteInput) {
+            deleteInput.checked = false;
+        }
+
+        tablaBody.appendChild(nuevaFila);
+        totalForms.value = nuevoIndice + 1;
+    }
+
+    function quitarFila(button) {
+        const filas = tablaBody.querySelectorAll('.detalle-row');
+        const row = button.closest('.detalle-row');
+        if (!row) return;
+
+        if (filas.length === 1) {
+            limpiarValoresFila(row);
+            const noCorteInput = row.querySelector('input[name*="-no_corte"]');
+            if (noCorteInput) noCorteInput.value = '1';
+            return;
+        }
+
+        const deleteInput = row.querySelector('input[name*="-DELETE"]');
+        const idInput = row.querySelector('input[name*="-id"]');
+
+        if (deleteInput && idInput && idInput.value) {
+            deleteInput.checked = true;
+            row.style.display = 'none';
+        } else {
+            row.remove();
+            reordenarFilas();
+        }
+    }
+
+    function reordenarFilas() {
+        const filas = Array.from(tablaBody.querySelectorAll('.detalle-row')).filter(f => f.style.display !== 'none');
+
+        filas.forEach((fila, index) => {
+            actualizarIndicesFila(fila, index);
+
+            const noCorteInput = fila.querySelector(`input[name="detalles-${index}-no_corte"]`);
+            if (noCorteInput && !noCorteInput.value) {
+                noCorteInput.value = index + 1;
+            }
+        });
+
+        totalForms.value = filas.length;
+    }
+
+    if (tipoProceso) {
+        tipoProceso.addEventListener('change', toggleBloqueSlitter);
+        toggleBloqueSlitter();
+    }
+
+    if (btnAgregarFila) {
+        btnAgregarFila.addEventListener('click', crearNuevaFila);
+    }
+
+    tablaBody.addEventListener('click', function (e) {
+        if (e.target.classList.contains('btn-eliminar-fila')) {
+            quitarFila(e.target);
+        }
+    });
+});
+</script>
 {% endblock %}
