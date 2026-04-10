@@ -261,16 +261,24 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const tipoProceso = document.getElementById('id_tipo_proceso');
+    const lineaSelect = document.getElementById('id_linea');
     const bloqueSlitter = document.getElementById('bloque-slitter');
     const totalForms = document.getElementById('id_detalles-TOTAL_FORMS');
     const tablaBody = document.getElementById('tabla-detalles-body');
     const btnAgregarFila = document.getElementById('agregarFila');
 
+    function esLineaSlitter() {
+        if (!lineaSelect) return false;
+
+        const opcion = lineaSelect.options[lineaSelect.selectedIndex];
+        if (!opcion) return false;
+
+        const texto = opcion.text.trim().toLowerCase();
+        return texto.includes('slitter');
+    }
+
     function toggleBloqueSlitter() {
-        if (!tipoProceso) return;
-        const valor = tipoProceso.value;
-        if (valor === 'slitter') {
+        if (esLineaSlitter()) {
             bloqueSlitter.classList.remove('oculto');
         } else {
             bloqueSlitter.classList.add('oculto');
@@ -379,8 +387,8 @@ document.addEventListener('DOMContentLoaded', function () {
         totalForms.value = filas.length;
     }
 
-    if (tipoProceso) {
-        tipoProceso.addEventListener('change', toggleBloqueSlitter);
+    if (lineaSelect) {
+        lineaSelect.addEventListener('change', toggleBloqueSlitter);
         toggleBloqueSlitter();
     }
 
