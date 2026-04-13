@@ -155,6 +155,19 @@
         font-size: 13px;
         color: #666;
     }
+
+    .resumen-slitter {
+        margin-bottom: 15px;
+        padding: 12px;
+        background: #eef6ff;
+        border: 1px solid #cfe2f3;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+
+    .resumen-slitter strong {
+        margin-right: 5px;
+    }
 </style>
 
 <div class="contenedor">
@@ -162,6 +175,12 @@
 
     {% if mensaje %}
         <div class="mensaje">{{ mensaje }}</div>
+    {% endif %}
+
+    {% if error %}
+        <div style="background:#fdecea;color:#b71c1c;padding:10px;border-radius:8px;margin-bottom:15px;">
+            {{ error }}
+        </div>
     {% endif %}
 
     <form method="post" id="ordenForm">
@@ -186,6 +205,11 @@
                     <div class="nota">Agrega los cortes necesarios solo cuando la máquina/proceso sea Slitter.</div>
                 </div>
                 <button type="button" class="acciones btn-agregar" id="agregarFila">+ Agregar corte</button>
+            </div>
+
+            <div id="resumen-slitter" class="resumen-slitter">
+                <strong>Total cortes:</strong> <span id="total-peso">0.00</span> kg |
+                <strong>Diferencia:</strong> <span id="diferencia-peso">0.00</span> kg
             </div>
 
             {{ formset.management_form }}
@@ -263,10 +287,15 @@
 document.addEventListener('DOMContentLoaded', function () {
     const lineaSelect = document.getElementById('id_linea');
     const tipoProcesoSelect = document.getElementById('id_tipo_proceso');
+    const pesoUsadoInput = document.getElementById('id_peso_usado');
+
     const bloqueSlitter = document.getElementById('bloque-slitter');
     const totalForms = document.getElementById('id_detalles-TOTAL_FORMS');
     const tablaBody = document.getElementById('tabla-detalles-body');
     const btnAgregarFila = document.getElementById('agregarFila');
+
+    const totalPesoSpan = document.getElementById('total-peso');
+    const diferenciaSpan = document.getElementById('diferencia-peso');
 
     function esSlitter() {
         let porLinea = false;
@@ -294,6 +323,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             bloqueSlitter.classList.add('oculto');
         }
+        calcularTotales();
     }
 
     function limpiarValoresFila(row) {
@@ -334,6 +364,38 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function calcularTotales() {
+        if (!tablaBody || !totalPesoSpan || !diferenciaSpan) return;
+
+        let total = 0;
+        const filas = Array.from(tablaBody.querySelectorAll('.detalle-row')).filter(f => f.style.display !== 'none');
+
+        filas.forEach(fila => {
+            const inputPeso = fila.querySelector('input[name*="-peso"]');
+            if (inputPeso) {
+                const val = parseFloat(inputPeso.value);
+                if (!isNaN(val)) total += val;
+            }
+        });
+
+        totalPesoSpan.innerText = total.toFixed(2);
+
+        const pesoUsado = parseFloat(pesoUsadoInput ? pesoUsadoInput.value : '');
+        if (!isNaN(pesoUsado)) {
+            const diferencia = pesoUsado - total;
+            diferenciaSpan.innerText = diferencia.toFixed(2);
+
+            if (Math.abs(diferencia) > 50) {
+                diferenciaSpan.style.color = 'red';
+            } else {
+                diferenciaSpan.style.color = 'green';
+            }
+        } else {
+            diferenciaSpan.innerText = '0.00';
+            diferenciaSpan.style.color = 'black';
+        }
+    }
+
     function crearNuevaFila() {
         const filas = tablaBody.querySelectorAll('.detalle-row');
         if (filas.length === 0) return;
@@ -357,6 +419,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tablaBody.appendChild(nuevaFila);
         totalForms.value = nuevoIndice + 1;
+        calcularTotales();
     }
 
     function quitarFila(button) {
@@ -368,6 +431,7 @@ document.addEventListener('DOMContentLoaded', function () {
             limpiarValoresFila(row);
             const noCorteInput = row.querySelector('input[name*="-no_corte"]');
             if (noCorteInput) noCorteInput.value = '1';
+            calcularTotales();
             return;
         }
 
@@ -381,6 +445,8 @@ document.addEventListener('DOMContentLoaded', function () {
             row.remove();
             reordenarFilas();
         }
+
+        calcularTotales();
     }
 
     function reordenarFilas() {
@@ -406,15 +472,25 @@ document.addEventListener('DOMContentLoaded', function () {
         tipoProcesoSelect.addEventListener('change', toggleBloqueSlitter);
     }
 
+    if (pesoUsadoInput) {
+        pesoUsadoInput.addEventListener('input', calcularTotales);
+    }
+
     if (btnAgregarFila) {
         btnAgregarFila.addEventListener('click', crearNuevaFila);
     }
 
-    tablaBody.addEventListener('click', function (e) {
-        if (e.target.classList.contains('btn-eliminar-fila')) {
-            quitarFila(e.target);
-        }
-    });
+    if (tablaBody) {
+        tablaBody.addEventListener('click', function (e) {
+            if (e.target.classList.contains('btn-eliminar-fila')) {
+                quitarFila(e.target);
+            }
+        });
+
+        tablaBody.addEventListener('input', function () {
+            calcularTotales();
+        });
+    }
 
     toggleBloqueSlitter();
 });

@@ -11,23 +11,44 @@ def captura_orden(request):
         return HttpResponse("No tienes permiso para capturar órdenes.")
 
     mensaje = ''
+    error = ''
 
     if request.method == 'POST':
         form = OrdenProduccionForm(request.POST)
         formset = DetalleSlitterFormSet(request.POST, prefix='detalles')
 
         if form.is_valid() and formset.is_valid():
-            orden = form.save()
-
+            orden = form.save(commit=False)
+            tipo = orden.tipo_proceso
             detalles = formset.save(commit=False)
-            for detalle in detalles:
-                detalle.orden = orden
-                detalle.save()
+
+            if tipo == 'slitter':
+                suma_pesos = 0
+
+                for d in detalles:
+                    if d.peso:
+                        suma_pesos += float(d.peso)
+
+                if orden.peso_usado:
+                    diferencia = float(orden.peso_usado) - suma_pesos
+                else:
+                    diferencia = 0
+
+                orden.peso_producido = suma_pesos
+                orden.scrap_total = diferencia if diferencia > 0 else 0
+            else:
+                detalles = []
+
+            orden.save()
+
+            for d in detalles:
+                d.orden = orden
+                d.save()
 
             for obj in formset.deleted_objects:
                 obj.delete()
 
-            mensaje = 'Orden Slitter registrada correctamente.'
+            mensaje = 'Orden registrada correctamente.'
             form = OrdenProduccionForm()
             formset = DetalleSlitterFormSet(prefix='detalles')
     else:
@@ -38,6 +59,7 @@ def captura_orden(request):
         'form': form,
         'formset': formset,
         'mensaje': mensaje,
+        'error': error,
     })
 
 
@@ -65,8 +87,6 @@ def cambiar_estado(request, orden_id, nuevo_estado):
         return HttpResponse("Estado no válido.")
 
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
-
-    # Actualiza solo el estado, sin volver a ejecutar lógica completa del save
     OrdenProduccion.objects.filter(id=orden.id).update(estado=nuevo_estado)
 
     return redirect('lista_ordenes')
