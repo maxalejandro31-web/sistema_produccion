@@ -1,24 +1,219 @@
 {% extends 'base.html' %}
 
+{% block title %}Detalle MP{% endblock %}
+
 {% block content %}
-<div style="background:white; padding:20px; border-radius:10px;">
-    <h2>Detalle de Materia Prima</h2>
+<style>
+    .contenedor {
+        max-width: 1200px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1, h2 {
+        margin-top: 0;
+    }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+        margin-bottom: 24px;
+    }
+    .card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 14px;
+    }
+    .card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #2c3e50;
+    }
+    .acciones {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    a {
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: white;
+    }
+    .btn-volver { background: #7f8c8d; }
+    .btn-editar { background: #2c3e50; }
+    .btn-pdf { background: #c0392b; }
 
-    <p><strong>MP:</strong> {{ mp.numero_mp }}</p>
-    <p><strong>Tipo:</strong> {{ mp.tipo_mp }}</p>
-    <p><strong>Material:</strong> {{ mp.material }}</p>
-    <p><strong>Descripción:</strong> {{ mp.descripcion }}</p>
-    <p><strong>Espesor:</strong> {{ mp.espesor_valor }} {{ mp.unidad_espesor }}</p>
-    <p><strong>Peso:</strong> {{ mp.peso }}</p>
-    <p><strong>Peso restante:</strong> {{ mp.peso_restante }}</p>
-    <p><strong>Estado:</strong> {{ mp.estado }}</p>
-    <p><strong>Ubicación:</strong> {{ mp.ubicacion }}</p>
+    .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .kpi {
+        background: #eef6ff;
+        border: 1px solid #d6e6f5;
+        border-radius: 10px;
+        padding: 14px;
+    }
+    .kpi .titulo {
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 5px;
+    }
+    .kpi .valor {
+        font-size: 24px;
+        font-weight: bold;
+        color: #1f2d3d;
+    }
 
-    {% if mp.archivo_pdf %}
-       <a class="btn-pdf" href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
-       <iframe src="{{ mp.archivo_pdf.url }}" width="100%" height="500"></iframe>
-    {% else %}
-       <p>Sin archivo PDF</p>
-    {% endif %}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        vertical-align: top;
+    }
+    th {
+        background: #f5f7fa;
+    }
+
+    .badge {
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: white;
+        display: inline-block;
+    }
+    .pendiente { background: #f39c12; }
+    .proceso { background: #2980b9; }
+    .terminado { background: #27ae60; }
+
+    .subtitulo {
+        margin-top: 30px;
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="contenedor">
+    <h1>Detalle de Materia Prima: {{ mp.numero_mp }}</h1>
+
+    <div class="acciones">
+        <a class="btn-volver" href="/lista-mp/">Volver</a>
+        <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
+        {% if mp.archivo_pdf %}
+            <a class="btn-pdf" href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
+        {% endif %}
+    </div>
+
+    <div class="kpis">
+        <div class="kpi">
+            <div class="titulo">Órdenes relacionadas</div>
+            <div class="valor">{{ cantidad_ordenes }}</div>
+        </div>
+        <div class="kpi">
+            <div class="titulo">Total consumido</div>
+            <div class="valor">{{ total_consumido }}</div>
+        </div>
+        <div class="kpi">
+            <div class="titulo">Total producido</div>
+            <div class="valor">{{ total_producido }}</div>
+        </div>
+        <div class="kpi">
+            <div class="titulo">Scrap total</div>
+            <div class="valor">{{ total_scrap }}</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card"><strong>Tipo MP</strong>{{ mp.tipo_mp }}</div>
+        <div class="card"><strong>Cliente</strong>{{ mp.cliente|default:"-" }}</div>
+
+        <div class="card"><strong>Origen MP</strong>{{ mp.origen_mp }}</div>
+        <div class="card"><strong>Material</strong>{{ mp.material }}</div>
+
+        <div class="card"><strong>Lote</strong>{{ mp.lote|default:"-" }}</div>
+        <div class="card"><strong>Código</strong>{{ mp.codigo|default:"-" }}</div>
+
+        <div class="card"><strong>Descripción</strong>{{ mp.descripcion|default:"-" }}</div>
+        <div class="card"><strong>Proveedor</strong>{{ mp.proveedor|default:"-" }}</div>
+
+        <div class="card"><strong>Espesor capturado</strong>{{ mp.espesor_valor }} {{ mp.unidad_espesor }}</div>
+        <div class="card"><strong>Conversión</strong>{{ mp.espesor_mm }} mm / {{ mp.espesor_pulg }} pulg / Cal {{ mp.calibre }}</div>
+
+        <div class="card"><strong>Ancho</strong>{{ mp.ancho|default:"-" }}</div>
+        <div class="card"><strong>Largo</strong>{{ mp.largo|default:"-" }}</div>
+
+        <div class="card"><strong>Peso total</strong>{{ mp.peso }}</div>
+        <div class="card"><strong>Peso restante</strong>{{ mp.peso_restante }}</div>
+
+        <div class="card"><strong>Diámetro interior</strong>{{ mp.diametro_interior|default:"-" }}</div>
+        <div class="card"><strong>Diámetro exterior</strong>{{ mp.diametro_exterior|default:"-" }}</div>
+
+        <div class="card"><strong>Ubicación</strong>{{ mp.ubicacion|default:"-" }}</div>
+        <div class="card"><strong>Estado</strong>{{ mp.estado }}</div>
+
+        <div class="card"><strong>Fecha entrada</strong>{{ mp.fecha_entrada }}</div>
+        <div class="card"><strong>Tiempo en fábrica</strong>{{ mp.tiempo_en_fabrica }}</div>
+
+        <div class="card" style="grid-column: span 2;">
+            <strong>Observaciones</strong>
+            {{ mp.observaciones|default:"-" }}
+        </div>
+    </div>
+
+    <h2 class="subtitulo">Órdenes relacionadas con esta MP</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Folio</th>
+                <th>Proceso</th>
+                <th>Cliente</th>
+                <th>Línea</th>
+                <th>Operador</th>
+                <th>Peso usado</th>
+                <th>Peso producido</th>
+                <th>Scrap</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for orden in ordenes_relacionadas %}
+            <tr>
+                <td>{{ orden.folio_orden|default:"Sin folio" }}</td>
+                <td>{{ orden.get_tipo_proceso_display }}</td>
+                <td>{{ orden.cliente|default:"-" }}</td>
+                <td>{{ orden.linea }}</td>
+                <td>{{ orden.operador|default:"-" }}</td>
+                <td>{{ orden.peso_usado|default:"-" }}</td>
+                <td>{{ orden.peso_producido|default:"-" }}</td>
+                <td>{{ orden.scrap_total|default:"-" }}</td>
+                <td>
+                    {% if orden.estado == 'pendiente' %}
+                        <span class="badge pendiente">Pendiente</span>
+                    {% elif orden.estado == 'proceso' %}
+                        <span class="badge proceso">En Proceso</span>
+                    {% elif orden.estado == 'terminado' %}
+                        <span class="badge terminado">Terminado</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9">Esta materia prima aún no ha sido usada en ninguna orden.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

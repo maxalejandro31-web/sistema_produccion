@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.db.models import Sum
 from .forms import MateriaPrimaForm
 from .models import MateriaPrima
+from produccion.models import OrdenProduccion
 
 
 @login_required
@@ -83,6 +85,20 @@ def detalle_mp(request, mp_id):
 
     mp = get_object_or_404(MateriaPrima, id=mp_id)
 
+    ordenes_relacionadas = OrdenProduccion.objects.select_related(
+        'cliente', 'linea', 'operador'
+    ).filter(mp=mp).order_by('-id')
+
+    total_consumido = ordenes_relacionadas.aggregate(total=Sum('peso_usado'))['total'] or 0
+    total_producido = ordenes_relacionadas.aggregate(total=Sum('peso_producido'))['total'] or 0
+    total_scrap = ordenes_relacionadas.aggregate(total=Sum('scrap_total'))['total'] or 0
+    cantidad_ordenes = ordenes_relacionadas.count()
+
     return render(request, 'inventario/detalle_mp.html', {
         'mp': mp,
+        'ordenes_relacionadas': ordenes_relacionadas,
+        'total_consumido': total_consumido,
+        'total_producido': total_producido,
+        'total_scrap': total_scrap,
+        'cantidad_ordenes': cantidad_ordenes,
     })
