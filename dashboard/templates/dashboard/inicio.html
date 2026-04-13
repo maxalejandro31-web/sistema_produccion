@@ -3,264 +3,254 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-    .header {
-        margin-bottom: 20px;
+    .contenedor {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
     }
-    .header h1 {
+
+    .titulo {
+        background: white;
+        padding: 24px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .titulo h1 {
         margin: 0 0 8px 0;
     }
-    .header p {
+
+    .titulo p {
         margin: 0;
         color: #666;
     }
-    .filtros {
-        background: white;
-        padding: 18px;
-        margin-bottom: 25px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .filtros form {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .filtros input, .filtros button, .filtros a {
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        text-decoration: none;
-    }
-    .filtros button {
-        background: #1f2d3d;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
-    .btn-exportar {
-        background: #27ae60;
-        color: white;
-        border: none;
-    }
+
     .kpis {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
-        margin-bottom: 24px;
     }
+
     .card {
         background: white;
         padding: 18px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
-    .card h3 {
-        margin: 0 0 8px 0;
-        font-size: 15px;
-        color: #555;
+
+    .card .label {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 8px;
     }
-    .card p {
-        margin: 0;
+
+    .card .valor {
         font-size: 28px;
         font-weight: bold;
         color: #1f2d3d;
     }
-    .charts {
+
+    .bloques {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 24px;
-    }
-    .tables {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
+        grid-template-columns: 1.4fr 1fr;
         gap: 20px;
     }
+
     table {
         width: 100%;
         border-collapse: collapse;
         font-size: 14px;
+        margin-top: 10px;
     }
+
     th, td {
         padding: 10px;
         border-bottom: 1px solid #ddd;
         text-align: left;
+        vertical-align: top;
     }
+
     th {
         background: #f5f7fa;
     }
-    .alerta {
-        color: #c0392b;
-        font-weight: bold;
-    }
+
     .badge {
-        padding: 4px 8px;
+        padding: 5px 10px;
         border-radius: 8px;
-        color: white;
         font-size: 12px;
+        color: white;
+        display: inline-block;
     }
-    .pendiente { background: #7f8c8d; }
-    .proceso { background: #f39c12; }
+
+    .pendiente { background: #f39c12; }
+    .proceso { background: #2980b9; }
     .terminado { background: #27ae60; }
 
-    @media (max-width: 1000px) {
-        .kpis, .charts, .tables {
+    .mini-kpis {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .mini {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 12px;
+    }
+
+    .mini .label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .mini .valor {
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    @media (max-width: 1100px) {
+        .kpis {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .bloques {
             grid-template-columns: 1fr;
         }
     }
 </style>
 
-<div class="header">
-    <h1>Dashboard de Producción</h1>
-    <p>Vista general del inventario y la producción</p>
+<div class="contenedor">
+    <div class="titulo">
+        <h1>Dashboard de Producción</h1>
+        <p>Resumen general del sistema, materia prima y órdenes de producción.</p>
+    </div>
+
+    <div class="kpis">
+        <div class="card">
+            <div class="label">Total MP</div>
+            <div class="valor">{{ total_mp }}</div>
+        </div>
+        <div class="card">
+            <div class="label">Total órdenes</div>
+            <div class="valor">{{ total_ordenes }}</div>
+        </div>
+        <div class="card">
+            <div class="label">Peso consumido</div>
+            <div class="valor">{{ peso_consumido }}</div>
+        </div>
+        <div class="card">
+            <div class="label">Peso producido</div>
+            <div class="valor">{{ peso_producido }}</div>
+        </div>
+    </div>
+
+    <div class="bloques">
+        <div class="card">
+            <h2>Últimas órdenes</h2>
+
+            <div class="mini-kpis">
+                <div class="mini">
+                    <div class="label">Pendientes</div>
+                    <div class="valor">{{ ordenes_pendientes }}</div>
+                </div>
+                <div class="mini">
+                    <div class="label">En proceso</div>
+                    <div class="valor">{{ ordenes_proceso }}</div>
+                </div>
+                <div class="mini">
+                    <div class="label">Terminadas</div>
+                    <div class="valor">{{ ordenes_terminadas }}</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Proceso</th>
+                        <th>Cliente</th>
+                        <th>Línea</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ultimas_ordenes %}
+                    <tr>
+                        <td>{{ orden.folio_orden|default:"Sin folio" }}</td>
+                        <td>{{ orden.get_tipo_proceso_display }}</td>
+                        <td>{{ orden.cliente|default:"-" }}</td>
+                        <td>{{ orden.linea }}</td>
+                        <td>
+                            {% if orden.estado == 'pendiente' %}
+                                <span class="badge pendiente">Pendiente</span>
+                            {% elif orden.estado == 'proceso' %}
+                                <span class="badge proceso">En Proceso</span>
+                            {% elif orden.estado == 'terminado' %}
+                                <span class="badge terminado">Terminado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">No hay órdenes registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Estado de materia prima</h2>
+
+            <div class="mini-kpis">
+                <div class="mini">
+                    <div class="label">Disponible</div>
+                    <div class="valor">{{ mp_disponible }}</div>
+                </div>
+                <div class="mini">
+                    <div class="label">En proceso</div>
+                    <div class="valor">{{ mp_proceso }}</div>
+                </div>
+                <div class="mini">
+                    <div class="label">Terminada</div>
+                    <div class="valor">{{ mp_terminada }}</div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px;">
+                <div class="label" style="font-weight:bold; margin-bottom:10px;">MP con menor peso restante</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>MP</th>
+                            <th>Cliente</th>
+                            <th>Peso restante</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mp in mp_critica %}
+                        <tr>
+                            <td>{{ mp.numero_mp }}</td>
+                            <td>{{ mp.cliente|default:"-" }}</td>
+                            <td>{{ mp.peso_restante }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">No hay materia prima registrada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:20px;">
+                <div class="label" style="font-weight:bold;">Scrap total acumulado</div>
+                <div class="valor" style="font-size:26px;">{{ scrap_total }}</div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div class="filtros">
-    <form method="get">
-        <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}">
-        <input type="date" name="fecha_fin" value="{{ fecha_fin }}">
-        <button type="submit">Filtrar</button>
-        <a href="/">Limpiar</a>
-        <a class="btn-exportar" href="/exportar/">Exportar Excel</a>
-    </form>
-</div>
-
-<div class="kpis">
-    <div class="card">
-        <h3>Total MP</h3>
-        <p>{{ total_mp }}</p>
-    </div>
-    <div class="card">
-        <h3>MP en proceso</h3>
-        <p>{{ mp_proceso }}</p>
-    </div>
-    <div class="card">
-        <h3>Órdenes activas</h3>
-        <p>{{ ordenes_proceso }}</p>
-    </div>
-    <div class="card">
-        <h3>Producción total</h3>
-        <p>{{ produccion_total }}</p>
-    </div>
-    <div class="card">
-        <h3>Peso total inventario</h3>
-        <p>{{ peso_total }}</p>
-    </div>
-    <div class="card">
-        <h3>Peso restante</h3>
-        <p>{{ peso_restante }}</p>
-    </div>
-    <div class="card">
-        <h3>Consumo total</h3>
-        <p>{{ consumo_total }}</p>
-    </div>
-    <div class="card">
-        <h3>MP terminada</h3>
-        <p>{{ mp_terminado }}</p>
-    </div>
-</div>
-
-<div class="charts">
-    <div class="card">
-        <h3>Órdenes por estado</h3>
-        <canvas id="ordenesChart"></canvas>
-    </div>
-    <div class="card">
-        <h3>Materia Prima por estado</h3>
-        <canvas id="mpChart"></canvas>
-    </div>
-</div>
-
-<div class="tables">
-    <div class="card">
-        <h3>Últimas órdenes</h3>
-        <table>
-            <tr>
-                <th>Folio</th>
-                <th>Cliente</th>
-                <th>MP</th>
-                <th>Línea</th>
-                <th>Estado</th>
-            </tr>
-            {% for o in ultimas_ordenes %}
-            <tr>
-                <td>{{ o.folio_orden }}</td>
-                <td>{{ o.cliente }}</td>
-                <td>{{ o.mp }}</td>
-                <td>{{ o.linea }}</td>
-                <td>
-                    {% if o.estado == 'pendiente' %}
-                        <span class="badge pendiente">Pendiente</span>
-                    {% elif o.estado == 'proceso' %}
-                        <span class="badge proceso">En Proceso</span>
-                    {% elif o.estado == 'terminado' %}
-                        <span class="badge terminado">Terminado</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5">No hay órdenes registradas.</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-
-    <div class="card">
-        <h3>MP con inventario bajo</h3>
-        <table>
-            <tr>
-                <th>MP</th>
-                <th>Peso restante</th>
-            </tr>
-            {% for mp in mp_baja %}
-            <tr>
-                <td>{{ mp.numero_mp }}</td>
-                <td class="alerta">{{ mp.peso_restante }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="2">No hay MP baja.</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
-
-{{ ordenes_labels|json_script:"ordenes-labels" }}
-{{ ordenes_data|json_script:"ordenes-data" }}
-{{ mp_labels|json_script:"mp-labels" }}
-{{ mp_data|json_script:"mp-data" }}
-
-<script>
-    const ordenesLabels = JSON.parse(document.getElementById('ordenes-labels').textContent);
-    const ordenesData = JSON.parse(document.getElementById('ordenes-data').textContent);
-    const mpLabels = JSON.parse(document.getElementById('mp-labels').textContent);
-    const mpData = JSON.parse(document.getElementById('mp-data').textContent);
-
-    new Chart(document.getElementById('ordenesChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ordenesLabels,
-            datasets: [{
-                data: ordenesData
-            }]
-        }
-    });
-
-    new Chart(document.getElementById('mpChart'), {
-        type: 'bar',
-        data: {
-            labels: mpLabels,
-            datasets: [{
-                label: 'Cantidad',
-                data: mpData
-            }]
-        }
-    });
-</script>
 {% endblock %}
