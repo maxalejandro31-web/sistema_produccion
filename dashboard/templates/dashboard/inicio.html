@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard Ejecutivo{% endblock %}
 
 {% block content %}
 <style>
@@ -110,6 +110,9 @@
     .enproceso { background: #2980b9; }
     .terminada { background: #7f8c8d; }
     .pendiente { background: #f39c12; }
+    .consumo { background: #8e44ad; }
+    .produccion { background: #16a085; }
+    .scrap { background: #c0392b; }
 
     .acciones-rapidas {
         display: grid;
@@ -136,24 +139,38 @@
         border-color: #2c3e50;
     }
 
-    .resumen-tabla {
+    table {
         width: 100%;
         border-collapse: collapse;
         font-size: 14px;
+        margin-top: 10px;
     }
 
-    .resumen-tabla th,
-    .resumen-tabla td {
+    th, td {
         padding: 10px;
         border-bottom: 1px solid #eaeaea;
         text-align: left;
+        vertical-align: top;
     }
 
-    .resumen-tabla th {
+    th {
         color: #555;
         font-size: 13px;
         text-transform: uppercase;
+        background: #f8f9fb;
     }
+
+    .badge {
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: white;
+        display: inline-block;
+    }
+
+    .badge.pendiente { background: #f39c12; }
+    .badge.proceso { background: #2980b9; }
+    .badge.terminado { background: #27ae60; }
 
     @media (max-width: 1100px) {
         .kpi-grid {
@@ -176,8 +193,8 @@
 
 <div class="dashboard-container">
     <div class="dashboard-header">
-        <h1>Dashboard de Producción</h1>
-        <p>Resumen ejecutivo del sistema de control de producción.</p>
+        <h1>Dashboard Ejecutivo de Producción</h1>
+        <p>Resumen general de materia prima, órdenes, consumo, producción y scrap.</p>
     </div>
 
     <div class="kpi-grid">
@@ -192,13 +209,13 @@
         </div>
 
         <div class="kpi-card">
-            <div class="kpi-label">MP Disponible</div>
-            <div class="kpi-value">{{ mp_disponible }}</div>
+            <div class="kpi-label">Peso Consumido</div>
+            <div class="kpi-value">{{ peso_consumido }}</div>
         </div>
 
         <div class="kpi-card">
-            <div class="kpi-label">Órdenes en Proceso</div>
-            <div class="kpi-value">{{ ordenes_proceso }}</div>
+            <div class="kpi-label">Scrap Total</div>
+            <div class="kpi-value">{{ scrap_total }}</div>
         </div>
     </div>
 
@@ -256,6 +273,31 @@
 
     <div class="section-grid">
         <div class="panel">
+            <h2>Producción y Consumo</h2>
+            <div class="estado-grid">
+                <div class="estado-card consumo">
+                    <div class="titulo">Peso Consumido</div>
+                    <div class="valor">{{ peso_consumido }}</div>
+                </div>
+
+                <div class="estado-card produccion">
+                    <div class="titulo">Peso Producido</div>
+                    <div class="valor">{{ peso_producido }}</div>
+                </div>
+
+                <div class="estado-card scrap">
+                    <div class="titulo">Scrap Total</div>
+                    <div class="valor">{{ scrap_total }}</div>
+                </div>
+
+                <div class="estado-card enproceso">
+                    <div class="titulo">Órdenes en Proceso</div>
+                    <div class="valor">{{ ordenes_proceso }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
             <h2>Acciones Rápidas</h2>
             <div class="acciones-rapidas">
                 <a class="accion-btn" href="/captura-mp/">Capturar MP</a>
@@ -264,33 +306,69 @@
                 <a class="accion-btn" href="/ordenes/">Ver Órdenes</a>
             </div>
         </div>
+    </div>
 
+    <div class="section-grid">
         <div class="panel">
-            <h2>Resumen General</h2>
-            <table class="resumen-tabla">
+            <h2>Últimas Órdenes</h2>
+            <table>
                 <thead>
                     <tr>
-                        <th>Indicador</th>
-                        <th>Valor</th>
+                        <th>Folio</th>
+                        <th>Proceso</th>
+                        <th>Cliente</th>
+                        <th>Línea</th>
+                        <th>Estado</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% for orden in ultimas_ordenes %}
                     <tr>
-                        <td>Materia prima total</td>
-                        <td>{{ total_mp }}</td>
+                        <td>{{ orden.folio_orden|default:"Sin folio" }}</td>
+                        <td>{{ orden.get_tipo_proceso_display }}</td>
+                        <td>{{ orden.cliente|default:"-" }}</td>
+                        <td>{{ orden.linea }}</td>
+                        <td>
+                            {% if orden.estado == 'pendiente' %}
+                                <span class="badge pendiente">Pendiente</span>
+                            {% elif orden.estado == 'proceso' %}
+                                <span class="badge proceso">En Proceso</span>
+                            {% elif orden.estado == 'terminado' %}
+                                <span class="badge terminado">Terminado</span>
+                            {% endif %}
+                        </td>
                     </tr>
+                    {% empty %}
                     <tr>
-                        <td>Materia prima en proceso</td>
-                        <td>{{ mp_proceso }}</td>
+                        <td colspan="5">No hay órdenes registradas.</td>
                     </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel">
+            <h2>MP Crítica</h2>
+            <table>
+                <thead>
                     <tr>
-                        <td>Órdenes pendientes</td>
-                        <td>{{ ordenes_pendientes }}</td>
+                        <th>MP</th>
+                        <th>Cliente</th>
+                        <th>Peso restante</th>
                     </tr>
+                </thead>
+                <tbody>
+                    {% for mp in mp_critica %}
                     <tr>
-                        <td>Órdenes terminadas</td>
-                        <td>{{ ordenes_terminadas }}</td>
+                        <td>{{ mp.numero_mp }}</td>
+                        <td>{{ mp.cliente|default:"-" }}</td>
+                        <td>{{ mp.peso_restante }}</td>
                     </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">No hay materia prima registrada.</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>

@@ -60,13 +60,16 @@ def inicio(request):
         'mp_disponible': mp_disponible,
         'mp_proceso': mp_proceso,
         'mp_terminada': mp_terminada,
+
         'total_ordenes': total_ordenes,
         'ordenes_pendientes': ordenes_pendientes,
         'ordenes_proceso': ordenes_proceso,
         'ordenes_terminadas': ordenes_terminadas,
+
         'peso_consumido': peso_consumido,
         'peso_producido': peso_producido,
         'scrap_total': scrap_total,
+
         'ultimas_ordenes': ultimas_ordenes,
         'mp_critica': mp_critica,
     }
