@@ -4,253 +4,297 @@
 
 {% block content %}
 <style>
-    .contenedor {
+    .dashboard-container {
         display: flex;
         flex-direction: column;
         gap: 24px;
     }
 
-    .titulo {
-        background: white;
-        padding: 24px;
-        border-radius: 14px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    .dashboard-header {
+        background: linear-gradient(135deg, #1f2d3d, #34495e);
+        color: white;
+        padding: 28px;
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.12);
     }
 
-    .titulo h1 {
+    .dashboard-header h1 {
         margin: 0 0 8px 0;
+        font-size: 30px;
     }
 
-    .titulo p {
+    .dashboard-header p {
         margin: 0;
-        color: #666;
+        opacity: 0.9;
+        font-size: 15px;
     }
 
-    .kpis {
+    .kpi-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
+        gap: 18px;
     }
 
-    .card {
+    .kpi-card {
         background: white;
-        padding: 18px;
-        border-radius: 14px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+        border-left: 6px solid #2c3e50;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .card .label {
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+    .kpi-label {
         font-size: 13px;
         color: #666;
         margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    .card .valor {
-        font-size: 28px;
+    .kpi-value {
+        font-size: 30px;
         font-weight: bold;
         color: #1f2d3d;
     }
 
-    .bloques {
+    .section-grid {
         display: grid;
-        grid-template-columns: 1.4fr 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-        margin-top: 10px;
+    .panel {
+        background: white;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 3px 14px rgba(0,0,0,0.08);
     }
 
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-        text-align: left;
-        vertical-align: top;
-    }
-
-    th {
-        background: #f5f7fa;
-    }
-
-    .badge {
-        padding: 5px 10px;
-        border-radius: 8px;
-        font-size: 12px;
-        color: white;
-        display: inline-block;
-    }
-
-    .pendiente { background: #f39c12; }
-    .proceso { background: #2980b9; }
-    .terminado { background: #27ae60; }
-
-    .mini-kpis {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin-top: 12px;
-    }
-
-    .mini {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 12px;
-    }
-
-    .mini .label {
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 5px;
-    }
-
-    .mini .valor {
+    .panel h2 {
+        margin-top: 0;
+        margin-bottom: 18px;
         font-size: 20px;
+        color: #1f2d3d;
+    }
+
+    .estado-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+
+    .estado-card {
+        border-radius: 12px;
+        padding: 16px;
+        color: white;
         font-weight: bold;
     }
 
+    .estado-card .titulo {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-bottom: 6px;
+    }
+
+    .estado-card .valor {
+        font-size: 28px;
+    }
+
+    .disponible { background: #27ae60; }
+    .enproceso { background: #2980b9; }
+    .terminada { background: #7f8c8d; }
+    .pendiente { background: #f39c12; }
+
+    .acciones-rapidas {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .accion-btn {
+        display: block;
+        text-decoration: none;
+        text-align: center;
+        padding: 14px;
+        border-radius: 12px;
+        background: #f4f6f8;
+        color: #1f2d3d;
+        font-weight: bold;
+        border: 1px solid #e1e5ea;
+        transition: all 0.15s ease;
+    }
+
+    .accion-btn:hover {
+        background: #2c3e50;
+        color: white;
+        border-color: #2c3e50;
+    }
+
+    .resumen-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .resumen-tabla th,
+    .resumen-tabla td {
+        padding: 10px;
+        border-bottom: 1px solid #eaeaea;
+        text-align: left;
+    }
+
+    .resumen-tabla th {
+        color: #555;
+        font-size: 13px;
+        text-transform: uppercase;
+    }
+
     @media (max-width: 1100px) {
-        .kpis {
+        .kpi-grid {
             grid-template-columns: repeat(2, 1fr);
         }
 
-        .bloques {
+        .section-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .kpi-grid,
+        .estado-grid,
+        .acciones-rapidas {
             grid-template-columns: 1fr;
         }
     }
 </style>
 
-<div class="contenedor">
-    <div class="titulo">
+<div class="dashboard-container">
+    <div class="dashboard-header">
         <h1>Dashboard de Producción</h1>
-        <p>Resumen general del sistema, materia prima y órdenes de producción.</p>
+        <p>Resumen ejecutivo del sistema de control de producción.</p>
     </div>
 
-    <div class="kpis">
-        <div class="card">
-            <div class="label">Total MP</div>
-            <div class="valor">{{ total_mp }}</div>
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Total Materia Prima</div>
+            <div class="kpi-value">{{ total_mp }}</div>
         </div>
-        <div class="card">
-            <div class="label">Total órdenes</div>
-            <div class="valor">{{ total_ordenes }}</div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Total Órdenes</div>
+            <div class="kpi-value">{{ total_ordenes }}</div>
         </div>
-        <div class="card">
-            <div class="label">Peso consumido</div>
-            <div class="valor">{{ peso_consumido }}</div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">MP Disponible</div>
+            <div class="kpi-value">{{ mp_disponible }}</div>
         </div>
-        <div class="card">
-            <div class="label">Peso producido</div>
-            <div class="valor">{{ peso_producido }}</div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Órdenes en Proceso</div>
+            <div class="kpi-value">{{ ordenes_proceso }}</div>
         </div>
     </div>
 
-    <div class="bloques">
-        <div class="card">
-            <h2>Últimas órdenes</h2>
+    <div class="section-grid">
+        <div class="panel">
+            <h2>Estado de Materia Prima</h2>
+            <div class="estado-grid">
+                <div class="estado-card disponible">
+                    <div class="titulo">Disponible</div>
+                    <div class="valor">{{ mp_disponible }}</div>
+                </div>
 
-            <div class="mini-kpis">
-                <div class="mini">
-                    <div class="label">Pendientes</div>
-                    <div class="valor">{{ ordenes_pendientes }}</div>
+                <div class="estado-card enproceso">
+                    <div class="titulo">En Proceso</div>
+                    <div class="valor">{{ mp_proceso }}</div>
                 </div>
-                <div class="mini">
-                    <div class="label">En proceso</div>
-                    <div class="valor">{{ ordenes_proceso }}</div>
+
+                <div class="estado-card terminada">
+                    <div class="titulo">Terminada</div>
+                    <div class="valor">{{ mp_terminada }}</div>
                 </div>
-                <div class="mini">
-                    <div class="label">Terminadas</div>
-                    <div class="valor">{{ ordenes_terminadas }}</div>
+
+                <div class="estado-card pendiente">
+                    <div class="titulo">Total Registrada</div>
+                    <div class="valor">{{ total_mp }}</div>
                 </div>
             </div>
+        </div>
 
-            <table>
+        <div class="panel">
+            <h2>Estado de Órdenes</h2>
+            <div class="estado-grid">
+                <div class="estado-card pendiente">
+                    <div class="titulo">Pendientes</div>
+                    <div class="valor">{{ ordenes_pendientes }}</div>
+                </div>
+
+                <div class="estado-card enproceso">
+                    <div class="titulo">En Proceso</div>
+                    <div class="valor">{{ ordenes_proceso }}</div>
+                </div>
+
+                <div class="estado-card disponible">
+                    <div class="titulo">Terminadas</div>
+                    <div class="valor">{{ ordenes_terminadas }}</div>
+                </div>
+
+                <div class="estado-card terminada">
+                    <div class="titulo">Total Órdenes</div>
+                    <div class="valor">{{ total_ordenes }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-grid">
+        <div class="panel">
+            <h2>Acciones Rápidas</h2>
+            <div class="acciones-rapidas">
+                <a class="accion-btn" href="/captura-mp/">Capturar MP</a>
+                <a class="accion-btn" href="/lista-mp/">Ver Materia Prima</a>
+                <a class="accion-btn" href="/captura/">Capturar Orden</a>
+                <a class="accion-btn" href="/ordenes/">Ver Órdenes</a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Resumen General</h2>
+            <table class="resumen-tabla">
                 <thead>
                     <tr>
-                        <th>Folio</th>
-                        <th>Proceso</th>
-                        <th>Cliente</th>
-                        <th>Línea</th>
-                        <th>Estado</th>
+                        <th>Indicador</th>
+                        <th>Valor</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for orden in ultimas_ordenes %}
                     <tr>
-                        <td>{{ orden.folio_orden|default:"Sin folio" }}</td>
-                        <td>{{ orden.get_tipo_proceso_display }}</td>
-                        <td>{{ orden.cliente|default:"-" }}</td>
-                        <td>{{ orden.linea }}</td>
-                        <td>
-                            {% if orden.estado == 'pendiente' %}
-                                <span class="badge pendiente">Pendiente</span>
-                            {% elif orden.estado == 'proceso' %}
-                                <span class="badge proceso">En Proceso</span>
-                            {% elif orden.estado == 'terminado' %}
-                                <span class="badge terminado">Terminado</span>
-                            {% endif %}
-                        </td>
+                        <td>Materia prima total</td>
+                        <td>{{ total_mp }}</td>
                     </tr>
-                    {% empty %}
                     <tr>
-                        <td colspan="5">No hay órdenes registradas.</td>
+                        <td>Materia prima en proceso</td>
+                        <td>{{ mp_proceso }}</td>
                     </tr>
-                    {% endfor %}
+                    <tr>
+                        <td>Órdenes pendientes</td>
+                        <td>{{ ordenes_pendientes }}</td>
+                    </tr>
+                    <tr>
+                        <td>Órdenes terminadas</td>
+                        <td>{{ ordenes_terminadas }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-
-        <div class="card">
-            <h2>Estado de materia prima</h2>
-
-            <div class="mini-kpis">
-                <div class="mini">
-                    <div class="label">Disponible</div>
-                    <div class="valor">{{ mp_disponible }}</div>
-                </div>
-                <div class="mini">
-                    <div class="label">En proceso</div>
-                    <div class="valor">{{ mp_proceso }}</div>
-                </div>
-                <div class="mini">
-                    <div class="label">Terminada</div>
-                    <div class="valor">{{ mp_terminada }}</div>
-                </div>
-            </div>
-
-            <div style="margin-top:20px;">
-                <div class="label" style="font-weight:bold; margin-bottom:10px;">MP con menor peso restante</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>MP</th>
-                            <th>Cliente</th>
-                            <th>Peso restante</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for mp in mp_critica %}
-                        <tr>
-                            <td>{{ mp.numero_mp }}</td>
-                            <td>{{ mp.cliente|default:"-" }}</td>
-                            <td>{{ mp.peso_restante }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="3">No hay materia prima registrada.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div style="margin-top:20px;">
-                <div class="label" style="font-weight:bold;">Scrap total acumulado</div>
-                <div class="valor" style="font-size:26px;">{{ scrap_total }}</div>
-            </div>
-        </div>
     </div>
 </div>
+
 {% endblock %}
