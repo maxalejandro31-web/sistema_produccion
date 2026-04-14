@@ -1,6 +1,6 @@
-from decimal import Decimal
 from django.db import models
 from django.utils import timezone
+from datetime import date
 
 
 class Cliente(models.Model):
@@ -14,13 +14,13 @@ class Cliente(models.Model):
 class MateriaPrima(models.Model):
     TIPO_MP_CHOICES = [
         ('Rollo', 'Rollo'),
-        ('Cinta', 'Cinta'),
         ('Placa', 'Placa'),
+        ('Cinta', 'Cinta'),
     ]
 
     ORIGEN_MP_CHOICES = [
-        ('Propia', 'Propia'),
         ('Cliente', 'Cliente'),
+        ('Interna', 'Interna'),
     ]
 
     MATERIAL_CHOICES = [
@@ -30,6 +30,15 @@ class MateriaPrima(models.Model):
         ('Aluminizado', 'Aluminizado'),
         ('Decapado', 'Decapado'),
         ('Rolado en caliente', 'Rolado en caliente'),
+        ('Galvanizado y pintado', 'Galvanizado y pintado'),
+    ]
+
+    UBICACION_CHOICES = [
+        ('Patio A', 'Patio A'),
+        ('Patio B', 'Patio B'),
+        ('Almacén 1', 'Almacén 1'),
+        ('Almacén 2', 'Almacén 2'),
+        ('Producción', 'Producción'),
     ]
 
     ESTADO_CHOICES = [
@@ -38,137 +47,95 @@ class MateriaPrima(models.Model):
         ('Terminado', 'Terminado'),
     ]
 
-    UBICACION_CHOICES = [
-        ('Patio A', 'Patio A'),
-        ('Patio B', 'Patio B'),
-        ('Almacen 1', 'Almacén 1'),
-        ('Almacen 2', 'Almacén 2'),
-        ('Produccion', 'Producción'),
-    ]
-
     UNIDAD_ESPESOR_CHOICES = [
         ('mm', 'mm'),
-        ('pulg', 'Pulgadas'),
-        ('calibre', 'Calibre'),
+        ('pulg', 'pulg'),
+        ('calibre', 'calibre'),
     ]
 
-    numero_mp = models.CharField(max_length=50, unique=True)
+    numero_mp = models.CharField(max_length=100, unique=True)
     tipo_mp = models.CharField(max_length=20, choices=TIPO_MP_CHOICES, default='Rollo')
-
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
-    origen_mp = models.CharField(max_length=20, choices=ORIGEN_MP_CHOICES, default='Propia')
+    origen_mp = models.CharField(max_length=20, choices=ORIGEN_MP_CHOICES, default='Interna')
 
-    lote = models.CharField(max_length=50, blank=True, null=True)
-    codigo = models.CharField(max_length=50, blank=True, null=True)
-    descripcion = models.CharField(max_length=200, blank=True, null=True)
+    lote = models.CharField(max_length=100, blank=True, null=True)
+    codigo = models.CharField(max_length=100, blank=True, null=True)
+    descripcion = models.CharField(max_length=255, blank=True, null=True)
 
-    material = models.CharField(max_length=100, choices=MATERIAL_CHOICES)
-    grado = models.CharField(max_length=50, blank=True, null=True)
-    acabado = models.CharField(max_length=50, blank=True, null=True)
+    material = models.CharField(max_length=50, choices=MATERIAL_CHOICES)
+    grado = models.CharField(max_length=100, blank=True, null=True)
+    acabado = models.CharField(max_length=100, blank=True, null=True)
 
-    espesor_valor = models.DecimalField(max_digits=10, decimal_places=4)
-    unidad_espesor = models.CharField(max_length=10, choices=UNIDAD_ESPESOR_CHOICES, default='mm')
+    espesor_valor = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    unidad_espesor = models.CharField(max_length=20, choices=UNIDAD_ESPESOR_CHOICES, default='mm')
 
-    espesor_mm = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    espesor_pulg = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    calibre = models.CharField(max_length=20, blank=True, null=True)
-
-    ancho = models.DecimalField(max_digits=10, decimal_places=3, blank=True, null=True)
-    largo = models.DecimalField(max_digits=10, decimal_places=3, blank=True, null=True)
+    ancho = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    largo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     peso = models.DecimalField(max_digits=10, decimal_places=2)
-    peso_restante = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    peso_restante = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
-    diametro_interior = models.DecimalField(max_digits=10, decimal_places=3, blank=True, null=True)
-    diametro_exterior = models.DecimalField(max_digits=10, decimal_places=3, blank=True, null=True)
+    diametro_interior = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    diametro_exterior = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     proveedor = models.CharField(max_length=150, blank=True, null=True)
-    ubicacion = models.CharField(max_length=100, choices=UBICACION_CHOICES, blank=True, null=True)
-    estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='Disponible')
+    ubicacion = models.CharField(max_length=50, choices=UBICACION_CHOICES, default='Almacén 1')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Disponible')
 
-    archivo_pdf = models.FileField(upload_to='ordenes_mp/', blank=True, null=True)
-
-    fecha_entrada = models.DateField(auto_now_add=True)
+    archivo_pdf = models.FileField(upload_to='ordenes_mp/', null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
 
-    def convertir_espesor(self):
-        MM_POR_PULGADA = Decimal('25.4')
-
-        tabla_calibres_mm = {
-            '7': Decimal('4.5500'),
-            '8': Decimal('4.1800'),
-            '9': Decimal('3.8000'),
-            '10': Decimal('3.4200'),
-            '11': Decimal('3.0400'),
-            '12': Decimal('2.6600'),
-            '13': Decimal('2.2800'),
-            '14': Decimal('1.9000'),
-            '15': Decimal('1.7100'),
-            '16': Decimal('1.5200'),
-            '18': Decimal('1.2140'),
-            '20': Decimal('0.9120'),
-            '22': Decimal('0.7600'),
-            '24': Decimal('0.6070'),
-            '26': Decimal('0.4550'),
-            '28': Decimal('0.3800'),
-            '30': Decimal('0.3050'),
-        }
-
-        self.espesor_mm = None
-        self.espesor_pulg = None
-
-        if self.unidad_espesor == 'mm':
-            self.espesor_mm = self.espesor_valor
-            self.espesor_pulg = self.espesor_valor / MM_POR_PULGADA
-
-        elif self.unidad_espesor == 'pulg':
-            self.espesor_pulg = self.espesor_valor
-            self.espesor_mm = self.espesor_valor * MM_POR_PULGADA
-
-        elif self.unidad_espesor == 'calibre':
-            valor = str(self.espesor_valor).replace('.0000', '').replace('.0', '')
-            mm = tabla_calibres_mm.get(valor)
-            if mm:
-                self.espesor_mm = mm
-                self.espesor_pulg = mm / MM_POR_PULGADA
-                self.calibre = valor
-
-        if self.espesor_mm and not self.calibre:
-            diferencia_min = None
-            calibre_mas_cercano = None
-
-            for cal, mm in tabla_calibres_mm.items():
-                diferencia = abs(self.espesor_mm - mm)
-                if diferencia_min is None or diferencia < diferencia_min:
-                    diferencia_min = diferencia
-                    calibre_mas_cercano = cal
-
-            self.calibre = calibre_mas_cercano
+    # IMPORTANTE: ahora sí es editable
+    fecha_entrada = models.DateField(default=timezone.localdate)
 
     def save(self, *args, **kwargs):
-        self.convertir_espesor()
-
         if self.peso_restante is None:
             self.peso_restante = self.peso
-
         super().save(*args, **kwargs)
 
+    @property
+    def espesor_mm(self):
+        if self.espesor_valor is None:
+            return None
+
+        if self.unidad_espesor == 'mm':
+            return round(float(self.espesor_valor), 4)
+        elif self.unidad_espesor == 'pulg':
+            return round(float(self.espesor_valor) * 25.4, 4)
+        elif self.unidad_espesor == 'calibre':
+            # Conversión aproximada simple
+            return round(0.1495 * (92 ** ((36 - float(self.espesor_valor)) / 39)), 4)
+        return None
+
+    @property
+    def espesor_pulg(self):
+        mm = self.espesor_mm
+        if mm is None:
+            return None
+        return round(mm / 25.4, 4)
+
+    @property
+    def calibre(self):
+        if self.unidad_espesor == 'calibre' and self.espesor_valor is not None:
+            return round(float(self.espesor_valor), 2)
+        return None
+
+    @property
     def tiempo_en_fabrica(self):
-        hoy = timezone.now().date()
+        if not self.fecha_entrada:
+            return "Sin fecha"
+
+        hoy = timezone.localdate()
         dias = (hoy - self.fecha_entrada).days
 
         if dias < 7:
-            return f"{dias} día{'s' if dias != 1 else ''}"
+            return f"{dias} día(s)"
         elif dias < 30:
             semanas = dias // 7
-            return f"{semanas} semana{'s' if semanas != 1 else ''}"
-        elif dias < 365:
-            meses = dias // 30
-            return f"{meses} mes{'es' if meses != 1 else ''}"
+            return f"{semanas} semana(s)"
         else:
-            anios = dias // 365
-            return f"{anios} año{'s' if anios != 1 else ''}"
+            meses = dias // 30
+            return f"{meses} mes(es)"
 
     def __str__(self):
-        cliente_txt = f" / {self.cliente}" if self.cliente else ""
-        return f"{self.numero_mp} - {self.tipo_mp} - {self.material}{cliente_txt}"
+        return self.numero_mp

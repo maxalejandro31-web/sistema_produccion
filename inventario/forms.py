@@ -32,9 +32,11 @@ class MateriaPrimaForm(forms.ModelForm):
             'proveedor',
             'ubicacion',
             'estado',
+            'fecha_entrada',
             'archivo_pdf',
             'observaciones',
         ]
         widgets = {
+            'fecha_entrada': forms.DateInput(attrs={'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'rows': 3}),
         }
