@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        max-width: 1100px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .topbar a {
+        background: #2c3e50;
+        color: white;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+    }
+    form input {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        min-width: 260px;
+    }
+    form button {
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: #16a085;
+        color: white;
+        cursor: pointer;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+    th {
+        background: #f5f7fa;
+    }
+    .activo {
+        color: #27ae60;
+        font-weight: bold;
+    }
+    .inactivo {
+        color: #c0392b;
+        font-weight: bold;
+    }
+    .btn-editar {
+        background: #34495e;
+        color: white;
+        padding: 7px 10px;
+        border-radius: 6px;
+        text-decoration: none;
+    }
+</style>
+
+<div class="contenedor">
+    <div class="topbar">
+        <h1>Clientes</h1>
+        <a href="{% url 'captura_cliente' %}">+ Nuevo cliente</a>
+    </div>
+
+    <form method="get" style="margin-bottom: 20px;">
+        <input type="text" name="q" placeholder="Buscar cliente..." value="{{ busqueda }}">
+        <button type="submit">Buscar</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            <tr>
+                <td>{{ cliente.nombre }}</td>
+                <td>
+                    {% if cliente.activo %}
+                        <span class="activo">Activo</span>
+                    {% else %}
+                        <span class="inactivo">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="btn-editar" href="{% url 'editar_cliente' cliente.id %}">Editar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">No hay clientes registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

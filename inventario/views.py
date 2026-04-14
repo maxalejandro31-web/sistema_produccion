@@ -2,14 +2,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.db.models import Sum
-from .forms import MateriaPrimaForm
-from .models import MateriaPrima
+
+from .forms import MateriaPrimaForm, ClienteForm
+from .models import MateriaPrima, Cliente
 from produccion.models import OrdenProduccion
 
 
 @login_required
 def captura_mp(request):
-    if not request.user.groups.filter(name__in=['Administrador', 'Operador']).exists():
+    if not request.user.groups.filter(name__in=['Administrador', 'Operador', 'Supervisor']).exists():
         return HttpResponse("No tienes permiso para capturar materia prima.")
 
     mensaje = ''
@@ -101,4 +102,64 @@ def detalle_mp(request, mp_id):
         'total_producido': total_producido,
         'total_scrap': total_scrap,
         'cantidad_ordenes': cantidad_ordenes,
+    })
+
+
+@login_required
+def lista_clientes(request):
+    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
+        return HttpResponse("No tienes permiso para ver clientes.")
+
+    busqueda = request.GET.get('q', '')
+    clientes = Cliente.objects.all().order_by('nombre')
+
+    if busqueda:
+        clientes = clientes.filter(nombre__icontains=busqueda)
+
+    return render(request, 'inventario/lista_clientes.html', {
+        'clientes': clientes,
+        'busqueda': busqueda,
+    })
+
+
+@login_required
+def captura_cliente(request):
+    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
+        return HttpResponse("No tienes permiso para capturar clientes.")
+
+    mensaje = ''
+
+    if request.method == 'POST':
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            form.save()
+            mensaje = 'Cliente registrado correctamente.'
+            form = ClienteForm()
+    else:
+        form = ClienteForm()
+
+    return render(request, 'inventario/captura_cliente.html', {
+        'form': form,
+        'mensaje': mensaje,
+    })
+
+
+@login_required
+def editar_cliente(request, cliente_id):
+    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
+        return HttpResponse("No tienes permiso para editar clientes.")
+
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+
+    if request.method == 'POST':
+        form = ClienteForm(request.POST, instance=cliente)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_clientes')
+    else:
+        form = ClienteForm(instance=cliente)
+
+    return render(request, 'inventario/editar_cliente.html', {
+        'form': form,
+        'cliente': cliente,
     })

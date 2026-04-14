@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Captura Cliente{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .campo {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 16px;
+    }
+    .campo label {
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+    .campo input,
+    .campo select {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+    }
+    .acciones {
+        margin-top: 20px;
+    }
+    .acciones button,
+    .acciones a {
+        display: inline-block;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+    .acciones button {
+        background: #2c3e50;
+        color: white;
+    }
+    .acciones a {
+        background: #95a5a6;
+        color: white;
+    }
+    .mensaje {
+        background: #dff0d8;
+        color: #2e7d32;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+</style>
+
+<div class="contenedor">
+    <h1>Alta de Cliente</h1>
+
+    {% if mensaje %}
+        <div class="mensaje">{{ mensaje }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <small style="color:red;">{{ field.errors }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="acciones">
+            <button type="submit">Guardar cliente</button>
+            <a href="{% url 'lista_clientes' %}">Ver clientes</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

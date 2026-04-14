@@ -1,5 +1,11 @@
 from django import forms
-from .models import MateriaPrima
+from .models import MateriaPrima, Cliente
+
+
+class ClienteForm(forms.ModelForm):
+    class Meta:
+        model = Cliente
+        fields = ['nombre', 'activo']
 
 
 class MateriaPrimaForm(forms.ModelForm):
@@ -30,8 +36,5 @@ class MateriaPrimaForm(forms.ModelForm):
             'observaciones',
         ]
         widgets = {
-            'descripcion': forms.TextInput(attrs={'placeholder': 'Descripción de la materia prima'}),
-            'grado': forms.TextInput(attrs={'placeholder': 'Ej. G50'}),
-            'acabado': forms.TextInput(attrs={'placeholder': 'Ej. RCD, Galv, etc.'}),
-            'observaciones': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Notas u observaciones'}),
+            'observaciones': forms.Textarea(attrs={'rows': 3}),
         }
