@@ -85,6 +85,7 @@
     <table>
         <thead>
             <tr>
+                <th>Código cliente</th>
                 <th>Nombre</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -93,6 +94,7 @@
         <tbody>
             {% for cliente in clientes %}
             <tr>
+                <td>{{ cliente.codigo_cliente }}</td>
                 <td>{{ cliente.nombre }}</td>
                 <td>
                     {% if cliente.activo %}
@@ -107,7 +109,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="3">No hay clientes registrados.</td>
+                <td colspan="4">No hay clientes registrados.</td>
             </tr>
             {% endfor %}
         </tbody>

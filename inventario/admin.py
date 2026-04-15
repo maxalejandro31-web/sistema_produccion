@@ -4,8 +4,8 @@ from .models import Cliente, MateriaPrima
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'activo')
-    search_fields = ('nombre',)
+    list_display = ('codigo_cliente', 'nombre', 'activo')
+    search_fields = ('codigo_cliente', 'nombre')
     list_filter = ('activo',)
 
 

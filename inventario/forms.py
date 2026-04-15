@@ -5,7 +5,7 @@ from .models import MateriaPrima, Cliente
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = ['nombre', 'activo']
+        fields = ['codigo_cliente', 'nombre', 'activo']
 
 
 class MateriaPrimaForm(forms.ModelForm):
@@ -32,9 +32,11 @@ class MateriaPrimaForm(forms.ModelForm):
             'proveedor',
             'ubicacion',
             'estado',
+            'fecha_entrada',
             'archivo_pdf',
             'observaciones',
         ]
         widgets = {
+            'fecha_entrada': forms.DateInput(attrs={'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'rows': 3}),
         }

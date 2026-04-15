@@ -1,13 +1,15 @@
 from django.db import models
 from django.utils import timezone
-from datetime import date
 
 
 class Cliente(models.Model):
+    codigo_cliente = models.CharField(max_length=50, unique=True, null=True, blank=True)
     nombre = models.CharField(max_length=150, unique=True)
     activo = models.BooleanField(default=True)
 
     def __str__(self):
+        if self.codigo_cliente:
+            return f"{self.codigo_cliente} - {self.nombre}"
         return self.nombre
 
 
@@ -82,11 +84,10 @@ class MateriaPrima(models.Model):
     ubicacion = models.CharField(max_length=50, choices=UBICACION_CHOICES, default='Almacén 1')
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Disponible')
 
+    fecha_entrada = models.DateField(null=True, blank=True)
+
     archivo_pdf = models.FileField(upload_to='ordenes_mp/', null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
-
-    # IMPORTANTE: ahora sí es editable
-    fecha_entrada = models.DateField(default=timezone.localdate)
 
     def save(self, *args, **kwargs):
         if self.peso_restante is None:
@@ -103,7 +104,6 @@ class MateriaPrima(models.Model):
         elif self.unidad_espesor == 'pulg':
             return round(float(self.espesor_valor) * 25.4, 4)
         elif self.unidad_espesor == 'calibre':
-            # Conversión aproximada simple
             return round(0.1495 * (92 ** ((36 - float(self.espesor_valor)) / 39)), 4)
         return None
 
