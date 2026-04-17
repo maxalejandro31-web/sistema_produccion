@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
 from django.db.models import Sum
 
 from .forms import MateriaPrimaForm, ClienteForm
@@ -10,10 +9,6 @@ from produccion.models import OrdenProduccion
 
 @login_required
 def captura_mp(request):
-    if not request.user.is_superuser:
-        if not request.user.groups.filter(name='Almacen').exists():
-            return HttpResponse("No tienes permisos para ver MP")
-
     mensaje = ''
 
     if request.method == 'POST':
@@ -33,37 +28,14 @@ def captura_mp(request):
 
 @login_required
 def lista_mp(request):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador']).exists():
-        return HttpResponse("No tienes permiso para ver la materia prima.")
-
-    busqueda = request.GET.get('q', '')
-    tipo = request.GET.get('tipo', '')
-    estado = request.GET.get('estado', '')
-
-    materias_primas = MateriaPrima.objects.all().order_by('-id')
-
-    if busqueda:
-        materias_primas = materias_primas.filter(numero_mp__icontains=busqueda)
-
-    if tipo:
-        materias_primas = materias_primas.filter(tipo_mp=tipo)
-
-    if estado:
-        materias_primas = materias_primas.filter(estado=estado)
-
+    materias = MateriaPrima.objects.all().order_by('-id')
     return render(request, 'inventario/lista_mp.html', {
-        'materias_primas': materias_primas,
-        'busqueda': busqueda,
-        'tipo': tipo,
-        'estado': estado,
+        'materias': materias
     })
 
 
 @login_required
 def editar_mp(request, mp_id):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
-        return HttpResponse("No tienes permiso para editar materia prima.")
-
     mp = get_object_or_404(MateriaPrima, id=mp_id)
 
     if request.method == 'POST':
@@ -82,9 +54,6 @@ def editar_mp(request, mp_id):
 
 @login_required
 def detalle_mp(request, mp_id):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador']).exists():
-        return HttpResponse("No tienes permiso para ver la materia prima.")
-
     mp = get_object_or_404(MateriaPrima, id=mp_id)
 
     ordenes_relacionadas = OrdenProduccion.objects.select_related(
@@ -108,9 +77,6 @@ def detalle_mp(request, mp_id):
 
 @login_required
 def lista_clientes(request):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
-        return HttpResponse("No tienes permiso para ver clientes.")
-
     busqueda = request.GET.get('q', '')
     clientes = Cliente.objects.all().order_by('nombre')
 
@@ -125,9 +91,6 @@ def lista_clientes(request):
 
 @login_required
 def captura_cliente(request):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
-        return HttpResponse("No tienes permiso para capturar clientes.")
-
     mensaje = ''
 
     if request.method == 'POST':
@@ -147,9 +110,6 @@ def captura_cliente(request):
 
 @login_required
 def editar_cliente(request, cliente_id):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
-        return HttpResponse("No tienes permiso para editar clientes.")
-
     cliente = get_object_or_404(Cliente, id=cliente_id)
 
     if request.method == 'POST':
