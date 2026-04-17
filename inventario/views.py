@@ -10,8 +10,9 @@ from produccion.models import OrdenProduccion
 
 @login_required
 def captura_mp(request):
-    if not request.user.groups.filter(name__in=['Administrador', 'Operador', 'Supervisor']).exists():
-        return HttpResponse("No tienes permiso para capturar materia prima.")
+    if not request.user.is_superuser:
+        if not request.user.groups.filter(name='Almacen').exists():
+            return HttpResponse("No tienes permisos para ver MP")
 
     mensaje = ''
 
@@ -19,14 +20,14 @@ def captura_mp(request):
         form = MateriaPrimaForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            mensaje = 'Materia prima registrada correctamente.'
+            mensaje = 'Materia prima registrada correctamente'
             form = MateriaPrimaForm()
     else:
         form = MateriaPrimaForm()
 
     return render(request, 'inventario/captura_mp.html', {
         'form': form,
-        'mensaje': mensaje,
+        'mensaje': mensaje
     })
 
 
