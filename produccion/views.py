@@ -1,15 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+
 from .models import OrdenProduccion
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet
 
 
 @login_required
 def captura_orden(request):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador']).exists():
-        return HttpResponse("No tienes permiso para capturar órdenes.")
-
     mensaje = ''
     error = ''
 
@@ -65,9 +63,6 @@ def captura_orden(request):
 
 @login_required
 def lista_ordenes(request):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador']).exists():
-        return HttpResponse("No tienes permiso para ver órdenes.")
-
     ordenes = OrdenProduccion.objects.select_related(
         'cliente', 'mp', 'linea', 'operador'
     ).order_by('-id')
@@ -79,9 +74,6 @@ def lista_ordenes(request):
 
 @login_required
 def cambiar_estado(request, orden_id, nuevo_estado):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
-        return HttpResponse("No tienes permiso para cambiar el estado de la orden.")
-
     estados_validos = ['pendiente', 'proceso', 'terminado']
     if nuevo_estado not in estados_validos:
         return HttpResponse("Estado no válido.")
@@ -94,9 +86,6 @@ def cambiar_estado(request, orden_id, nuevo_estado):
 
 @login_required
 def editar_orden(request, orden_id):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists():
-        return HttpResponse("No tienes permiso para editar órdenes.")
-
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
 
     try:
@@ -120,9 +109,6 @@ def editar_orden(request, orden_id):
 
 @login_required
 def detalle_orden(request, orden_id):
-    if not request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador']).exists():
-        return HttpResponse("No tienes permiso para ver esta orden.")
-
     orden = get_object_or_404(
         OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),
         id=orden_id
