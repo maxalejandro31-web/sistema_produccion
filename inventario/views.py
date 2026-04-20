@@ -28,9 +28,26 @@ def captura_mp(request):
 
 @login_required
 def lista_mp(request):
-    materias = MateriaPrima.objects.all().order_by('-id')
+    busqueda = request.GET.get('q', '')
+    tipo = request.GET.get('tipo', '')
+    estado = request.GET.get('estado', '')
+
+    materias_primas = MateriaPrima.objects.all().order_by('-id')
+
+    if busqueda:
+        materias_primas = materias_primas.filter(numero_mp__icontains=busqueda)
+
+    if tipo:
+        materias_primas = materias_primas.filter(tipo_mp=tipo)
+
+    if estado:
+        materias_primas = materias_primas.filter(estado=estado)
+
     return render(request, 'inventario/lista_mp.html', {
-        'materias': materias
+        'materias_primas': materias_primas,
+        'busqueda': busqueda,
+        'tipo': tipo,
+        'estado': estado,
     })
 
 
