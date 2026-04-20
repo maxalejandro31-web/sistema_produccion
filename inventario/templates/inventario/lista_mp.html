@@ -10,16 +10,19 @@
         padding: 25px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
+
     h1 {
         margin-top: 0;
         margin-bottom: 20px;
     }
+
     .filtros {
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
         margin-bottom: 20px;
     }
+
     .filtros input,
     .filtros select,
     .filtros button,
@@ -29,26 +32,31 @@
         border: 1px solid #ccc;
         text-decoration: none;
     }
+
     .filtros button {
         background: #2c3e50;
         color: white;
         border: none;
         cursor: pointer;
     }
+
     table {
         width: 100%;
         border-collapse: collapse;
         font-size: 14px;
     }
+
     th, td {
         padding: 10px;
         border-bottom: 1px solid #ddd;
         text-align: left;
         vertical-align: top;
     }
+
     th {
         background: #f5f7fa;
     }
+
     .badge {
         padding: 5px 10px;
         border-radius: 8px;
@@ -56,6 +64,7 @@
         color: white;
         display: inline-block;
     }
+
     .rollo { background: #2980b9; }
     .cinta { background: #27ae60; }
     .placa { background: #8e44ad; }
@@ -64,23 +73,7 @@
     .enproceso { background: #f39c12; }
     .terminado { background: #7f8c8d; }
 
-    .bajo {
-        color: #c0392b;
-        font-weight: bold;
-    }
-    .tiempo-verde {
-        color: #27ae60;
-        font-weight: bold;
-    }
-    .tiempo-amarillo {
-        color: #f39c12;
-        font-weight: bold;
-    }
-    .tiempo-rojo {
-        color: #c0392b;
-        font-weight: bold;
-    }
-    .btn-pdf, .btn-editar, .btn-detalle {
+    .btn-editar, .btn-detalle {
         display: inline-block;
         padding: 6px 10px;
         color: white;
@@ -90,7 +83,7 @@
         margin-right: 5px;
         margin-bottom: 4px;
     }
-    .btn-pdf { background: #c0392b; }
+
     .btn-editar { background: #2c3e50; }
     .btn-detalle { background: #16a085; }
 </style>
@@ -128,11 +121,9 @@
                 <th>Descripción</th>
                 <th>Espesor</th>
                 <th>Peso restante</th>
-                <th>Tiempo en planta</th>
-                <th>PDF</th>
-                <th>Acciones</th>
                 <th>Ubicación</th>
                 <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -154,47 +145,8 @@
 
                 <td>{{ mp.material|default:"-" }}</td>
                 <td>{{ mp.descripcion|default:"-" }}</td>
-
-                <td>
-                    {{ mp.espesor_valor|default:"-" }} {{ mp.unidad_espesor|default:"" }}<br>
-                    <small>
-                        {{ mp.espesor_mm|default:"-" }} mm / Cal {{ mp.calibre|default:"-" }}
-                    </small>
-                </td>
-
-                <td class="{% if mp.peso_restante and mp.peso_restante < 1000 %}bajo{% endif %}">
-                    {{ mp.peso_restante|default:"-" }}
-                </td>
-
-                <td>
-                    {% if mp.tiempo_en_fabrica %}
-                        {% with tiempo=mp.tiempo_en_fabrica %}
-                            {% if 'día' in tiempo or 'días' in tiempo %}
-                                <span class="tiempo-verde">{{ tiempo }}</span>
-                            {% elif 'semana' in tiempo or 'semanas' in tiempo %}
-                                <span class="tiempo-amarillo">{{ tiempo }}</span>
-                            {% else %}
-                                <span class="tiempo-rojo">{{ tiempo }}</span>
-                            {% endif %}
-                        {% endwith %}
-                    {% else %}
-                        <span>-</span>
-                    {% endif %}
-                </td>
-
-                <td>
-                    {% if mp.archivo_pdf %}
-                        <a class="btn-pdf" href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
-                    {% else %}
-                        Sin archivo
-                    {% endif %}
-                </td>
-
-                <td>
-                    <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
-                    <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
-                </td>
-
+                <td>{{ mp.espesor_valor|default:"-" }} {{ mp.unidad_espesor|default:"" }}</td>
+                <td>{{ mp.peso_restante|default:"-" }}</td>
                 <td>{{ mp.ubicacion|default:"-" }}</td>
 
                 <td>
@@ -208,10 +160,15 @@
                         {{ mp.estado|default:"-" }}
                     {% endif %}
                 </td>
+
+                <td>
+                    <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
+                    <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
+                </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="11">No hay materia prima registrada.</td>
+                <td colspan="9">No hay materia prima registrada.</td>
             </tr>
             {% endfor %}
         </tbody>
