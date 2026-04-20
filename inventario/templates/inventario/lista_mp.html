@@ -99,7 +99,7 @@
     <h1>Lista de Materia Prima</h1>
 
     <form method="get" class="filtros">
-        <input type="text" name="q" placeholder="Buscar número MP" value="{{ busqueda }}">
+        <input type="text" name="q" placeholder="Buscar número MP" value="{{ busqueda|default:'' }}">
 
         <select name="tipo">
             <option value="">Todos los tipos</option>
@@ -138,7 +138,8 @@
         <tbody>
             {% for mp in materias_primas %}
             <tr>
-                <td>{{ mp.numero_mp }}</td>
+                <td>{{ mp.numero_mp|default:"-" }}</td>
+
                 <td>
                     {% if mp.tipo_mp == 'Rollo' %}
                         <span class="badge rollo">Rollo</span>
@@ -146,28 +147,41 @@
                         <span class="badge cinta">Cinta</span>
                     {% elif mp.tipo_mp == 'Placa' %}
                         <span class="badge placa">Placa</span>
+                    {% else %}
+                        {{ mp.tipo_mp|default:"-" }}
                     {% endif %}
                 </td>
-                <td>{{ mp.material }}</td>
-                <td>{{ mp.descripcion }}</td>
+
+                <td>{{ mp.material|default:"-" }}</td>
+                <td>{{ mp.descripcion|default:"-" }}</td>
+
                 <td>
-                    {{ mp.espesor_valor }} {{ mp.unidad_espesor }}<br>
-                    <small>{{ mp.espesor_mm }} mm / Cal {{ mp.calibre }}</small>
+                    {{ mp.espesor_valor|default:"-" }} {{ mp.unidad_espesor|default:"" }}<br>
+                    <small>
+                        {{ mp.espesor_mm|default:"-" }} mm / Cal {{ mp.calibre|default:"-" }}
+                    </small>
                 </td>
-                <td class="{% if mp.peso_restante < 1000 %}bajo{% endif %}">
-                    {{ mp.peso_restante }}
+
+                <td class="{% if mp.peso_restante and mp.peso_restante < 1000 %}bajo{% endif %}">
+                    {{ mp.peso_restante|default:"-" }}
                 </td>
+
                 <td>
-                    {% with tiempo=mp.tiempo_en_fabrica %}
-                        {% if 'día' in tiempo or 'días' in tiempo %}
-                            <span class="tiempo-verde">{{ tiempo }}</span>
-                        {% elif 'semana' in tiempo or 'semanas' in tiempo %}
-                            <span class="tiempo-amarillo">{{ tiempo }}</span>
-                        {% else %}
-                            <span class="tiempo-rojo">{{ tiempo }}</span>
-                        {% endif %}
-                    {% endwith %}
+                    {% if mp.tiempo_en_fabrica %}
+                        {% with tiempo=mp.tiempo_en_fabrica %}
+                            {% if 'día' in tiempo or 'días' in tiempo %}
+                                <span class="tiempo-verde">{{ tiempo }}</span>
+                            {% elif 'semana' in tiempo or 'semanas' in tiempo %}
+                                <span class="tiempo-amarillo">{{ tiempo }}</span>
+                            {% else %}
+                                <span class="tiempo-rojo">{{ tiempo }}</span>
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <span>-</span>
+                    {% endif %}
                 </td>
+
                 <td>
                     {% if mp.archivo_pdf %}
                         <a class="btn-pdf" href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
@@ -175,11 +189,14 @@
                         Sin archivo
                     {% endif %}
                 </td>
+
                 <td>
                     <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
                     <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
                 </td>
-                <td>{{ mp.ubicacion }}</td>
+
+                <td>{{ mp.ubicacion|default:"-" }}</td>
+
                 <td>
                     {% if mp.estado == 'Disponible' %}
                         <span class="badge disponible">Disponible</span>
@@ -188,7 +205,7 @@
                     {% elif mp.estado == 'Terminado' %}
                         <span class="badge terminado">Terminado</span>
                     {% else %}
-                        {{ mp.estado }}
+                        {{ mp.estado|default:"-" }}
                     {% endif %}
                 </td>
             </tr>
