@@ -71,7 +71,13 @@
             {% for field in form %}
                 <div class="campo">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
+
+                    {% if field.name == 'archivo_pdf' %}
+                        <input type="file" name="archivo_pdf" id="{{ field.id_for_label }}" accept=".pdf">
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+
                     {% if field.errors %}
                         <small style="color:red;">{{ field.errors }}</small>
                     {% endif %}
@@ -81,10 +87,10 @@
 
         <div class="pdf-actual">
             <strong>PDF actual:</strong>
-            {% if mp.archivo_pdf %}
-                <a href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF actual</a>
+            {% if pdf_url %}
+                <a href="{{ pdf_url }}" target="_blank">Ver PDF actual</a>
             {% else %}
-                <span>No hay PDF cargado.</span>
+                <span>No hay PDF válido cargado.</span>
             {% endif %}
         </div>
 

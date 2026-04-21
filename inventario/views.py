@@ -2,10 +2,36 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.db.models import Sum
+from django import forms
 
 from .forms import MateriaPrimaForm, ClienteForm
 from .models import MateriaPrima, Cliente
 from produccion.models import OrdenProduccion
+
+
+def preparar_form_mp(form):
+    """
+    Evita que el widget del archivo intente renderizar el archivo actual
+    y tumbe editar_mp cuando el PDF guardado está roto o inválido.
+    """
+    if 'archivo_pdf' in form.fields:
+        form.fields['archivo_pdf'].required = False
+        form.fields['archivo_pdf'].widget = forms.FileInput(attrs={
+            'accept': '.pdf'
+        })
+    return form
+
+
+def obtener_pdf_url_segura(mp):
+    """
+    Intenta obtener la URL del PDF sin tirar error 500 si el archivo está mal.
+    """
+    try:
+        if getattr(mp, 'archivo_pdf', None):
+            return mp.archivo_pdf.url
+    except Exception:
+        return None
+    return None
 
 
 @login_required
@@ -14,12 +40,14 @@ def captura_mp(request):
 
     if request.method == 'POST':
         form = MateriaPrimaForm(request.POST, request.FILES)
+        form = preparar_form_mp(form)
+
         if form.is_valid():
             form.save()
             mensaje = 'Materia prima registrada correctamente'
-            form = MateriaPrimaForm()
+            form = preparar_form_mp(MateriaPrimaForm())
     else:
-        form = MateriaPrimaForm()
+        form = preparar_form_mp(MateriaPrimaForm())
 
     return render(request, 'inventario/captura_mp.html', {
         'form': form,
@@ -29,62 +57,74 @@ def captura_mp(request):
 
 @login_required
 def lista_mp(request):
-    busqueda = request.GET.get('q', '')
-    tipo = request.GET.get('tipo', '')
-    estado = request.GET.get('estado', '')
-
-    materias_primas = MateriaPrima.objects.all().order_by('-id')
-
-    if busqueda:
-        materias_primas = materias_primas.filter(numero_mp__icontains=busqueda)
-
-    if tipo:
-        materias_primas = materias_primas.filter(tipo_mp=tipo)
-
-    if estado:
-        materias_primas = materias_primas.filter(estado=estado)
+    materias = MateriaPrima.objects.all().order_by('-id')
 
     return render(request, 'inventario/lista_mp.html', {
-        'materias_primas': materias_primas,
-        'busqueda': busqueda,
-        'tipo': tipo,
-        'estado': estado,
+        'materias': materias,
+        'materias_primas': materias,  # por compatibilidad con templates
     })
 
 
 @login_required
 def editar_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
+    pdf_url = obtener_pdf_url_segura(mp)
 
     if request.method == 'POST':
         form = MateriaPrimaForm(request.POST, request.FILES, instance=mp)
+        form = preparar_form_mp(form)
+
         if form.is_valid():
-            form.save()
+            mp_actualizada = form.save(commit=False)
+
+            # Si no suben un archivo nuevo, conserva el anterior
+            if not request.FILES.get('archivo_pdf'):
+                mp_actualizada.archivo_pdf = mp.archivo_pdf
+
+            mp_actualizada.save()
             return redirect('lista_mp')
     else:
-        form = MateriaPrimaForm(instance=mp)
+        form = preparar_form_mp(MateriaPrimaForm(instance=mp))
 
     return render(request, 'inventario/editar_mp.html', {
         'form': form,
         'mp': mp,
+        'pdf_url': pdf_url,
     })
 
 
 @login_required
 def detalle_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
+    pdf_url = obtener_pdf_url_segura(mp)
 
-    ordenes_relacionadas = OrdenProduccion.objects.select_related(
-        'cliente', 'linea', 'operador'
-    ).filter(mp=mp).order_by('-id')
+    ordenes_relacionadas = []
+    total_consumido = 0
+    total_producido = 0
+    total_scrap = 0
+    cantidad_ordenes = 0
 
-    total_consumido = ordenes_relacionadas.aggregate(total=Sum('peso_usado'))['total'] or 0
-    total_producido = ordenes_relacionadas.aggregate(total=Sum('peso_producido'))['total'] or 0
-    total_scrap = ordenes_relacionadas.aggregate(total=Sum('scrap_total'))['total'] or 0
-    cantidad_ordenes = ordenes_relacionadas.count()
+    try:
+        qs = OrdenProduccion.objects.select_related(
+            'cliente', 'linea', 'operador'
+        ).filter(mp=mp).order_by('-id')
+
+        ordenes_relacionadas = qs
+        total_consumido = qs.aggregate(total=Sum('peso_usado'))['total'] or 0
+        total_producido = qs.aggregate(total=Sum('peso_producido'))['total'] or 0
+        total_scrap = qs.aggregate(total=Sum('scrap_total'))['total'] or 0
+        cantidad_ordenes = qs.count()
+    except Exception:
+        # Si algo falla en las órdenes relacionadas, no tiramos la página
+        ordenes_relacionadas = []
+        total_consumido = 0
+        total_producido = 0
+        total_scrap = 0
+        cantidad_ordenes = 0
 
     return render(request, 'inventario/detalle_mp.html', {
         'mp': mp,
+        'pdf_url': pdf_url,
         'ordenes_relacionadas': ordenes_relacionadas,
         'total_consumido': total_consumido,
         'total_producido': total_producido,

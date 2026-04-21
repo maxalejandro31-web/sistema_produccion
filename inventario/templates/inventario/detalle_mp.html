@@ -59,102 +59,31 @@
 
     <div class="seccion">
         <div class="grid">
-            <div class="card">
-                <strong>Número MP</strong>
-                {{ mp.numero_mp|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Tipo</strong>
-                {{ mp.tipo_mp|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Material</strong>
-                {{ mp.material|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Descripción</strong>
-                {{ mp.descripcion|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Grado</strong>
-                {{ mp.grado|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Acabado</strong>
-                {{ mp.acabado|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Espesor valor</strong>
-                {{ mp.espesor_valor|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Unidad espesor</strong>
-                {{ mp.unidad_espesor|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Ancho</strong>
-                {{ mp.ancho|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Largo</strong>
-                {{ mp.largo|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Peso</strong>
-                {{ mp.peso|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Peso restante</strong>
-                {{ mp.peso_restante|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Diámetro interior</strong>
-                {{ mp.diametro_interior|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Diámetro exterior</strong>
-                {{ mp.diametro_exterior|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Proveedor</strong>
-                {{ mp.proveedor|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Ubicación</strong>
-                {{ mp.ubicacion|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Estado</strong>
-                {{ mp.estado|default:"-" }}
-            </div>
-
-            <div class="card">
-                <strong>Fecha entrada</strong>
-                {{ mp.fecha_entrada|date:"d/m/Y"|default:"-" }}
-            </div>
+            <div class="card"><strong>Número MP</strong>{{ mp.numero_mp|default:"-" }}</div>
+            <div class="card"><strong>Tipo</strong>{{ mp.tipo_mp|default:"-" }}</div>
+            <div class="card"><strong>Material</strong>{{ mp.material|default:"-" }}</div>
+            <div class="card"><strong>Descripción</strong>{{ mp.descripcion|default:"-" }}</div>
+            <div class="card"><strong>Grado</strong>{{ mp.grado|default:"-" }}</div>
+            <div class="card"><strong>Acabado</strong>{{ mp.acabado|default:"-" }}</div>
+            <div class="card"><strong>Espesor valor</strong>{{ mp.espesor_valor|default:"-" }}</div>
+            <div class="card"><strong>Unidad espesor</strong>{{ mp.unidad_espesor|default:"-" }}</div>
+            <div class="card"><strong>Ancho</strong>{{ mp.ancho|default:"-" }}</div>
+            <div class="card"><strong>Largo</strong>{{ mp.largo|default:"-" }}</div>
+            <div class="card"><strong>Peso</strong>{{ mp.peso|default:"-" }}</div>
+            <div class="card"><strong>Peso restante</strong>{{ mp.peso_restante|default:"-" }}</div>
+            <div class="card"><strong>Diámetro interior</strong>{{ mp.diametro_interior|default:"-" }}</div>
+            <div class="card"><strong>Diámetro exterior</strong>{{ mp.diametro_exterior|default:"-" }}</div>
+            <div class="card"><strong>Proveedor</strong>{{ mp.proveedor|default:"-" }}</div>
+            <div class="card"><strong>Ubicación</strong>{{ mp.ubicacion|default:"-" }}</div>
+            <div class="card"><strong>Estado</strong>{{ mp.estado|default:"-" }}</div>
+            <div class="card"><strong>Fecha entrada</strong>{{ mp.fecha_entrada|date:"d/m/Y"|default:"-" }}</div>
 
             <div class="card">
                 <strong>PDF</strong>
-                {% if mp.archivo_pdf %}
-                    <a href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
+                {% if pdf_url %}
+                    <a href="{{ pdf_url }}" target="_blank">Ver PDF</a>
                 {% else %}
-                    No hay PDF cargado
+                    No hay PDF válido cargado
                 {% endif %}
             </div>
         </div>
@@ -163,22 +92,10 @@
     <div class="seccion">
         <h2>Resumen de consumo</h2>
         <div class="grid">
-            <div class="card">
-                <strong>Órdenes relacionadas</strong>
-                {{ cantidad_ordenes|default:"0" }}
-            </div>
-            <div class="card">
-                <strong>Total consumido</strong>
-                {{ total_consumido|default:"0" }}
-            </div>
-            <div class="card">
-                <strong>Total producido</strong>
-                {{ total_producido|default:"0" }}
-            </div>
-            <div class="card">
-                <strong>Total scrap</strong>
-                {{ total_scrap|default:"0" }}
-            </div>
+            <div class="card"><strong>Órdenes relacionadas</strong>{{ cantidad_ordenes|default:"0" }}</div>
+            <div class="card"><strong>Total consumido</strong>{{ total_consumido|default:"0" }}</div>
+            <div class="card"><strong>Total producido</strong>{{ total_producido|default:"0" }}</div>
+            <div class="card"><strong>Total scrap</strong>{{ total_scrap|default:"0" }}</div>
         </div>
     </div>
 
