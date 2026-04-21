@@ -5,7 +5,7 @@
 {% block content %}
 <style>
     .contenedor {
-        max-width: 1100px;
+        max-width: 1200px;
         margin: auto;
         background: white;
         padding: 25px;
@@ -16,7 +16,7 @@
     .grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
+        gap: 16px;
     }
 
     .campo {
@@ -65,6 +65,12 @@
         margin-bottom: 15px;
     }
 
+    .error-texto {
+        color: red;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
     .acciones {
         margin-top: 20px;
     }
@@ -90,10 +96,57 @@
         color: white;
     }
 
-    .error-texto {
-        color: red;
-        font-size: 13px;
-        margin-top: 4px;
+    .convertidor {
+        grid-column: 1 / -1;
+        background: #f8f9fb;
+        border: 1px solid #dfe6ee;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 6px;
+    }
+
+    .convertidor h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #2c3e50;
+    }
+
+    .convertidor-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+
+    .convertidor-botones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .convertidor-botones button {
+        background: #34495e;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 14px;
+        cursor: pointer;
+    }
+
+    .resultado-conversion {
+        margin-top: 12px;
+        padding: 10px;
+        border-radius: 8px;
+        background: #eef5ff;
+        color: #1f3c88;
+        font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+        .grid,
+        .convertidor-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
@@ -114,20 +167,169 @@
         {% csrf_token %}
 
         <div class="grid">
-            {% for field in form %}
-                <div class="campo {% if field.name == 'observaciones' %}campo-completo{% endif %}">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
 
-                    {% if field.help_text %}
-                        <small>{{ field.help_text }}</small>
-                    {% endif %}
+            <div class="campo">
+                <label for="{{ form.numero_mp.id_for_label }}">{{ form.numero_mp.label }}</label>
+                {{ form.numero_mp }}
+                {% if form.numero_mp.errors %}<small class="error-texto">{{ form.numero_mp.errors }}</small>{% endif %}
+            </div>
 
-                    {% if field.errors %}
-                        <small class="error-texto">{{ field.errors }}</small>
-                    {% endif %}
+            <div class="campo">
+                <label for="{{ form.tipo_mp.id_for_label }}">{{ form.tipo_mp.label }}</label>
+                {{ form.tipo_mp }}
+                {% if form.tipo_mp.errors %}<small class="error-texto">{{ form.tipo_mp.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }}</label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}<small class="error-texto">{{ form.cliente.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.origen_mp.id_for_label }}">{{ form.origen_mp.label }}</label>
+                {{ form.origen_mp }}
+                {% if form.origen_mp.errors %}<small class="error-texto">{{ form.origen_mp.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.lote.id_for_label }}">{{ form.lote.label }}</label>
+                {{ form.lote }}
+                {% if form.lote.errors %}<small class="error-texto">{{ form.lote.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}<small class="error-texto">{{ form.codigo.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo campo-completo">
+                <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}<small class="error-texto">{{ form.descripcion.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.material.id_for_label }}">{{ form.material.label }}</label>
+                {{ form.material }}
+                {% if form.material.errors %}<small class="error-texto">{{ form.material.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.grado.id_for_label }}">{{ form.grado.label }}</label>
+                {{ form.grado }}
+                {% if form.grado.errors %}<small class="error-texto">{{ form.grado.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.acabado.id_for_label }}">{{ form.acabado.label }}</label>
+                {{ form.acabado }}
+                {% if form.acabado.errors %}<small class="error-texto">{{ form.acabado.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.proveedor.id_for_label }}">{{ form.proveedor.label }}</label>
+                {{ form.proveedor }}
+                {% if form.proveedor.errors %}<small class="error-texto">{{ form.proveedor.errors }}</small>{% endif %}
+            </div>
+
+            <div class="convertidor">
+                <h3>Convertidor de espesor (calibre ↔ mm)</h3>
+
+                <div class="convertidor-grid">
+                    <div class="campo">
+                        <label for="calibre_helper">Calibre</label>
+                        <input type="number" id="calibre_helper" step="1" placeholder="Ej. 18">
+                    </div>
+
+                    <div class="campo">
+                        <label for="mm_helper">Milímetros (mm)</label>
+                        <input type="number" id="mm_helper" step="0.001" placeholder="Ej. 1.214">
+                    </div>
                 </div>
-            {% endfor %}
+
+                <div class="convertidor-botones">
+                    <button type="button" id="btn_calibre_a_mm">Convertir calibre → mm</button>
+                    <button type="button" id="btn_mm_a_calibre">Convertir mm → calibre</button>
+                    <button type="button" id="btn_limpiar_convertidor">Limpiar convertidor</button>
+                </div>
+
+                <div id="resultado_conversion" class="resultado-conversion" style="display:none;"></div>
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.espesor_valor.id_for_label }}">{{ form.espesor_valor.label }}</label>
+                {{ form.espesor_valor }}
+                {% if form.espesor_valor.errors %}<small class="error-texto">{{ form.espesor_valor.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.unidad_espesor.id_for_label }}">{{ form.unidad_espesor.label }}</label>
+                {{ form.unidad_espesor }}
+                {% if form.unidad_espesor.errors %}<small class="error-texto">{{ form.unidad_espesor.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.ancho.id_for_label }}">{{ form.ancho.label }}</label>
+                {{ form.ancho }}
+                {% if form.ancho.errors %}<small class="error-texto">{{ form.ancho.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.largo.id_for_label }}">{{ form.largo.label }}</label>
+                {{ form.largo }}
+                {% if form.largo.errors %}<small class="error-texto">{{ form.largo.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.peso.id_for_label }}">{{ form.peso.label }}</label>
+                {{ form.peso }}
+                {% if form.peso.errors %}<small class="error-texto">{{ form.peso.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.diametro_interior.id_for_label }}">{{ form.diametro_interior.label }}</label>
+                {{ form.diametro_interior }}
+                {% if form.diametro_interior.errors %}<small class="error-texto">{{ form.diametro_interior.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.diametro_exterior.id_for_label }}">{{ form.diametro_exterior.label }}</label>
+                {{ form.diametro_exterior }}
+                {% if form.diametro_exterior.errors %}<small class="error-texto">{{ form.diametro_exterior.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.ubicacion.id_for_label }}">{{ form.ubicacion.label }}</label>
+                {{ form.ubicacion }}
+                {% if form.ubicacion.errors %}<small class="error-texto">{{ form.ubicacion.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
+                {{ form.estado }}
+                {% if form.estado.errors %}<small class="error-texto">{{ form.estado.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.fecha_entrada.id_for_label }}">{{ form.fecha_entrada.label }}</label>
+                {{ form.fecha_entrada }}
+                {% if form.fecha_entrada.errors %}<small class="error-texto">{{ form.fecha_entrada.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="{{ form.archivo_pdf.id_for_label }}">{{ form.archivo_pdf.label }}</label>
+                {{ form.archivo_pdf }}
+                {% if form.archivo_pdf.errors %}<small class="error-texto">{{ form.archivo_pdf.errors }}</small>{% endif %}
+            </div>
+
+            <div class="campo campo-completo">
+                <label for="{{ form.observaciones.id_for_label }}">{{ form.observaciones.label }}</label>
+                {{ form.observaciones }}
+                {% if form.observaciones.errors %}<small class="error-texto">{{ form.observaciones.errors }}</small>{% endif %}
+            </div>
+
         </div>
 
         <div class="acciones">
@@ -136,4 +338,121 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const gaugeToMm = {
+        10: 3.416,
+        11: 3.038,
+        12: 2.656,
+        13: 2.278,
+        14: 1.897,
+        15: 1.709,
+        16: 1.519,
+        17: 1.367,
+        18: 1.214,
+        19: 1.062,
+        20: 0.911,
+        21: 0.835,
+        22: 0.759,
+        23: 0.683,
+        24: 0.607,
+        25: 0.531,
+        26: 0.455,
+        27: 0.417,
+        28: 0.379,
+        29: 0.341,
+        30: 0.303,
+        31: 0.265,
+        32: 0.246
+    };
+
+    const calibreInput = document.getElementById('calibre_helper');
+    const mmInput = document.getElementById('mm_helper');
+    const espesorValor = document.getElementById('id_espesor_valor');
+    const unidadEspesor = document.getElementById('id_unidad_espesor');
+    const resultado = document.getElementById('resultado_conversion');
+
+    const btnCalibreMm = document.getElementById('btn_calibre_a_mm');
+    const btnMmCalibre = document.getElementById('btn_mm_a_calibre');
+    const btnLimpiar = document.getElementById('btn_limpiar_convertidor');
+
+    function mostrarResultado(texto) {
+        resultado.style.display = 'block';
+        resultado.textContent = texto;
+    }
+
+    function buscarCalibreMasCercano(mm) {
+        let mejorCalibre = null;
+        let menorDiferencia = Infinity;
+
+        for (const calibre in gaugeToMm) {
+            const diferencia = Math.abs(gaugeToMm[calibre] - mm);
+            if (diferencia < menorDiferencia) {
+                menorDiferencia = diferencia;
+                mejorCalibre = calibre;
+            }
+        }
+
+        return mejorCalibre;
+    }
+
+    btnCalibreMm.addEventListener('click', function () {
+        const calibre = parseInt(calibreInput.value);
+
+        if (!calibre || !gaugeToMm[calibre]) {
+            mostrarResultado('Ese calibre no está en la tabla del convertidor.');
+            return;
+        }
+
+        const mm = gaugeToMm[calibre];
+        mmInput.value = mm.toFixed(3);
+
+        if (espesorValor) {
+            espesorValor.value = mm.toFixed(3);
+        }
+
+        if (unidadEspesor) {
+            unidadEspesor.value = 'mm';
+        }
+
+        mostrarResultado(`Calibre ${calibre} = ${mm.toFixed(3)} mm. Ya se colocó en el formulario real.`);
+    });
+
+    btnMmCalibre.addEventListener('click', function () {
+        const mm = parseFloat(mmInput.value);
+
+        if (!mm || mm <= 0) {
+            mostrarResultado('Ingresa un valor válido en milímetros.');
+            return;
+        }
+
+        const calibre = buscarCalibreMasCercano(mm);
+
+        if (!calibre) {
+            mostrarResultado('No se pudo encontrar un calibre cercano.');
+            return;
+        }
+
+        calibreInput.value = calibre;
+
+        if (espesorValor) {
+            espesorValor.value = calibre;
+        }
+
+        if (unidadEspesor) {
+            unidadEspesor.value = 'calibre';
+        }
+
+        mostrarResultado(`${mm.toFixed(3)} mm ≈ calibre ${calibre}. Ya se colocó en el formulario real.`);
+    });
+
+    btnLimpiar.addEventListener('click', function () {
+        calibreInput.value = '';
+        mmInput.value = '';
+        resultado.style.display = 'none';
+        resultado.textContent = '';
+    });
+});
+</script>
 {% endblock %}
