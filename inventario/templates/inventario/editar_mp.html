@@ -5,183 +5,92 @@
 {% block content %}
 <style>
     .contenedor {
-        max-width: 1000px;
+        max-width: 1100px;
         margin: auto;
         background: white;
         padding: 25px;
         border-radius: 14px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
-
-    h1 {
-        margin-top: 0;
-        margin-bottom: 20px;
-    }
-
     .grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
+        gap: 14px;
     }
-
     .campo {
         display: flex;
         flex-direction: column;
     }
-
-    .campo-completo {
-        grid-column: span 2;
-    }
-
-    label {
+    .campo label {
         font-weight: bold;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
     }
-
-    input, select, textarea {
+    .campo input,
+    .campo select,
+    .campo textarea {
         padding: 10px;
-        border-radius: 8px;
         border: 1px solid #ccc;
+        border-radius: 8px;
     }
-
     .acciones {
         margin-top: 20px;
-        display: flex;
-        gap: 10px;
     }
-
-    button, a {
+    .acciones button,
+    .acciones a {
+        display: inline-block;
         padding: 10px 14px;
         border-radius: 8px;
-        border: none;
         text-decoration: none;
+        border: none;
         cursor: pointer;
+        margin-right: 10px;
     }
-
-    button {
+    .acciones button {
         background: #2c3e50;
         color: white;
     }
-
-    .volver {
+    .acciones a {
         background: #95a5a6;
         color: white;
+    }
+    .pdf-actual {
+        margin-top: 20px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
     }
 </style>
 
 <div class="contenedor">
-    <h1>Editar Materia Prima: {{ mp.numero_mp }}</h1>
+    <h1>Editar Materia Prima</h1>
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="grid">
+            {% for field in form %}
+                <div class="campo">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <small style="color:red;">{{ field.errors }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
 
-            <div class="campo">
-                <label>Número MP</label>
-                {{ form.numero_mp }}
-            </div>
-
-            <div class="campo">
-                <label>Tipo MP</label>
-                {{ form.tipo_mp }}
-            </div>
-
-            <div class="campo">
-                <label>Lote</label>
-                {{ form.lote }}
-            </div>
-
-            <div class="campo">
-                <label>Código</label>
-                {{ form.codigo }}
-            </div>
-
-            <div class="campo campo-completo">
-                <label>Descripción</label>
-                {{ form.descripcion }}
-            </div>
-
-            <div class="campo">
-                <label>Material</label>
-                {{ form.material }}
-            </div>
-
-            <div class="campo">
-                <label>Grado</label>
-                {{ form.grado }}
-            </div>
-
-            <div class="campo">
-                <label>Acabado</label>
-                {{ form.acabado }}
-            </div>
-
-            <div class="campo">
-                <label>Espesor</label>
-                {{ form.espesor_valor }}
-            </div>
-
-            <div class="campo">
-                <label>Unidad</label>
-                {{ form.unidad_espesor }}
-            </div>
-
-            <div class="campo">
-                <label>Ancho</label>
-                {{ form.ancho }}
-            </div>
-
-            <div class="campo">
-                <label>Largo</label>
-                {{ form.largo }}
-            </div>
-
-            <div class="campo">
-                <label>Peso</label>
-                {{ form.peso }}
-            </div>
-
-            <div class="campo">
-                <label>Diámetro Interior</label>
-                {{ form.diametro_interior }}
-            </div>
-
-            <div class="campo">
-                <label>Diámetro Exterior</label>
-                {{ form.diametro_exterior }}
-            </div>
-
-            <div class="campo">
-                <label>Proveedor</label>
-                {{ form.proveedor }}
-            </div>
-
-            <div class="campo">
-                <label>Ubicación</label>
-                {{ form.ubicacion }}
-            </div>
-
-            <div class="campo">
-                <label>Estado</label>
-                {{ form.estado }}
-            </div>
-
-            <div class="campo campo-completo">
-                <label>Archivo PDF</label>
-                {{ form.archivo_pdf }}
-            </div>
-
-            <div class="campo campo-completo">
-                <label>Observaciones</label>
-                {{ form.observaciones }}
-            </div>
-
+        <div class="pdf-actual">
+            <strong>PDF actual:</strong>
+            {% if mp.archivo_pdf %}
+                <a href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF actual</a>
+            {% else %}
+                <span>No hay PDF cargado.</span>
+            {% endif %}
         </div>
 
         <div class="acciones">
             <button type="submit">Guardar cambios</button>
-            <a class="volver" href="/lista-mp/">Volver</a>
+            <a href="{% url 'lista_mp' %}">Volver</a>
         </div>
     </form>
 </div>
