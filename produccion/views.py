@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 
 from .models import OrdenProduccion
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet
+from core.decorators import roles_required
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor', 'Operador')
 def captura_orden(request):
     mensaje = ''
     error = ''
@@ -61,7 +61,7 @@ def captura_orden(request):
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor', 'Operador')
 def lista_ordenes(request):
     ordenes = OrdenProduccion.objects.select_related(
         'cliente', 'mp', 'linea', 'operador'
@@ -72,7 +72,7 @@ def lista_ordenes(request):
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor')
 def cambiar_estado(request, orden_id, nuevo_estado):
     estados_validos = ['pendiente', 'proceso', 'terminado']
     if nuevo_estado not in estados_validos:
@@ -84,7 +84,7 @@ def cambiar_estado(request, orden_id, nuevo_estado):
     return redirect('lista_ordenes')
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor')
 def editar_orden(request, orden_id):
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
 
@@ -107,7 +107,7 @@ def editar_orden(request, orden_id):
         return HttpResponse(f"Error al editar orden: {e}")
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor', 'Operador')
 def detalle_orden(request, orden_id):
     orden = get_object_or_404(
         OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),

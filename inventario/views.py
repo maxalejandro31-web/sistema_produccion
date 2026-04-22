@@ -1,18 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
 from django.db.models import Sum
 from django import forms
 
 from .forms import MateriaPrimaForm, ClienteForm
 from .models import MateriaPrima, Cliente
 from produccion.models import OrdenProduccion
+from core.decorators import roles_required
 
 
 def preparar_form_mp(form):
     """
-    Evita que el widget del archivo intente renderizar el archivo actual
-    y tumbe editar_mp cuando el PDF guardado está roto o inválido.
+    Evita que el widget del archivo intente renderizar un PDF roto
+    y tumbe editar_mp.
     """
     if 'archivo_pdf' in form.fields:
         form.fields['archivo_pdf'].required = False
@@ -34,7 +33,7 @@ def obtener_pdf_url_segura(mp):
     return None
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor', 'Almacen')
 def captura_mp(request):
     mensaje = ''
 
@@ -55,17 +54,32 @@ def captura_mp(request):
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor', 'Almacen')
 def lista_mp(request):
-    materias = MateriaPrima.objects.all().order_by('-id')
+    busqueda = request.GET.get('q', '')
+    tipo = request.GET.get('tipo', '')
+    estado = request.GET.get('estado', '')
+
+    materias_primas = MateriaPrima.objects.all().order_by('-id')
+
+    if busqueda:
+        materias_primas = materias_primas.filter(numero_mp__icontains=busqueda)
+
+    if tipo:
+        materias_primas = materias_primas.filter(tipo_mp=tipo)
+
+    if estado:
+        materias_primas = materias_primas.filter(estado=estado)
 
     return render(request, 'inventario/lista_mp.html', {
-        'materias': materias,
-        'materias_primas': materias,  # por compatibilidad con templates
+        'materias_primas': materias_primas,
+        'busqueda': busqueda,
+        'tipo': tipo,
+        'estado': estado,
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor')
 def editar_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
     pdf_url = obtener_pdf_url_segura(mp)
@@ -77,7 +91,6 @@ def editar_mp(request, mp_id):
         if form.is_valid():
             mp_actualizada = form.save(commit=False)
 
-            # Si no suben un archivo nuevo, conserva el anterior
             if not request.FILES.get('archivo_pdf'):
                 mp_actualizada.archivo_pdf = mp.archivo_pdf
 
@@ -93,7 +106,7 @@ def editar_mp(request, mp_id):
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor', 'Almacen')
 def detalle_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
     pdf_url = obtener_pdf_url_segura(mp)
@@ -115,7 +128,6 @@ def detalle_mp(request, mp_id):
         total_scrap = qs.aggregate(total=Sum('scrap_total'))['total'] or 0
         cantidad_ordenes = qs.count()
     except Exception:
-        # Si algo falla en las órdenes relacionadas, no tiramos la página
         ordenes_relacionadas = []
         total_consumido = 0
         total_producido = 0
@@ -133,7 +145,7 @@ def detalle_mp(request, mp_id):
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor')
 def lista_clientes(request):
     busqueda = request.GET.get('q', '')
     clientes = Cliente.objects.all().order_by('nombre')
@@ -147,7 +159,7 @@ def lista_clientes(request):
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor')
 def captura_cliente(request):
     mensaje = ''
 
@@ -166,7 +178,7 @@ def captura_cliente(request):
     })
 
 
-@login_required
+@roles_required('Administrador', 'Supervisor')
 def editar_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
 
