@@ -54,13 +54,28 @@
 
     <div class="links">
         <span class="usuario">{{ request.user.username }}</span>
-        <a href="/">Dashboard</a>
-        <a href="/captura-mp/">Captura MP</a>
-        <a href="/lista-mp/">Lista MP</a>
-        <a href="/captura/">Captura Orden</a>
-        <a href="/ordenes/">Órdenes</a>
-        <a href="/admin/">Admin</a>
-        <a href="/logout/">Cerrar sesión</a>
+
+        <a href="{% url 'inicio' %}">Dashboard</a>
+
+        {% if es_admin_total or es_administrador or es_supervisor or es_almacen %}
+            <a href="{% url 'captura_mp' %}">Captura MP</a>
+            <a href="{% url 'lista_mp' %}">Lista MP</a>
+        {% endif %}
+
+        {% if es_admin_total or es_administrador or es_supervisor %}
+            <a href="{% url 'lista_clientes' %}">Clientes</a>
+        {% endif %}
+
+        {% if es_admin_total or es_administrador or es_supervisor or es_operador %}
+            <a href="{% url 'captura_orden' %}">Captura Orden</a>
+            <a href="{% url 'lista_ordenes' %}">Órdenes</a>
+        {% endif %}
+
+        {% if es_admin_total %}
+            <a href="/admin/">Admin</a>
+        {% endif %}
+
+        <a href="{% url 'logout' %}">Cerrar sesión</a>
     </div>
 </div>
 {% endif %}
