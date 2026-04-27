@@ -1,45 +1,25 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
-from django import forms
 
-from .forms import MateriaPrimaForm, ClienteForm, MovimientoMPForm
-from .models import MateriaPrima, Cliente, MovimientoMP
+from .forms import MateriaPrimaForm, ClienteForm
+from .models import MateriaPrima, Cliente
 from produccion.models import OrdenProduccion
-from core.decorators import roles_required
 
 
-def preparar_form_mp(form):
-    if 'archivo_pdf' in form.fields:
-        form.fields['archivo_pdf'].required = False
-        form.fields['archivo_pdf'].widget = forms.FileInput(attrs={
-            'accept': '.pdf'
-        })
-    return form
-
-
-def obtener_pdf_url_segura(mp):
-    try:
-        if getattr(mp, 'archivo_pdf', None):
-            return mp.archivo_pdf.url
-    except Exception:
-        return None
-    return None
-
-
-@roles_required('Administrador', 'Supervisor', 'Almacen')
+@login_required
 def captura_mp(request):
     mensaje = ''
 
     if request.method == 'POST':
         form = MateriaPrimaForm(request.POST, request.FILES)
-        form = preparar_form_mp(form)
-
         if form.is_valid():
             form.save()
             mensaje = 'Materia prima registrada correctamente'
-            form = preparar_form_mp(MateriaPrimaForm())
+            form = MateriaPrimaForm()
     else:
-        form = preparar_form_mp(MateriaPrimaForm())
+        form = MateriaPrimaForm()
 
     return render(request, 'inventario/captura_mp.html', {
         'form': form,
@@ -47,102 +27,81 @@ def captura_mp(request):
     })
 
 
-@roles_required('Administrador', 'Supervisor', 'Almacen')
+@login_required
 def lista_mp(request):
-    busqueda = request.GET.get('q', '')
-    tipo = request.GET.get('tipo', '')
-    estado = request.GET.get('estado', '')
-
-    materias_primas = MateriaPrima.objects.all().order_by('-id')
-
-    if busqueda:
-        materias_primas = materias_primas.filter(numero_mp__icontains=busqueda)
-
-    if tipo:
-        materias_primas = materias_primas.filter(tipo_mp=tipo)
-
-    if estado:
-        materias_primas = materias_primas.filter(estado=estado)
-
+    materias = MateriaPrima.objects.all().order_by('-id')
     return render(request, 'inventario/lista_mp.html', {
-        'materias_primas': materias_primas,
-        'busqueda': busqueda,
-        'tipo': tipo,
-        'estado': estado,
+        'materias': materias
     })
 
 
-@roles_required('Administrador', 'Supervisor')
+@login_required
 def editar_mp(request, mp_id):
+    if not (
+        request.user.is_superuser or
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+    ):
+        return HttpResponse("No tienes permiso para editar materia prima.")
+
     mp = get_object_or_404(MateriaPrima, id=mp_id)
-    pdf_url = obtener_pdf_url_segura(mp)
 
     if request.method == 'POST':
         form = MateriaPrimaForm(request.POST, request.FILES, instance=mp)
-        form = preparar_form_mp(form)
-
         if form.is_valid():
-            mp_actualizada = form.save(commit=False)
-
-            if not request.FILES.get('archivo_pdf'):
-                mp_actualizada.archivo_pdf = mp.archivo_pdf
-
-            mp_actualizada.save()
+            form.save()
             return redirect('lista_mp')
     else:
-        form = preparar_form_mp(MateriaPrimaForm(instance=mp))
+        form = MateriaPrimaForm(instance=mp)
 
     return render(request, 'inventario/editar_mp.html', {
         'form': form,
         'mp': mp,
-        'pdf_url': pdf_url,
     })
 
 
-@roles_required('Administrador', 'Supervisor', 'Almacen')
+@login_required
 def detalle_mp(request, mp_id):
+    if not (
+        request.user.is_superuser or
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador', 'Almacen']).exists()
+    ):
+        return HttpResponse("No tienes permiso para ver la materia prima.")
+
     mp = get_object_or_404(MateriaPrima, id=mp_id)
-    pdf_url = obtener_pdf_url_segura(mp)
 
-    ordenes_relacionadas = []
-    total_consumido = 0
-    total_producido = 0
-    total_scrap = 0
-    cantidad_ordenes = 0
+    ordenes_relacionadas = OrdenProduccion.objects.select_related(
+        'cliente', 'linea', 'operador'
+    ).filter(mp_id=mp.id).order_by('-id')
 
-    try:
-        qs = OrdenProduccion.objects.select_related(
-            'cliente', 'linea', 'operador'
-        ).filter(mp=mp).order_by('-id')
+    resumen = ordenes_relacionadas.aggregate(
+        total_consumido=Sum('peso_usado'),
+        total_producido=Sum('peso_producido'),
+        total_scrap=Sum('scrap_total'),
+    )
 
-        ordenes_relacionadas = qs
-        total_consumido = qs.aggregate(total=Sum('peso_usado'))['total'] or 0
-        total_producido = qs.aggregate(total=Sum('peso_producido'))['total'] or 0
-        total_scrap = qs.aggregate(total=Sum('scrap_total'))['total'] or 0
-        cantidad_ordenes = qs.count()
-    except Exception:
-        ordenes_relacionadas = []
-        total_consumido = 0
-        total_producido = 0
-        total_scrap = 0
-        cantidad_ordenes = 0
-
-    movimientos = mp.movimientos.select_related('usuario').order_by('-fecha')
+    total_consumido = resumen['total_consumido'] or 0
+    total_producido = resumen['total_producido'] or 0
+    total_scrap = resumen['total_scrap'] or 0
+    cantidad_ordenes = ordenes_relacionadas.count()
 
     return render(request, 'inventario/detalle_mp.html', {
         'mp': mp,
-        'pdf_url': pdf_url,
         'ordenes_relacionadas': ordenes_relacionadas,
         'total_consumido': total_consumido,
         'total_producido': total_producido,
         'total_scrap': total_scrap,
         'cantidad_ordenes': cantidad_ordenes,
-        'movimientos': movimientos,
     })
 
 
-@roles_required('Administrador', 'Supervisor')
+@login_required
 def lista_clientes(request):
+    if not (
+        request.user.is_superuser or
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+    ):
+        return HttpResponse("No tienes permiso para ver clientes.")
+
     busqueda = request.GET.get('q', '')
     clientes = Cliente.objects.all().order_by('nombre')
 
@@ -155,8 +114,14 @@ def lista_clientes(request):
     })
 
 
-@roles_required('Administrador', 'Supervisor')
+@login_required
 def captura_cliente(request):
+    if not (
+        request.user.is_superuser or
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+    ):
+        return HttpResponse("No tienes permiso para capturar clientes.")
+
     mensaje = ''
 
     if request.method == 'POST':
@@ -174,8 +139,14 @@ def captura_cliente(request):
     })
 
 
-@roles_required('Administrador', 'Supervisor')
+@login_required
 def editar_cliente(request, cliente_id):
+    if not (
+        request.user.is_superuser or
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+    ):
+        return HttpResponse("No tienes permiso para editar clientes.")
+
     cliente = get_object_or_404(Cliente, id=cliente_id)
 
     if request.method == 'POST':
@@ -189,47 +160,4 @@ def editar_cliente(request, cliente_id):
     return render(request, 'inventario/editar_cliente.html', {
         'form': form,
         'cliente': cliente,
-    })
-
-
-@roles_required('Administrador', 'Supervisor', 'Almacen')
-def captura_movimiento_mp(request, mp_id=None):
-    mensaje = ''
-
-    if request.method == 'POST':
-        form = MovimientoMPForm(request.POST)
-        if form.is_valid():
-            movimiento = form.save(commit=False)
-            movimiento.usuario = request.user
-
-            if not movimiento.ubicacion_origen:
-                movimiento.ubicacion_origen = movimiento.mp.ubicacion
-
-            movimiento.save()
-            mensaje = 'Movimiento registrado correctamente.'
-
-            if mp_id:
-                return redirect('detalle_mp', mp_id=mp_id)
-
-            form = MovimientoMPForm()
-    else:
-        initial = {}
-        if mp_id:
-            mp = get_object_or_404(MateriaPrima, id=mp_id)
-            initial['mp'] = mp
-            initial['ubicacion_origen'] = mp.ubicacion
-        form = MovimientoMPForm(initial=initial)
-
-    return render(request, 'inventario/captura_movimiento_mp.html', {
-        'form': form,
-        'mensaje': mensaje,
-    })
-
-
-@roles_required('Administrador', 'Supervisor', 'Almacen')
-def lista_movimientos_mp(request):
-    movimientos = MovimientoMP.objects.select_related('mp', 'usuario').order_by('-fecha')
-
-    return render(request, 'inventario/lista_movimientos_mp.html', {
-        'movimientos': movimientos,
     })

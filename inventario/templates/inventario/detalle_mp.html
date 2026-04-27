@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Detalle Materia Prima{% endblock %}
+{% block title %}Detalle de Materia Prima{% endblock %}
 
 {% block content %}
 <style>
@@ -12,36 +12,69 @@
         border-radius: 14px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
-    .seccion {
-        margin-bottom: 30px;
+    .titulo {
+        margin-bottom: 20px;
     }
     .grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        margin-bottom: 25px;
+    }
+    .campo {
+        background: #f8f9fb;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px;
+    }
+    .campo label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 6px;
+        color: #2c3e50;
+    }
+    .valor {
+        color: #333;
+    }
+    .resumen {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 25px;
     }
     .card {
-        background: #f8f9fa;
-        padding: 14px;
+        background: #eef3f8;
+        padding: 15px;
         border-radius: 10px;
-        border: 1px solid #e5e7eb;
+        text-align: center;
+        border: 1px solid #d9e2ec;
     }
-    .card strong {
-        display: block;
-        margin-bottom: 5px;
+    .card h3 {
+        margin: 0;
+        font-size: 15px;
+        color: #2c3e50;
+    }
+    .card p {
+        margin: 8px 0 0;
+        font-size: 22px;
+        font-weight: bold;
+        color: #111827;
     }
     table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 15px;
+        margin-top: 12px;
     }
-    th, td {
-        border-bottom: 1px solid #ddd;
+    table th, table td {
+        border: 1px solid #ddd;
         padding: 10px;
         text-align: left;
     }
-    th {
+    table th {
         background: #f1f5f9;
+    }
+    .acciones {
+        margin-top: 20px;
     }
     .acciones a {
         display: inline-block;
@@ -52,132 +85,209 @@
         color: white;
         margin-right: 10px;
     }
+    .acciones a.secundario {
+        background: #6b7280;
+    }
 </style>
 
 <div class="contenedor">
-    <h1>Detalle de Materia Prima</h1>
+    <h1 class="titulo">Detalle de Materia Prima</h1>
 
-    <div class="seccion">
-        <div class="grid">
-            <div class="card"><strong>Número MP</strong>{{ mp.numero_mp|default:"-" }}</div>
-            <div class="card"><strong>Tipo</strong>{{ mp.tipo_mp|default:"-" }}</div>
-            <div class="card"><strong>Material</strong>{{ mp.material|default:"-" }}</div>
-            <div class="card"><strong>Descripción</strong>{{ mp.descripcion|default:"-" }}</div>
-            <div class="card"><strong>Grado</strong>{{ mp.grado|default:"-" }}</div>
-            <div class="card"><strong>Acabado</strong>{{ mp.acabado|default:"-" }}</div>
-            <div class="card"><strong>Espesor valor</strong>{{ mp.espesor_valor|default:"-" }}</div>
-            <div class="card"><strong>Unidad espesor</strong>{{ mp.unidad_espesor|default:"-" }}</div>
-            <div class="card"><strong>Ancho</strong>{{ mp.ancho|default:"-" }}</div>
-            <div class="card"><strong>Largo</strong>{{ mp.largo|default:"-" }}</div>
-            <div class="card"><strong>Peso</strong>{{ mp.peso|default:"-" }}</div>
-            <div class="card"><strong>Peso restante</strong>{{ mp.peso_restante|default:"-" }}</div>
-            <div class="card"><strong>Diámetro interior</strong>{{ mp.diametro_interior|default:"-" }}</div>
-            <div class="card"><strong>Diámetro exterior</strong>{{ mp.diametro_exterior|default:"-" }}</div>
-            <div class="card"><strong>Proveedor</strong>{{ mp.proveedor|default:"-" }}</div>
-            <div class="card"><strong>Ubicación</strong>{{ mp.ubicacion|default:"-" }}</div>
-            <div class="card"><strong>Estado</strong>{{ mp.estado|default:"-" }}</div>
-            <div class="card"><strong>Fecha entrada</strong>{{ mp.fecha_entrada|date:"d/m/Y"|default:"-" }}</div>
-            <div class="card">
-                <strong>PDF</strong>
-                {% if pdf_url %}
-                    <a href="{{ pdf_url }}" target="_blank">Ver PDF</a>
+    <div class="grid">
+        <div class="campo">
+            <label>Número MP</label>
+            <div class="valor">{{ mp.numero_mp|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Cliente</label>
+            <div class="valor">{{ mp.cliente|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Tipo MP</label>
+            <div class="valor">{{ mp.tipo_mp|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Origen MP</label>
+            <div class="valor">{{ mp.origen_mp|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Lote</label>
+            <div class="valor">{{ mp.lote|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Código</label>
+            <div class="valor">{{ mp.codigo|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Material</label>
+            <div class="valor">{{ mp.material|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Descripción</label>
+            <div class="valor">{{ mp.descripcion|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Grado</label>
+            <div class="valor">{{ mp.grado|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Acabado</label>
+            <div class="valor">{{ mp.acabado|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Espesor</label>
+            <div class="valor">
+                {{ mp.espesor_valor|default_if_none:"-" }} {{ mp.unidad_espesor|default:"" }}
+            </div>
+        </div>
+
+        <div class="campo">
+            <label>Ancho</label>
+            <div class="valor">{{ mp.ancho|default_if_none:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Largo</label>
+            <div class="valor">{{ mp.largo|default_if_none:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Peso</label>
+            <div class="valor">{{ mp.peso|default_if_none:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Peso restante</label>
+            <div class="valor">{{ mp.peso_restante|default_if_none:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Diámetro interior</label>
+            <div class="valor">{{ mp.diametro_interior|default_if_none:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Diámetro exterior</label>
+            <div class="valor">{{ mp.diametro_exterior|default_if_none:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Proveedor</label>
+            <div class="valor">{{ mp.proveedor|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Ubicación</label>
+            <div class="valor">{{ mp.ubicacion|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Estado</label>
+            <div class="valor">{{ mp.estado|default:"-" }}</div>
+        </div>
+
+        <div class="campo">
+            <label>Fecha de entrada</label>
+            <div class="valor">
+                {% if mp.fecha_entrada %}
+                    {{ mp.fecha_entrada|date:"d/m/Y" }}
                 {% else %}
-                    No hay PDF válido cargado
+                    -
                 {% endif %}
             </div>
         </div>
-    </div>
 
-    <div class="seccion">
-        <h2>Resumen de consumo</h2>
-        <div class="grid">
-            <div class="card"><strong>Órdenes relacionadas</strong>{{ cantidad_ordenes|default:"0" }}</div>
-            <div class="card"><strong>Total consumido</strong>{{ total_consumido|default:"0" }}</div>
-            <div class="card"><strong>Total producido</strong>{{ total_producido|default:"0" }}</div>
-            <div class="card"><strong>Total scrap</strong>{{ total_scrap|default:"0" }}</div>
+        <div class="campo">
+            <label>PDF</label>
+            <div class="valor">
+                {% if mp.archivo_pdf %}
+                    <a href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
+                {% else %}
+                    No disponible
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="campo">
+            <label>Observaciones</label>
+            <div class="valor">{{ mp.observaciones|default:"-" }}</div>
         </div>
     </div>
 
-    <div class="seccion">
-        <h2>Órdenes relacionadas</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Folio</th>
-                    <th>Cliente</th>
-                    <th>Línea</th>
-                    <th>Operador</th>
-                    <th>Estado</th>
-                    <th>Peso usado</th>
-                    <th>Peso producido</th>
-                    <th>Scrap</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for orden in ordenes_relacionadas %}
-                <tr>
-                    <td>{{ orden.folio_orden|default:"-" }}</td>
-                    <td>{{ orden.cliente|default:"-" }}</td>
-                    <td>{{ orden.linea|default:"-" }}</td>
-                    <td>{{ orden.operador|default:"-" }}</td>
-                    <td>{{ orden.estado|default:"-" }}</td>
-                    <td>{{ orden.peso_usado|default:"0" }}</td>
-                    <td>{{ orden.peso_producido|default:"0" }}</td>
-                    <td>{{ orden.scrap_total|default:"0" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8">No hay órdenes relacionadas.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="seccion">
-        <h2>Historial de movimientos</h2>
-
-        <div style="margin-bottom: 15px;">
-            <a href="{% url 'captura_movimiento_mp_desde_mp' mp.id %}"
-               style="display:inline-block; padding:10px 14px; border-radius:8px; text-decoration:none; background:#16a085; color:white;">
-                + Registrar movimiento
-            </a>
+    <h2>Resumen de consumo</h2>
+    <div class="resumen">
+        <div class="card">
+            <h3>Total consumido</h3>
+            <p>{{ total_consumido }}</p>
         </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Tipo</th>
-                    <th>Peso</th>
-                    <th>Origen</th>
-                    <th>Destino</th>
-                    <th>Usuario</th>
-                    <th>Observaciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for mov in movimientos %}
-                <tr>
-                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
-                    <td>{{ mov.get_tipo_movimiento_display }}</td>
-                    <td>{{ mov.peso }}</td>
-                    <td>{{ mov.ubicacion_origen|default:"-" }}</td>
-                    <td>{{ mov.ubicacion_destino|default:"-" }}</td>
-                    <td>{{ mov.usuario.username|default:"-" }}</td>
-                    <td>{{ mov.observaciones|default:"-" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7">No hay movimientos registrados para esta MP.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="card">
+            <h3>Total producido</h3>
+            <p>{{ total_producido }}</p>
+        </div>
+        <div class="card">
+            <h3>Total scrap</h3>
+            <p>{{ total_scrap }}</p>
+        </div>
+        <div class="card">
+            <h3>Órdenes relacionadas</h3>
+            <p>{{ cantidad_ordenes }}</p>
+        </div>
     </div>
+
+    <h2>Órdenes relacionadas</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Folio</th>
+                <th>Cliente</th>
+                <th>Línea</th>
+                <th>Operador</th>
+                <th>Peso usado</th>
+                <th>Peso producido</th>
+                <th>Scrap</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for orden in ordenes_relacionadas %}
+            <tr>
+                <td>{{ orden.folio_orden|default:"-" }}</td>
+                <td>{{ orden.cliente|default:"-" }}</td>
+                <td>{{ orden.linea|default:"-" }}</td>
+                <td>{{ orden.operador|default:"-" }}</td>
+                <td>{{ orden.peso_usado|default_if_none:"-" }}</td>
+                <td>{{ orden.peso_producido|default_if_none:"-" }}</td>
+                <td>{{ orden.scrap_total|default_if_none:"-" }}</td>
+                <td>{{ orden.estado|default:"-" }}</td>
+                <td>
+                    {% if orden.fecha %}
+                        {{ orden.fecha|date:"d/m/Y H:i" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9">No hay órdenes relacionadas para esta MP.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
     <div class="acciones">
-        <a href="{% url 'lista_mp' %}">Volver a lista</a>
+        <a href="{% url 'lista_mp' %}" class="secundario">Volver a la lista</a>
         <a href="{% url 'editar_mp' mp.id %}">Editar MP</a>
     </div>
 </div>
