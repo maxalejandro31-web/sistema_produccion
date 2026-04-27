@@ -1,5 +1,5 @@
 from django import forms
-from .models import MateriaPrima, Cliente
+from .models import MateriaPrima, Cliente, MovimientoMP
 
 
 class ClienteForm(forms.ModelForm):
@@ -7,12 +7,8 @@ class ClienteForm(forms.ModelForm):
         model = Cliente
         fields = ['codigo_cliente', 'nombre', 'activo']
         widgets = {
-            'codigo_cliente': forms.TextInput(attrs={
-                'placeholder': 'Código del cliente'
-            }),
-            'nombre': forms.TextInput(attrs={
-                'placeholder': 'Nombre del cliente'
-            }),
+            'codigo_cliente': forms.TextInput(attrs={'placeholder': 'Código del cliente'}),
+            'nombre': forms.TextInput(attrs={'placeholder': 'Nombre del cliente'}),
             'activo': forms.CheckboxInput(),
         }
 
@@ -83,6 +79,36 @@ class MateriaPrimaForm(forms.ModelForm):
         if 'cliente' in self.fields:
             self.fields['cliente'].queryset = Cliente.objects.all().order_by('nombre')
             self.fields['cliente'].empty_label = 'Selecciona un cliente'
+
+        for field_name, field in self.fields.items():
+            if not isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'form-control')
+
+
+class MovimientoMPForm(forms.ModelForm):
+    class Meta:
+        model = MovimientoMP
+        fields = [
+            'mp',
+            'tipo_movimiento',
+            'peso',
+            'ubicacion_origen',
+            'ubicacion_destino',
+            'observaciones',
+        ]
+        widgets = {
+            'mp': forms.Select(),
+            'tipo_movimiento': forms.Select(),
+            'peso': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Peso del movimiento'}),
+            'ubicacion_origen': forms.TextInput(attrs={'placeholder': 'Ubicación origen'}),
+            'ubicacion_destino': forms.TextInput(attrs={'placeholder': 'Ubicación destino'}),
+            'observaciones': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Observaciones'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['mp'].queryset = MateriaPrima.objects.all().order_by('-id')
+        self.fields['mp'].empty_label = 'Selecciona una MP'
 
         for field_name, field in self.fields.items():
             if not isinstance(field.widget, forms.CheckboxInput):

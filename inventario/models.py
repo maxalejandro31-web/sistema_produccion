@@ -1,5 +1,7 @@
-from django.db import models
+from django.db import models, transaction
+from django.conf import settings
 from django.utils import timezone
+from decimal import Decimal
 
 
 class Cliente(models.Model):
@@ -64,25 +66,25 @@ class MateriaPrima(models.Model):
     codigo = models.CharField(max_length=100, blank=True, null=True)
     descripcion = models.CharField(max_length=255, blank=True, null=True)
 
-    material = models.CharField(max_length=50, choices=MATERIAL_CHOICES)
+    material = models.CharField(max_length=50, choices=MATERIAL_CHOICES, blank=True, null=True)
     grado = models.CharField(max_length=100, blank=True, null=True)
     acabado = models.CharField(max_length=100, blank=True, null=True)
 
     espesor_valor = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
-    unidad_espesor = models.CharField(max_length=20, choices=UNIDAD_ESPESOR_CHOICES, default='mm')
+    unidad_espesor = models.CharField(max_length=20, choices=UNIDAD_ESPESOR_CHOICES, default='mm', blank=True, null=True)
 
     ancho = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     largo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
-    peso = models.DecimalField(max_digits=10, decimal_places=2)
+    peso = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     peso_restante = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     diametro_interior = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     diametro_exterior = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     proveedor = models.CharField(max_length=150, blank=True, null=True)
-    ubicacion = models.CharField(max_length=50, choices=UBICACION_CHOICES, default='Almacén 1')
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Disponible')
+    ubicacion = models.CharField(max_length=50, choices=UBICACION_CHOICES, default='Almacén 1', blank=True, null=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Disponible', blank=True, null=True)
 
     fecha_entrada = models.DateField(null=True, blank=True)
 
@@ -90,7 +92,7 @@ class MateriaPrima(models.Model):
     observaciones = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if self.peso_restante is None:
+        if self.peso_restante is None and self.peso is not None:
             self.peso_restante = self.peso
         super().save(*args, **kwargs)
 
@@ -104,7 +106,10 @@ class MateriaPrima(models.Model):
         elif self.unidad_espesor == 'pulg':
             return round(float(self.espesor_valor) * 25.4, 4)
         elif self.unidad_espesor == 'calibre':
-            return round(0.1495 * (92 ** ((36 - float(self.espesor_valor)) / 39)), 4)
+            try:
+                return round(0.1495 * (92 ** ((36 - float(self.espesor_valor)) / 39)), 4)
+            except Exception:
+                return None
         return None
 
     @property
@@ -139,3 +144,70 @@ class MateriaPrima(models.Model):
 
     def __str__(self):
         return self.numero_mp
+
+
+class MovimientoMP(models.Model):
+    TIPO_MOVIMIENTO_CHOICES = [
+        ('ENTRADA', 'Entrada'),
+        ('CONSUMO', 'Consumo'),
+        ('AJUSTE_POSITIVO', 'Ajuste positivo'),
+        ('AJUSTE_NEGATIVO', 'Ajuste negativo'),
+        ('MERMA', 'Merma'),
+        ('TRASPASO', 'Traspaso'),
+        ('SALIDA', 'Salida'),
+    ]
+
+    mp = models.ForeignKey(
+        MateriaPrima,
+        on_delete=models.CASCADE,
+        related_name='movimientos'
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    tipo_movimiento = models.CharField(max_length=30, choices=TIPO_MOVIMIENTO_CHOICES)
+    peso = models.DecimalField(max_digits=12, decimal_places=2)
+    ubicacion_origen = models.CharField(max_length=100, blank=True, null=True)
+    ubicacion_destino = models.CharField(max_length=100, blank=True, null=True)
+    observaciones = models.TextField(blank=True, null=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    def __str__(self):
+        return f"{self.mp.numero_mp} - {self.tipo_movimiento} - {self.peso}"
+
+    def save(self, *args, **kwargs):
+        es_nuevo = self.pk is None
+
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+            if es_nuevo:
+                mp = self.mp
+                peso_actual = mp.peso_restante if mp.peso_restante is not None else mp.peso
+                if peso_actual is None:
+                    peso_actual = Decimal("0.00")
+
+                if self.tipo_movimiento in ['ENTRADA', 'AJUSTE_POSITIVO']:
+                    nuevo_peso = peso_actual + self.peso
+                elif self.tipo_movimiento in ['CONSUMO', 'AJUSTE_NEGATIVO', 'MERMA', 'SALIDA']:
+                    nuevo_peso = peso_actual - self.peso
+                else:
+                    nuevo_peso = peso_actual
+
+                if nuevo_peso < 0:
+                    nuevo_peso = Decimal("0.00")
+
+                mp.peso_restante = nuevo_peso
+
+                if self.tipo_movimiento == 'TRASPASO' and self.ubicacion_destino:
+                    mp.ubicacion = self.ubicacion_destino
+
+                if mp.peso_restante == 0:
+                    mp.estado = 'Terminado'
+                elif mp.estado == 'Disponible' and self.tipo_movimiento in ['CONSUMO', 'MERMA', 'TRASPASO']:
+                    mp.estado = 'En Proceso'
+
+                mp.save()

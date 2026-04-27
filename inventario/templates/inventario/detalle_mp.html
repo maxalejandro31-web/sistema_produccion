@@ -77,7 +77,6 @@
             <div class="card"><strong>Ubicación</strong>{{ mp.ubicacion|default:"-" }}</div>
             <div class="card"><strong>Estado</strong>{{ mp.estado|default:"-" }}</div>
             <div class="card"><strong>Fecha entrada</strong>{{ mp.fecha_entrada|date:"d/m/Y"|default:"-" }}</div>
-
             <div class="card">
                 <strong>PDF</strong>
                 {% if pdf_url %}
@@ -129,6 +128,48 @@
                 {% empty %}
                 <tr>
                     <td colspan="8">No hay órdenes relacionadas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="seccion">
+        <h2>Historial de movimientos</h2>
+
+        <div style="margin-bottom: 15px;">
+            <a href="{% url 'captura_movimiento_mp_desde_mp' mp.id %}"
+               style="display:inline-block; padding:10px 14px; border-radius:8px; text-decoration:none; background:#16a085; color:white;">
+                + Registrar movimiento
+            </a>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Peso</th>
+                    <th>Origen</th>
+                    <th>Destino</th>
+                    <th>Usuario</th>
+                    <th>Observaciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr>
+                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mov.get_tipo_movimiento_display }}</td>
+                    <td>{{ mov.peso }}</td>
+                    <td>{{ mov.ubicacion_origen|default:"-" }}</td>
+                    <td>{{ mov.ubicacion_destino|default:"-" }}</td>
+                    <td>{{ mov.usuario.username|default:"-" }}</td>
+                    <td>{{ mov.observaciones|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">No hay movimientos registrados para esta MP.</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -2,17 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Sum
 from django import forms
 
-from .forms import MateriaPrimaForm, ClienteForm
-from .models import MateriaPrima, Cliente
+from .forms import MateriaPrimaForm, ClienteForm, MovimientoMPForm
+from .models import MateriaPrima, Cliente, MovimientoMP
 from produccion.models import OrdenProduccion
 from core.decorators import roles_required
 
 
 def preparar_form_mp(form):
-    """
-    Evita que el widget del archivo intente renderizar un PDF roto
-    y tumbe editar_mp.
-    """
     if 'archivo_pdf' in form.fields:
         form.fields['archivo_pdf'].required = False
         form.fields['archivo_pdf'].widget = forms.FileInput(attrs={
@@ -22,9 +18,6 @@ def preparar_form_mp(form):
 
 
 def obtener_pdf_url_segura(mp):
-    """
-    Intenta obtener la URL del PDF sin tirar error 500 si el archivo está mal.
-    """
     try:
         if getattr(mp, 'archivo_pdf', None):
             return mp.archivo_pdf.url
@@ -134,6 +127,8 @@ def detalle_mp(request, mp_id):
         total_scrap = 0
         cantidad_ordenes = 0
 
+    movimientos = mp.movimientos.select_related('usuario').order_by('-fecha')
+
     return render(request, 'inventario/detalle_mp.html', {
         'mp': mp,
         'pdf_url': pdf_url,
@@ -142,6 +137,7 @@ def detalle_mp(request, mp_id):
         'total_producido': total_producido,
         'total_scrap': total_scrap,
         'cantidad_ordenes': cantidad_ordenes,
+        'movimientos': movimientos,
     })
 
 
@@ -193,4 +189,47 @@ def editar_cliente(request, cliente_id):
     return render(request, 'inventario/editar_cliente.html', {
         'form': form,
         'cliente': cliente,
+    })
+
+
+@roles_required('Administrador', 'Supervisor', 'Almacen')
+def captura_movimiento_mp(request, mp_id=None):
+    mensaje = ''
+
+    if request.method == 'POST':
+        form = MovimientoMPForm(request.POST)
+        if form.is_valid():
+            movimiento = form.save(commit=False)
+            movimiento.usuario = request.user
+
+            if not movimiento.ubicacion_origen:
+                movimiento.ubicacion_origen = movimiento.mp.ubicacion
+
+            movimiento.save()
+            mensaje = 'Movimiento registrado correctamente.'
+
+            if mp_id:
+                return redirect('detalle_mp', mp_id=mp_id)
+
+            form = MovimientoMPForm()
+    else:
+        initial = {}
+        if mp_id:
+            mp = get_object_or_404(MateriaPrima, id=mp_id)
+            initial['mp'] = mp
+            initial['ubicacion_origen'] = mp.ubicacion
+        form = MovimientoMPForm(initial=initial)
+
+    return render(request, 'inventario/captura_movimiento_mp.html', {
+        'form': form,
+        'mensaje': mensaje,
+    })
+
+
+@roles_required('Administrador', 'Supervisor', 'Almacen')
+def lista_movimientos_mp(request):
+    movimientos = MovimientoMP.objects.select_related('mp', 'usuario').order_by('-fecha')
+
+    return render(request, 'inventario/lista_movimientos_mp.html', {
+        'movimientos': movimientos,
     })
