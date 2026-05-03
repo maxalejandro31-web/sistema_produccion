@@ -15,14 +15,9 @@ def captura_mp(request):
     if request.method == 'POST':
         form = MateriaPrimaForm(request.POST, request.FILES)
         if form.is_valid():
-            try:
-                form.save()
-                mensaje = 'Materia prima registrada correctamente'
-                form = MateriaPrimaForm()
-            except Exception as e:
-                mensaje = f'ERROR: {str(e)}'
-        else:
-            mensaje = f'FORM ERRORS: {str(form.errors)}'
+            form.save()
+            mensaje = 'Materia prima registrada correctamente'
+            form = MateriaPrimaForm()
     else:
         form = MateriaPrimaForm()
 
