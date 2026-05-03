@@ -44,7 +44,6 @@ class MateriaPrimaForm(forms.ModelForm):
             'ubicacion',
             'estado',
             'fecha_entrada',
-            'archivo_pdf',
             'observaciones',
         ]
         widgets = {
@@ -69,17 +68,14 @@ class MateriaPrimaForm(forms.ModelForm):
             'ubicacion': forms.Select(),
             'estado': forms.Select(),
             'fecha_entrada': forms.DateInput(attrs={'type': 'date'}),
-            'archivo_pdf': forms.ClearableFileInput(),
             'observaciones': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Observaciones'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         if 'cliente' in self.fields:
             self.fields['cliente'].queryset = Cliente.objects.all().order_by('nombre')
             self.fields['cliente'].empty_label = 'Selecciona un cliente'
-
         for field_name, field in self.fields.items():
             if not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.setdefault('class', 'form-control')

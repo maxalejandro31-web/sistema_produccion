@@ -87,8 +87,6 @@ class MateriaPrima(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Disponible', blank=True, null=True)
 
     fecha_entrada = models.DateField(null=True, blank=True)
-
-    archivo_pdf = models.FileField(upload_to='ordenes_mp/', null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
@@ -100,7 +98,6 @@ class MateriaPrima(models.Model):
     def espesor_mm(self):
         if self.espesor_valor is None:
             return None
-
         if self.unidad_espesor == 'mm':
             return round(float(self.espesor_valor), 4)
         elif self.unidad_espesor == 'pulg':
@@ -129,10 +126,8 @@ class MateriaPrima(models.Model):
     def tiempo_en_fabrica(self):
         if not self.fecha_entrada:
             return "Sin fecha"
-
         hoy = timezone.localdate()
         dias = (hoy - self.fecha_entrada).days
-
         if dias < 7:
             return f"{dias} día(s)"
         elif dias < 30:
