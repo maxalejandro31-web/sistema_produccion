@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Producto Terminado{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        background: white;
+        border-radius: 14px;
+        padding: 25px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 { margin-top: 0; margin-bottom: 20px; }
+    .filtros {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .filtros input, .filtros select {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    .filtros button {
+        padding: 8px 14px;
+        background: #2c3e50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .filtros a {
+        padding: 8px 14px;
+        background: #7f8c8d;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        vertical-align: middle;
+    }
+    th { background: #f5f7fa; }
+    .badge {
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: white;
+        display: inline-block;
+    }
+    .en_almacen { background: #2980b9; }
+    .vendido { background: #27ae60; }
+    .embarcado { background: #8e44ad; }
+    .btn {
+        display: inline-block;
+        padding: 5px 10px;
+        color: white;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 12px;
+        margin-right: 4px;
+    }
+    .btn-detalle { background: #16a085; }
+    .btn-vender { background: #27ae60; }
+    .btn-embarcar { background: #8e44ad; }
+    .btn-regresar { background: #f39c12; }
+    .resumen {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+    .card-resumen {
+        background: #f5f7fa;
+        border-radius: 10px;
+        padding: 16px 24px;
+        text-align: center;
+        min-width: 130px;
+    }
+    .card-resumen .num { font-size: 28px; font-weight: bold; color: #2c3e50; }
+    .card-resumen .lbl { font-size: 12px; color: #666; margin-top: 4px; }
+</style>
+
+<div class="contenedor">
+    <h1>Producto Terminado</h1>
+
+    <div class="resumen">
+        <div class="card-resumen">
+            <div class="num">{{ productos.count }}</div>
+            <div class="lbl">Total</div>
+        </div>
+        <div class="card-resumen">
+            <div class="num" style="color:#2980b9">{{ productos|length }}</div>
+            <div class="lbl">Mostrando</div>
+        </div>
+    </div>
+
+    <form method="get" class="filtros">
+        <input type="text" name="q" placeholder="Buscar por N° PT..." value="{{ q }}">
+        <select name="estado">
+            <option value="">Todos los estados</option>
+            <option value="en_almacen" {% if estado_filtro == 'en_almacen' %}selected{% endif %}>En Almacén</option>
+            <option value="vendido" {% if estado_filtro == 'vendido' %}selected{% endif %}>Vendido</option>
+            <option value="embarcado" {% if estado_filtro == 'embarcado' %}selected{% endif %}>Embarcado</option>
+        </select>
+        <button type="submit">Filtrar</button>
+        <a href="{% url 'lista_pt' %}">Limpiar</a>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>N° PT</th>
+                <th>Proceso</th>
+                <th>Cliente</th>
+                <th>Peso (kg)</th>
+                <th>Paquetes</th>
+                <th>Estado</th>
+                <th>Ubicación</th>
+                <th>Fecha ingreso</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pt in productos %}
+            <tr>
+                <td><strong>{{ pt.numero_pt }}</strong></td>
+                <td>{{ pt.tipo_proceso|title }}</td>
+                <td>{{ pt.cliente|default:"-" }}</td>
+                <td>{{ pt.peso_kg }}</td>
+                <td>{{ pt.cantidad_paquetes|default:"-" }}</td>
+                <td>
+                    <span class="badge {{ pt.estado }}">{{ pt.get_estado_display }}</span>
+                </td>
+                <td>{{ pt.ubicacion }}</td>
+                <td>{{ pt.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <a class="btn btn-detalle" href="{% url 'detalle_pt' pt.id %}">Detalle</a>
+                    {% if es_admin_total or es_administrador or es_supervisor %}
+                        {% if pt.estado == 'en_almacen' %}
+                            <a class="btn btn-vender" href="{% url 'cambiar_estado_pt' pt.id 'vendido' %}">Vender</a>
+                            <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}">Embarcar</a>
+                        {% elif pt.estado == 'vendido' %}
+                            <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}">Embarcar</a>
+                            <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' pt.id 'en_almacen' %}">Regresar</a>
+                        {% elif pt.estado == 'embarcado' %}
+                            <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' pt.id 'en_almacen' %}">Regresar</a>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align:center; color:#999; padding:30px;">
+                    No hay productos terminados. Se generan automáticamente al finalizar una orden de producción.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

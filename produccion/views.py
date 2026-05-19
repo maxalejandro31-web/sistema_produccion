@@ -79,7 +79,8 @@ def cambiar_estado(request, orden_id, nuevo_estado):
         return HttpResponse("Estado no válido.")
 
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
-    OrdenProduccion.objects.filter(id=orden.id).update(estado=nuevo_estado)
+    orden.estado = nuevo_estado
+    orden.save()
 
     return redirect('lista_ordenes')
 

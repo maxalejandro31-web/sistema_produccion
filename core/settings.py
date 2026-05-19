@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "dashboard",
     "inventario",
     "produccion",
+    "materia_terminada",
 ]
 
 

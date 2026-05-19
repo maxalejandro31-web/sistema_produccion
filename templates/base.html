@@ -71,6 +71,10 @@
             <a href="{% url 'lista_ordenes' %}">Órdenes</a>
         {% endif %}
 
+        {% if es_admin_total or es_administrador or es_supervisor or es_almacen %}
+            <a href="{% url 'lista_pt' %}">Producto Terminado</a>
+        {% endif %}
+
         {% if es_admin_total %}
             <a href="/admin/">Admin</a>
         {% endif %}

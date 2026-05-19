@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle PT - {{ producto.numero_pt }}{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        background: white;
+        border-radius: 14px;
+        padding: 28px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        max-width: 900px;
+    }
+    h1 { margin-top: 0; }
+    .seccion {
+        margin-bottom: 28px;
+    }
+    .seccion h3 {
+        margin-bottom: 12px;
+        color: #2c3e50;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 6px;
+    }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+    }
+    .campo {
+        background: #f5f7fa;
+        border-radius: 10px;
+        padding: 12px 16px;
+    }
+    .campo .etiqueta {
+        font-size: 11px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .campo .valor {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    .badge {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: white;
+        display: inline-block;
+    }
+    .en_almacen { background: #2980b9; }
+    .vendido { background: #27ae60; }
+    .embarcado { background: #8e44ad; }
+    .acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+    .btn {
+        padding: 10px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: white;
+        font-size: 14px;
+    }
+    .btn-volver { background: #7f8c8d; }
+    .btn-vender { background: #27ae60; }
+    .btn-embarcar { background: #8e44ad; }
+    .btn-regresar { background: #f39c12; }
+</style>
+
+<div class="contenedor">
+    <h1>{{ producto.numero_pt }}</h1>
+    <p style="color:#666; margin-top:-10px;">Producto terminado · Orden: <strong>{{ producto.orden.folio_orden|default:producto.orden.id }}</strong></p>
+
+    <div class="seccion">
+        <h3>Datos del producto</h3>
+        <div class="grid">
+            <div class="campo">
+                <div class="etiqueta">Estado</div>
+                <div class="valor"><span class="badge {{ producto.estado }}">{{ producto.get_estado_display }}</span></div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Tipo de proceso</div>
+                <div class="valor">{{ producto.tipo_proceso|title }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Cliente</div>
+                <div class="valor">{{ producto.cliente|default:"—" }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Peso (kg)</div>
+                <div class="valor">{{ producto.peso_kg }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Paquetes</div>
+                <div class="valor">{{ producto.cantidad_paquetes|default:"—" }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Piezas</div>
+                <div class="valor">{{ producto.cantidad_piezas|default:"—" }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Ubicación</div>
+                <div class="valor">{{ producto.ubicacion }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Fecha de ingreso</div>
+                <div class="valor">{{ producto.fecha_ingreso|date:"d/m/Y H:i" }}</div>
+            </div>
+        </div>
+        {% if producto.observaciones %}
+        <div class="campo" style="margin-top:14px;">
+            <div class="etiqueta">Observaciones</div>
+            <div class="valor" style="font-size:14px; font-weight:normal;">{{ producto.observaciones }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="seccion">
+        <h3>Orden de producción de origen</h3>
+        <div class="grid">
+            <div class="campo">
+                <div class="etiqueta">Folio</div>
+                <div class="valor">{{ producto.orden.folio_orden|default:"—" }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Línea</div>
+                <div class="valor">{{ producto.orden.linea }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Operador</div>
+                <div class="valor">{{ producto.orden.operador|default:"—" }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Peso usado (kg)</div>
+                <div class="valor">{{ producto.orden.peso_usado|default:"—" }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Scrap</div>
+                <div class="valor">{{ producto.orden.scrap_total|default:"—" }}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Rendimiento</div>
+                <div class="valor">{{ producto.orden.rendimiento_porcentaje|default:"—" }}{% if producto.orden.rendimiento_porcentaje %}%{% endif %}</div>
+            </div>
+            <div class="campo">
+                <div class="etiqueta">Fecha de orden</div>
+                <div class="valor">{{ producto.orden.fecha }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="acciones">
+        <a class="btn btn-volver" href="{% url 'lista_pt' %}">Volver a lista</a>
+        {% if es_admin_total or es_administrador or es_supervisor %}
+            {% if producto.estado == 'en_almacen' %}
+                <a class="btn btn-vender" href="{% url 'cambiar_estado_pt' producto.id 'vendido' %}">Marcar como vendido</a>
+                <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' producto.id 'embarcado' %}">Marcar como embarcado</a>
+            {% elif producto.estado == 'vendido' %}
+                <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' producto.id 'embarcado' %}">Marcar como embarcado</a>
+                <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' producto.id 'en_almacen' %}">Regresar a almacén</a>
+            {% elif producto.estado == 'embarcado' %}
+                <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' producto.id 'en_almacen' %}">Regresar a almacén</a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

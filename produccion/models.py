@@ -89,20 +89,21 @@ class OrdenProduccion(models.Model):
         es_nueva = self.pk is None
 
         if es_nueva and self.mp and self.peso_usado:
-            if self.mp.peso_restante is not None:
-                if self.mp.peso_restante < self.peso_usado:
-                    raise ValueError("No hay suficiente peso disponible en la materia prima")
-
-                self.mp.peso_restante -= self.peso_usado
-
-                if self.mp.peso_restante == 0:
-                    self.mp.estado = "Terminado"
-                else:
-                    self.mp.estado = "En Proceso"
-
-                self.mp.save()
+            if self.mp.peso_restante is not None and self.mp.peso_restante < self.peso_usado:
+                raise ValueError("No hay suficiente peso disponible en la materia prima")
 
         super().save(*args, **kwargs)
+
+        if es_nueva and self.mp and self.peso_usado:
+            from inventario.models import MovimientoMP
+            MovimientoMP.objects.create(
+                mp=self.mp,
+                tipo_movimiento='CONSUMO',
+                peso=self.peso_usado,
+                ubicacion_origen=self.mp.ubicacion or '',
+                ubicacion_destino='Producción',
+                observaciones=f'Consumo por orden {self.folio_orden or self.pk}',
+            )
 
 
 class DetalleSlitter(models.Model):
