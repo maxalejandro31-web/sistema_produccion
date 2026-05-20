@@ -1,10 +1,27 @@
+import os
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponse
+from django.core.management import call_command
+from django.conf import settings
 from django.db.models import Sum
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
+
+
+@staff_member_required
+def cargar_datos_view(request):
+    if MateriaPrima.objects.exists():
+        return HttpResponse("Los datos ya existen. No se cargó nada.")
+    fixture = os.path.join(settings.BASE_DIR, 'fixtures', 'datos_produccion.json')
+    try:
+        call_command('loaddata', fixture, verbosity=0)
+        return HttpResponse("✅ Datos cargados correctamente. Ya puedes cerrar esta página.")
+    except Exception as e:
+        return HttpResponse(f"❌ Error: {e}")
 
 
 def login_view(request):
