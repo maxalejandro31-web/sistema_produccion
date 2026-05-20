@@ -1,1 +1,1 @@
-web: python manage.py migrate && gunicorn core.wsgi:application
+web: python manage.py migrate && python manage.py cargar_datos_iniciales && gunicorn core.wsgi:application
