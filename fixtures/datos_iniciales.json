@@ -1,0 +1,696 @@
+[
+  {
+    "model": "auth.group",
+    "fields": {
+      "name": "Administrador",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "fields": {
+      "name": "Supervisor",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "fields": {
+      "name": "Operador",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1200000$FW0AZPD1X6wEG0Zyjr1x9i$wKFWLNbL/D/zy1RUTa4hYHtEojMp6CRZYWJlGUTmV9M=",
+      "last_login": "2026-05-03T17:21:18.319Z",
+      "is_superuser": true,
+      "username": "admin",
+      "first_name": "",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-03-13T17:04:10Z",
+      "groups": [
+        [
+          "Administrador"
+        ]
+      ],
+      "user_permissions": [
+        [
+          "add_logentry",
+          "admin",
+          "logentry"
+        ],
+        [
+          "change_logentry",
+          "admin",
+          "logentry"
+        ],
+        [
+          "delete_logentry",
+          "admin",
+          "logentry"
+        ],
+        [
+          "view_logentry",
+          "admin",
+          "logentry"
+        ],
+        [
+          "add_group",
+          "auth",
+          "group"
+        ],
+        [
+          "change_group",
+          "auth",
+          "group"
+        ],
+        [
+          "delete_group",
+          "auth",
+          "group"
+        ],
+        [
+          "view_group",
+          "auth",
+          "group"
+        ],
+        [
+          "add_permission",
+          "auth",
+          "permission"
+        ],
+        [
+          "change_permission",
+          "auth",
+          "permission"
+        ],
+        [
+          "delete_permission",
+          "auth",
+          "permission"
+        ],
+        [
+          "view_permission",
+          "auth",
+          "permission"
+        ],
+        [
+          "add_user",
+          "auth",
+          "user"
+        ],
+        [
+          "change_user",
+          "auth",
+          "user"
+        ],
+        [
+          "delete_user",
+          "auth",
+          "user"
+        ],
+        [
+          "view_user",
+          "auth",
+          "user"
+        ],
+        [
+          "add_contenttype",
+          "contenttypes",
+          "contenttype"
+        ],
+        [
+          "change_contenttype",
+          "contenttypes",
+          "contenttype"
+        ],
+        [
+          "delete_contenttype",
+          "contenttypes",
+          "contenttype"
+        ],
+        [
+          "view_contenttype",
+          "contenttypes",
+          "contenttype"
+        ],
+        [
+          "add_cliente",
+          "inventario",
+          "cliente"
+        ],
+        [
+          "change_cliente",
+          "inventario",
+          "cliente"
+        ],
+        [
+          "delete_cliente",
+          "inventario",
+          "cliente"
+        ],
+        [
+          "view_cliente",
+          "inventario",
+          "cliente"
+        ],
+        [
+          "add_rollo",
+          "inventario",
+          "rollo"
+        ],
+        [
+          "change_rollo",
+          "inventario",
+          "rollo"
+        ],
+        [
+          "delete_rollo",
+          "inventario",
+          "rollo"
+        ],
+        [
+          "view_rollo",
+          "inventario",
+          "rollo"
+        ],
+        [
+          "add_lineaproduccion",
+          "produccion",
+          "lineaproduccion"
+        ],
+        [
+          "change_lineaproduccion",
+          "produccion",
+          "lineaproduccion"
+        ],
+        [
+          "delete_lineaproduccion",
+          "produccion",
+          "lineaproduccion"
+        ],
+        [
+          "view_lineaproduccion",
+          "produccion",
+          "lineaproduccion"
+        ],
+        [
+          "add_merma",
+          "produccion",
+          "merma"
+        ],
+        [
+          "change_merma",
+          "produccion",
+          "merma"
+        ],
+        [
+          "delete_merma",
+          "produccion",
+          "merma"
+        ],
+        [
+          "view_merma",
+          "produccion",
+          "merma"
+        ],
+        [
+          "add_ordenproduccion",
+          "produccion",
+          "ordenproduccion"
+        ],
+        [
+          "change_ordenproduccion",
+          "produccion",
+          "ordenproduccion"
+        ],
+        [
+          "delete_ordenproduccion",
+          "produccion",
+          "ordenproduccion"
+        ],
+        [
+          "view_ordenproduccion",
+          "produccion",
+          "ordenproduccion"
+        ],
+        [
+          "add_session",
+          "sessions",
+          "session"
+        ],
+        [
+          "change_session",
+          "sessions",
+          "session"
+        ],
+        [
+          "delete_session",
+          "sessions",
+          "session"
+        ],
+        [
+          "view_session",
+          "sessions",
+          "session"
+        ]
+      ]
+    }
+  },
+  {
+    "model": "auth.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1200000$DyJjCharSqQPBBCgpDT3CD$HekzdNL+vn53hPf8Yh1pPHWSWbvYRkbSS/mdex9K7jE=",
+      "last_login": "2026-03-20T17:43:55.416Z",
+      "is_superuser": true,
+      "username": "supervisor",
+      "first_name": "",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-03-20T17:11:29.902Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1200000$b8HXku9cUYUGRXGuAp0kn3$0+aev18whMRTwejdTpW1hfj2bukayyysRmPlsVHO8xs=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "Administrador",
+      "first_name": "Maximo",
+      "last_name": "Trejo",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-03-20T17:23:17Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1200000$EzLKEAkM4wcqBZpKpM2QOx$xPk2ZEwxlLYjm0zPhQeBRIeWmpQVmVdJYXSHq9F4ylE=",
+      "last_login": "2026-04-01T15:43:02.222Z",
+      "is_superuser": false,
+      "username": "pruebas1",
+      "first_name": "",
+      "last_name": "",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-04-01T15:29:06Z",
+      "groups": [
+        [
+          "Supervisor"
+        ],
+        [
+          "Operador"
+        ]
+      ],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "inventario.materiaprima",
+    "pk": 1,
+    "fields": {
+      "numero_mp": "IA-02082",
+      "tipo_mp": "Rollo",
+      "cliente": null,
+      "origen_mp": "Propia",
+      "lote": null,
+      "codigo": null,
+      "descripcion": null,
+      "material": "Galvanizado",
+      "grado": "G50",
+      "acabado": null,
+      "espesor_valor": "14.0000",
+      "unidad_espesor": "calibre",
+      "ancho": "59.29",
+      "largo": null,
+      "peso": "14740.00",
+      "peso_restante": "4740.00",
+      "diametro_interior": null,
+      "diametro_exterior": null,
+      "proveedor": "Maquilas JC",
+      "ubicacion": "Patio A",
+      "estado": "Disponible",
+      "fecha_entrada": "2026-03-26",
+      "observaciones": "Nivelar todo el rollo a 3200 mm.\r\nRealizar paquetes de 2 a 2.2 toneladas.\r\nRevisar que no venga oxidado ni con camber."
+    }
+  },
+  {
+    "model": "inventario.materiaprima",
+    "pk": 2,
+    "fields": {
+      "numero_mp": "87404-00",
+      "tipo_mp": "Rollo",
+      "cliente": null,
+      "origen_mp": "Propia",
+      "lote": null,
+      "codigo": "A12ROFI16X60",
+      "descripcion": "Rollo fría calibre 16 x 60",
+      "material": "Recocido RFR",
+      "grado": null,
+      "acabado": null,
+      "espesor_valor": "16.0000",
+      "unidad_espesor": "calibre",
+      "ancho": "58.13",
+      "largo": null,
+      "peso": "12046.00",
+      "peso_restante": "7046.00",
+      "diametro_interior": null,
+      "diametro_exterior": null,
+      "proveedor": null,
+      "ubicacion": "Patio A",
+      "estado": "Terminado",
+      "fecha_entrada": "2026-03-26",
+      "observaciones": ""
+    }
+  },
+  {
+    "model": "inventario.materiaprima",
+    "pk": 3,
+    "fields": {
+      "numero_mp": "87803-01",
+      "tipo_mp": "Cinta",
+      "cliente": null,
+      "origen_mp": "Propia",
+      "lote": null,
+      "codigo": "A12CINFI16",
+      "descripcion": "Cinta fría calibre 16",
+      "material": "Recocido RFR",
+      "grado": null,
+      "acabado": null,
+      "espesor_valor": "16.0000",
+      "unidad_espesor": "calibre",
+      "ancho": "27.50",
+      "largo": null,
+      "peso": "1972.00",
+      "peso_restante": "1972.00",
+      "diametro_interior": null,
+      "diametro_exterior": null,
+      "proveedor": null,
+      "ubicacion": "Patio A",
+      "estado": "Disponible",
+      "fecha_entrada": "2026-03-26",
+      "observaciones": ""
+    }
+  },
+  {
+    "model": "inventario.materiaprima",
+    "pk": 4,
+    "fields": {
+      "numero_mp": "RBM-3497",
+      "tipo_mp": "Rollo",
+      "cliente": null,
+      "origen_mp": "Propia",
+      "lote": null,
+      "codigo": null,
+      "descripcion": null,
+      "material": "Recocido RFR",
+      "grado": null,
+      "acabado": null,
+      "espesor_valor": "16.0000",
+      "unidad_espesor": "calibre",
+      "ancho": "36.00",
+      "largo": null,
+      "peso": "4650.00",
+      "peso_restante": "2150.00",
+      "diametro_interior": null,
+      "diametro_exterior": null,
+      "proveedor": "Steel Park",
+      "ubicacion": "Patio A",
+      "estado": "Terminado",
+      "fecha_entrada": "2026-03-26",
+      "observaciones": "Material libre de defectos.\r\nScrap permitido hasta 2%.\r\nEmpaque: Tarima / VCI blanco / ojo al cielo."
+    }
+  },
+  {
+    "model": "inventario.materiaprima",
+    "pk": 5,
+    "fields": {
+      "numero_mp": "900001LNCJC",
+      "tipo_mp": "Rollo",
+      "cliente": null,
+      "origen_mp": "Propia",
+      "lote": "M010013219",
+      "codigo": null,
+      "descripcion": "ROLLO LNC035 LINEA FLEJE",
+      "material": "Crudo",
+      "grado": null,
+      "acabado": "LAMINA NEGRA",
+      "espesor_valor": "0.0350",
+      "unidad_espesor": "pulg",
+      "ancho": "48.22",
+      "largo": null,
+      "peso": "20666.00",
+      "peso_restante": "116.00",
+      "diametro_interior": null,
+      "diametro_exterior": "20.00",
+      "proveedor": "GALVA CID",
+      "ubicacion": "Patio A",
+      "estado": "Disponible",
+      "fecha_entrada": "2026-04-01",
+      "observaciones": "UNA DIF DE PESO DE -116KG"
+    }
+  },
+  {
+    "model": "inventario.materiaprima",
+    "pk": 6,
+    "fields": {
+      "numero_mp": "900002LNCJC",
+      "tipo_mp": "Rollo",
+      "cliente": null,
+      "origen_mp": "Propia",
+      "lote": "M010013220",
+      "codigo": null,
+      "descripcion": "ROLLO LNC035 LINEA FLEJE",
+      "material": "Crudo",
+      "grado": null,
+      "acabado": "LAMINA NEGRA",
+      "espesor_valor": "0.0350",
+      "unidad_espesor": "pulg",
+      "ancho": "48.80",
+      "largo": null,
+      "peso": "20836.00",
+      "peso_restante": "20666.00",
+      "diametro_interior": "20.00",
+      "diametro_exterior": null,
+      "proveedor": "GALVA CID",
+      "ubicacion": "Almacén 1",
+      "estado": "Disponible",
+      "fecha_entrada": "2026-04-01",
+      "observaciones": "DIFERENVCIA DE PESO EN BASCULA DE 116KG"
+    }
+  },
+  {
+    "model": "produccion.lineaproduccion",
+    "pk": 1,
+    "fields": {
+      "nombre": "Slitter",
+      "descripcion": null,
+      "activa": true
+    }
+  },
+  {
+    "model": "produccion.lineaproduccion",
+    "pk": 2,
+    "fields": {
+      "nombre": "Baby Slitter",
+      "descripcion": null,
+      "activa": true
+    }
+  },
+  {
+    "model": "produccion.lineaproduccion",
+    "pk": 3,
+    "fields": {
+      "nombre": "Multiblanking",
+      "descripcion": null,
+      "activa": true
+    }
+  },
+  {
+    "model": "produccion.lineaproduccion",
+    "pk": 4,
+    "fields": {
+      "nombre": "Oscilado",
+      "descripcion": null,
+      "activa": true
+    }
+  },
+  {
+    "model": "produccion.lineaproduccion",
+    "pk": 5,
+    "fields": {
+      "nombre": "Fleje",
+      "descripcion": null,
+      "activa": true
+    }
+  },
+  {
+    "model": "produccion.lineaproduccion",
+    "pk": 6,
+    "fields": {
+      "nombre": "Corte Liso",
+      "descripcion": null,
+      "activa": true
+    }
+  },
+  {
+    "model": "produccion.ordenproduccion",
+    "pk": 1,
+    "fields": {
+      "folio_orden": null,
+      "tipo_proceso": "slitter",
+      "cliente": null,
+      "mp": null,
+      "linea": 6,
+      "operador": null,
+      "turno": null,
+      "prioridad": "media",
+      "fecha": null,
+      "hora_inicio": null,
+      "hora_fin": null,
+      "tiempo_preparacion_min": null,
+      "tiempo_proceso_min": null,
+      "tiempo_muerto_min": null,
+      "peso_usado": null,
+      "peso_producido": null,
+      "scrap_total": null,
+      "merma_kg": null,
+      "rendimiento_porcentaje": null,
+      "cantidad_paquetes": null,
+      "cantidad_piezas": null,
+      "observaciones": null,
+      "estado": "pendiente"
+    }
+  },
+  {
+    "model": "produccion.ordenproduccion",
+    "pk": 2,
+    "fields": {
+      "folio_orden": null,
+      "tipo_proceso": "slitter",
+      "cliente": null,
+      "mp": 1,
+      "linea": 1,
+      "operador": null,
+      "turno": null,
+      "prioridad": "media",
+      "fecha": null,
+      "hora_inicio": null,
+      "hora_fin": null,
+      "tiempo_preparacion_min": null,
+      "tiempo_proceso_min": null,
+      "tiempo_muerto_min": null,
+      "peso_usado": "10000.00",
+      "peso_producido": null,
+      "scrap_total": null,
+      "merma_kg": null,
+      "rendimiento_porcentaje": null,
+      "cantidad_paquetes": null,
+      "cantidad_piezas": null,
+      "observaciones": "",
+      "estado": "pendiente"
+    }
+  },
+  {
+    "model": "produccion.ordenproduccion",
+    "pk": 3,
+    "fields": {
+      "folio_orden": null,
+      "tipo_proceso": "slitter",
+      "cliente": null,
+      "mp": 2,
+      "linea": 2,
+      "operador": null,
+      "turno": null,
+      "prioridad": "media",
+      "fecha": null,
+      "hora_inicio": null,
+      "hora_fin": null,
+      "tiempo_preparacion_min": null,
+      "tiempo_proceso_min": null,
+      "tiempo_muerto_min": null,
+      "peso_usado": "5000.00",
+      "peso_producido": null,
+      "scrap_total": null,
+      "merma_kg": null,
+      "rendimiento_porcentaje": null,
+      "cantidad_paquetes": null,
+      "cantidad_piezas": null,
+      "observaciones": "",
+      "estado": "terminado"
+    }
+  },
+  {
+    "model": "produccion.ordenproduccion",
+    "pk": 4,
+    "fields": {
+      "folio_orden": null,
+      "tipo_proceso": "slitter",
+      "cliente": null,
+      "mp": 4,
+      "linea": 1,
+      "operador": null,
+      "turno": null,
+      "prioridad": "media",
+      "fecha": null,
+      "hora_inicio": null,
+      "hora_fin": null,
+      "tiempo_preparacion_min": null,
+      "tiempo_proceso_min": null,
+      "tiempo_muerto_min": null,
+      "peso_usado": "2500.00",
+      "peso_producido": null,
+      "scrap_total": null,
+      "merma_kg": null,
+      "rendimiento_porcentaje": null,
+      "cantidad_paquetes": null,
+      "cantidad_piezas": null,
+      "observaciones": "",
+      "estado": "terminado"
+    }
+  },
+  {
+    "model": "produccion.ordenproduccion",
+    "pk": 5,
+    "fields": {
+      "folio_orden": "JC01",
+      "tipo_proceso": "slitter",
+      "cliente": null,
+      "mp": 5,
+      "linea": 1,
+      "operador": null,
+      "turno": null,
+      "prioridad": "media",
+      "fecha": null,
+      "hora_inicio": null,
+      "hora_fin": null,
+      "tiempo_preparacion_min": null,
+      "tiempo_proceso_min": null,
+      "tiempo_muerto_min": null,
+      "peso_usado": "20550.00",
+      "peso_producido": null,
+      "scrap_total": null,
+      "merma_kg": null,
+      "rendimiento_porcentaje": null,
+      "cantidad_paquetes": null,
+      "cantidad_piezas": null,
+      "observaciones": "CORTAR TRES CINTAS 2 DE 16\" Y UNA DE 15.750\"",
+      "estado": "pendiente"
+    }
+  }
+]
