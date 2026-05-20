@@ -1,1 +1,1 @@
-web: python manage.py migrate && python manage.py shell -c "from django.contrib.auth.models import User; User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', '', 'Berenice28')" && gunicorn core.wsgi:application
+web: python manage.py migrate && python manage.py shell -c "from django.contrib.auth.models import User; u,_ = User.objects.get_or_create(username='admin'); u.set_password('Berenice28'); u.is_superuser=True; u.is_staff=True; u.is_active=True; u.save()" && gunicorn core.wsgi:application
