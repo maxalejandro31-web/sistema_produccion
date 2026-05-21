@@ -28,3 +28,6 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING("Fixture no encontrado"))
         else:
             self.stdout.write("Datos ya existentes, sin cambios.")
+
+        # Importar clientes siempre (get_or_create, no duplica)
+        call_command('importar_clientes')
