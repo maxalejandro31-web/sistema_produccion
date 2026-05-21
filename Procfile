@@ -1,1 +1,1 @@
-web: python manage.py migrate && python manage.py setup && gunicorn core.wsgi:application
+web: python manage.py migrate && python manage.py setup && python manage.py importar_clientes && gunicorn core.wsgi:application
