@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
+from django.core.paginator import Paginator
 
 from .models import OrdenProduccion
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet
@@ -63,12 +64,38 @@ def captura_orden(request):
 
 @roles_required('Administrador', 'Supervisor', 'Operador')
 def lista_ordenes(request):
-    ordenes = OrdenProduccion.objects.select_related(
+    estado       = request.GET.get('estado', '')
+    tipo_proceso = request.GET.get('tipo_proceso', '')
+    fecha_inicio = request.GET.get('fecha_inicio', '')
+    fecha_fin    = request.GET.get('fecha_fin', '')
+    q            = request.GET.get('q', '')
+
+    qs = OrdenProduccion.objects.select_related(
         'cliente', 'mp', 'linea', 'operador'
     ).order_by('-id')
 
+    if estado:
+        qs = qs.filter(estado=estado)
+    if tipo_proceso:
+        qs = qs.filter(tipo_proceso=tipo_proceso)
+    if fecha_inicio:
+        qs = qs.filter(fecha__gte=fecha_inicio)
+    if fecha_fin:
+        qs = qs.filter(fecha__lte=fecha_fin)
+    if q:
+        qs = qs.filter(folio_orden__icontains=q)
+
+    paginator = Paginator(qs, 25)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
+
     return render(request, 'produccion/lista_ordenes.html', {
-        'ordenes': ordenes
+        'ordenes': page_obj,
+        'page_obj': page_obj,
+        'estado': estado,
+        'tipo_proceso': tipo_proceso,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'q': q,
     })
 
 

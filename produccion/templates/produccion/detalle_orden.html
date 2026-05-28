@@ -47,13 +47,27 @@
         text-decoration: none;
         border-radius: 8px;
     }
+    .btn-imprimir {
+        background: #16a085;
+        cursor: pointer;
+    }
+    @media print {
+        .navbar, .footer, .acciones, .messages-wrap, .breadcrumbs { display: none !important; }
+        body { background: white; }
+        .contenido { padding: 0; }
+        .contenedor { box-shadow: none; border-radius: 0; }
+        .card { break-inside: avoid; }
+        table { page-break-inside: auto; }
+        tr { page-break-inside: avoid; }
+    }
 </style>
 
 <div class="contenedor">
     <h1>Detalle de Orden</h1>
 
     <div class="acciones">
-        <a href="{% url 'lista_ordenes' %}">Volver</a>
+        <a href="{% url 'lista_ordenes' %}">← Volver a órdenes</a>
+        <a href="javascript:window.print()" class="btn-imprimir">🖨️ Imprimir orden</a>
         <a href="{% url 'editar_orden' orden.id %}">Editar</a>
     </div>
 

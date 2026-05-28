@@ -1,0 +1,30 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="paginacion">
+    {% if page_obj.has_previous %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page=1">«</a>
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">‹</a>
+    {% else %}
+        <span class="disabled">«</span>
+        <span class="disabled">‹</span>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+            <span class="current-page">{{ num }}</span>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">›</a>
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">»</a>
+    {% else %}
+        <span class="disabled">›</span>
+        <span class="disabled">»</span>
+    {% endif %}
+</div>
+<p class="paginacion-info">
+    Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+</p>
+{% endif %}

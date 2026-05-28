@@ -98,12 +98,12 @@
 
     <div class="resumen">
         <div class="card-resumen">
-            <div class="num">{{ productos.count }}</div>
+            <div class="num">{{ total }}</div>
             <div class="lbl">Total</div>
         </div>
         <div class="card-resumen">
             <div class="num" style="color:#2980b9">{{ productos|length }}</div>
-            <div class="lbl">Mostrando</div>
+            <div class="lbl">En esta página</div>
         </div>
     </div>
 
@@ -163,12 +163,14 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" style="text-align:center; color:#999; padding:30px;">
-                    No hay productos terminados. Se generan automáticamente al finalizar una orden de producción.
+                <td colspan="9" style="text-align:center;color:#999;padding:30px;">
+                    No hay productos terminados.
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    {% include 'partials/paginacion.html' %}
 </div>
 {% endblock %}

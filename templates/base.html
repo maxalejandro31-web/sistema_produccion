@@ -2,59 +2,171 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Producción{% endblock %}</title>
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
             background: #f4f6f8;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
+
+        /* ── Navbar ── */
         .navbar {
             background: #1f2d3d;
             color: white;
-            padding: 14px 24px;
+            padding: 0 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            min-height: 56px;
+            flex-wrap: wrap;
+            gap: 8px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         }
         .navbar .logo {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
+            padding: 12px 0;
+            white-space: nowrap;
         }
         .navbar .links {
             display: flex;
-            gap: 10px;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: center;
+            padding: 8px 0;
         }
         .navbar a {
             color: white;
             text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 6px 11px;
+            border-radius: 7px;
+            font-size: 13px;
             background: rgba(255,255,255,0.08);
+            white-space: nowrap;
+            transition: background 0.15s;
         }
-        .navbar a:hover {
-            background: rgba(255,255,255,0.18);
-        }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .navbar a.active { background: rgba(255,255,255,0.22); font-weight: bold; }
+        .navbar a.logout { background: rgba(220,53,69,0.35); }
+        .navbar a.logout:hover { background: rgba(220,53,69,0.6); }
         .usuario {
-            font-size: 14px;
-            opacity: 0.9;
+            font-size: 13px;
+            opacity: 0.85;
+            padding: 6px 11px;
+            border-radius: 7px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
         }
+
+        /* ── Mensajes flash ── */
+        .messages-wrap {
+            padding: 10px 24px 0;
+        }
+        .msg {
+            padding: 11px 16px;
+            border-radius: 9px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn .25s ease;
+        }
+        .msg.success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .msg.error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .msg.warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .msg.info    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+        /* ── Breadcrumbs ── */
+        .breadcrumbs {
+            padding: 10px 24px 0;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .breadcrumbs a { color: #6b7280; text-decoration: none; }
+        .breadcrumbs a:hover { color: #1f2d3d; text-decoration: underline; }
+        .breadcrumbs .sep { color: #d1d5db; margin: 0 6px; }
+        .breadcrumbs .current { color: #374151; font-weight: 600; }
+
+        /* ── Contenido principal ── */
         .contenido {
             padding: 24px;
+            flex: 1;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            background: #1f2d3d;
+            color: rgba(255,255,255,0.55);
+            text-align: center;
+            padding: 14px 24px;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .footer a { color: rgba(255,255,255,0.55); text-decoration: none; }
+        .footer a:hover { color: white; }
+
+        /* ── Paginación compartida ── */
+        .paginacion {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .paginacion a, .paginacion span {
+            padding: 7px 13px;
+            border-radius: 7px;
+            font-size: 13px;
+            text-decoration: none;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            background: white;
+        }
+        .paginacion a:hover { background: #f3f4f6; }
+        .paginacion .current-page {
+            background: #1f2d3d;
+            color: white;
+            border-color: #1f2d3d;
+            font-weight: bold;
+        }
+        .paginacion .disabled { color: #9ca3af; cursor: default; }
+        .paginacion-info {
+            text-align: center;
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .contenido { padding: 14px; }
+            .navbar { padding: 0 14px; }
+            .messages-wrap, .breadcrumbs { padding-left: 14px; padding-right: 14px; }
         }
     </style>
 </head>
 <body>
 
 {% if request.user.is_authenticated %}
-<div class="navbar">
+<nav class="navbar">
     <div class="logo">Sistema Control de Producción</div>
-
     <div class="links">
-        <span class="usuario">{{ request.user.username }}</span>
-
+        <span class="usuario">👤 {{ request.user.username }}</span>
         <a href="{% url 'inicio' %}">Dashboard</a>
 
         {% if es_admin_total or es_administrador or es_supervisor or es_almacen %}
@@ -80,17 +192,40 @@
         {% endif %}
 
         {% if es_admin_total %}
-            <a href="/admin/">Admin</a>
+            <a href="{% url 'lista_usuarios' %}">Usuarios</a>
         {% endif %}
 
-        <a href="{% url 'logout' %}">Cerrar sesión</a>
+        <a href="{% url 'cambiar_password' %}">Mi contraseña</a>
+        <a href="{% url 'logout' %}" class="logout">Salir</a>
     </div>
+</nav>
+{% endif %}
+
+{% if messages %}
+<div class="messages-wrap">
+    {% for message in messages %}
+    <div class="msg {{ message.tags }}">
+        {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+        {{ message }}
+    </div>
+    {% endfor %}
 </div>
 {% endif %}
+
+{% block breadcrumbs %}{% endblock %}
 
 <div class="contenido">
     {% block content %}{% endblock %}
 </div>
 
+<footer class="footer">
+    <span>Sistema Control de Producción &copy; 2026</span>
+    <a href="{% url 'inicio' %}">Dashboard</a>
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'cambiar_password' %}">Mi contraseña</a>
+    {% endif %}
+</footer>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

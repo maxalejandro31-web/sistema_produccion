@@ -1,378 +1,279 @@
 {% extends 'base.html' %}
-
-{% block title %}Dashboard Ejecutivo{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
 <style>
-    .dashboard-container {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
+    .dash { display:flex; flex-direction:column; gap:22px; }
+
+    /* Alertas */
+    .alertas { display:flex; flex-direction:column; gap:10px; }
+    .alerta { display:flex; align-items:center; gap:12px; padding:13px 18px;
+              border-radius:10px; font-size:14px; font-weight:500; }
+    .alerta a { color:inherit; text-decoration:underline; }
+    .alerta-roja    { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+    .alerta-naranja { background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
+    .alerta-azul    { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; }
+
+    /* KPIs */
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .kpi { background:white; border-radius:14px; padding:20px 22px;
+           box-shadow:0 2px 10px rgba(0,0,0,0.07); border-left:5px solid #2c3e50;
+           transition:transform .15s, box-shadow .15s; }
+    .kpi:hover { transform:translateY(-2px); box-shadow:0 5px 16px rgba(0,0,0,0.11); }
+    .kpi-label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+    .kpi-value { font-size:32px; font-weight:bold; color:#1f2d3d; }
+    .kpi-sub   { font-size:12px; color:#9ca3af; margin-top:4px; }
+    .kpi-verde  { border-color:#27ae60; }
+    .kpi-azul   { border-color:#2980b9; }
+    .kpi-morado { border-color:#8e44ad; }
+    .kpi-rojo   { border-color:#c0392b; }
+
+    /* Paneles */
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+    .panel { background:white; border-radius:14px; padding:22px;
+             box-shadow:0 2px 10px rgba(0,0,0,0.07); }
+    .panel h2 { margin-top:0; margin-bottom:16px; font-size:17px; color:#1f2d3d;
+                padding-bottom:10px; border-bottom:1px solid #f0f0f0; }
+
+    /* Acciones rápidas */
+    .acciones-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .accion-btn { display:block; text-align:center; padding:13px; border-radius:10px;
+                  background:#f4f6f8; color:#1f2d3d; font-weight:bold; font-size:13px;
+                  text-decoration:none; border:1px solid #e1e5ea; transition:all .15s; }
+    .accion-btn:hover { background:#1f2d3d; color:white; border-color:#1f2d3d; }
+
+    /* Tablas internas */
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { padding:9px 10px; border-bottom:1px solid #f0f0f0; text-align:left; vertical-align:middle; }
+    th { color:#6b7280; font-size:11px; text-transform:uppercase; background:#f8f9fb; }
+    .badge { padding:4px 9px; border-radius:8px; font-size:11px; color:white; display:inline-block; }
+    .badge.pendiente  { background:#f39c12; }
+    .badge.proceso    { background:#2980b9; }
+    .badge.terminado  { background:#27ae60; }
+
+    /* Chart container */
+    .chart-wrap { position:relative; height:200px; }
+
+    @media (max-width:1100px) {
+        .kpi-grid { grid-template-columns:repeat(2,1fr); }
+        .grid3    { grid-template-columns:1fr 1fr; }
     }
-
-    .dashboard-header {
-        background: linear-gradient(135deg, #1f2d3d, #34495e);
-        color: white;
-        padding: 28px;
-        border-radius: 16px;
-        box-shadow: 0 4px 18px rgba(0,0,0,0.12);
-    }
-
-    .dashboard-header h1 {
-        margin: 0 0 8px 0;
-        font-size: 30px;
-    }
-
-    .dashboard-header p {
-        margin: 0;
-        opacity: 0.9;
-        font-size: 15px;
-    }
-
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
-    }
-
-    .kpi-card {
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 3px 14px rgba(0,0,0,0.08);
-        border-left: 6px solid #2c3e50;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-    }
-
-    .kpi-label {
-        font-size: 13px;
-        color: #666;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .kpi-value {
-        font-size: 30px;
-        font-weight: bold;
-        color: #1f2d3d;
-    }
-
-    .section-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    .panel {
-        background: white;
-        border-radius: 16px;
-        padding: 22px;
-        box-shadow: 0 3px 14px rgba(0,0,0,0.08);
-    }
-
-    .panel h2 {
-        margin-top: 0;
-        margin-bottom: 18px;
-        font-size: 20px;
-        color: #1f2d3d;
-    }
-
-    .estado-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
-    }
-
-    .estado-card {
-        border-radius: 12px;
-        padding: 16px;
-        color: white;
-        font-weight: bold;
-    }
-
-    .estado-card .titulo {
-        font-size: 13px;
-        opacity: 0.9;
-        margin-bottom: 6px;
-    }
-
-    .estado-card .valor {
-        font-size: 28px;
-    }
-
-    .disponible { background: #27ae60; }
-    .enproceso { background: #2980b9; }
-    .terminada { background: #7f8c8d; }
-    .pendiente { background: #f39c12; }
-    .consumo { background: #8e44ad; }
-    .produccion { background: #16a085; }
-    .scrap { background: #c0392b; }
-
-    .acciones-rapidas {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
-
-    .accion-btn {
-        display: block;
-        text-decoration: none;
-        text-align: center;
-        padding: 14px;
-        border-radius: 12px;
-        background: #f4f6f8;
-        color: #1f2d3d;
-        font-weight: bold;
-        border: 1px solid #e1e5ea;
-        transition: all 0.15s ease;
-    }
-
-    .accion-btn:hover {
-        background: #2c3e50;
-        color: white;
-        border-color: #2c3e50;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-        margin-top: 10px;
-    }
-
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #eaeaea;
-        text-align: left;
-        vertical-align: top;
-    }
-
-    th {
-        color: #555;
-        font-size: 13px;
-        text-transform: uppercase;
-        background: #f8f9fb;
-    }
-
-    .badge {
-        padding: 5px 10px;
-        border-radius: 8px;
-        font-size: 12px;
-        color: white;
-        display: inline-block;
-    }
-
-    .badge.pendiente { background: #f39c12; }
-    .badge.proceso { background: #2980b9; }
-    .badge.terminado { background: #27ae60; }
-
-    @media (max-width: 1100px) {
-        .kpi-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .section-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 700px) {
-        .kpi-grid,
-        .estado-grid,
-        .acciones-rapidas {
-            grid-template-columns: 1fr;
-        }
+    @media (max-width:700px) {
+        .kpi-grid,.grid2,.grid3,.acciones-grid { grid-template-columns:1fr; }
     }
 </style>
 
-<div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>Dashboard Ejecutivo de Producción</h1>
-        <p>Resumen general de materia prima, órdenes, consumo, producción y scrap.</p>
+<div class="dash">
+
+    <!-- Cabecera -->
+    <div style="background:linear-gradient(135deg,#1f2d3d,#2c4a6e);color:white;
+                padding:26px 28px;border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,0.15);">
+        <h1 style="margin:0 0 6px;font-size:26px;">Dashboard de Producción</h1>
+        <p style="margin:0;opacity:.85;font-size:14px;">
+            Resumen general · Materia prima, órdenes, producción y alertas activas
+        </p>
     </div>
 
+    <!-- Alertas -->
+    {% if mp_cobro_activo or mp_por_vencer or ordenes_urgentes %}
+    <div class="alertas">
+        {% if mp_cobro_activo %}
+        <div class="alerta alerta-roja">
+            🔴 <strong>{{ mp_cobro_activo }} materia{{ mp_cobro_activo|pluralize:"","s" }} prima con cobro por estancia activo</strong>
+            — superaron los 30 días de estadía gratuita.
+            <a href="{% url 'lista_mp' %}">Ver MP</a>
+        </div>
+        {% endif %}
+        {% if mp_por_vencer %}
+        <div class="alerta alerta-naranja">
+            ⚠️ <strong>{{ mp_por_vencer }} materia{{ mp_por_vencer|pluralize:"","s" }} prima por vencer</strong>
+            — quedan 7 días o menos para que inicie el cobro.
+            <a href="{% url 'lista_mp' %}">Ver MP</a>
+        </div>
+        {% endif %}
+        {% if ordenes_urgentes %}
+        <div class="alerta alerta-azul">
+            🚨 <strong>{{ ordenes_urgentes }} orden{{ ordenes_urgentes|pluralize:"","es" }} urgente{{ ordenes_urgentes|pluralize:"","s" }} pendiente{{ ordenes_urgentes|pluralize:"","s" }}</strong>
+            — requieren atención inmediata.
+            <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- KPIs -->
     <div class="kpi-grid">
-        <div class="kpi-card">
-            <div class="kpi-label">Total Materia Prima</div>
+        <div class="kpi kpi-verde">
+            <div class="kpi-label">Materia Prima</div>
             <div class="kpi-value">{{ total_mp }}</div>
+            <div class="kpi-sub">{{ mp_disponible }} disponible · {{ mp_proceso }} en proceso</div>
         </div>
-
-        <div class="kpi-card">
-            <div class="kpi-label">Total Órdenes</div>
+        <div class="kpi kpi-azul">
+            <div class="kpi-label">Órdenes de Producción</div>
             <div class="kpi-value">{{ total_ordenes }}</div>
+            <div class="kpi-sub">{{ ordenes_pendientes }} pendientes · {{ ordenes_proceso }} en proceso</div>
         </div>
-
-        <div class="kpi-card">
-            <div class="kpi-label">Peso Consumido</div>
-            <div class="kpi-value">{{ peso_consumido }}</div>
+        <div class="kpi kpi-morado">
+            <div class="kpi-label">Peso Producido</div>
+            <div class="kpi-value">{{ peso_producido }}</div>
+            <div class="kpi-sub">kg totales producidos</div>
         </div>
-
-        <div class="kpi-card">
+        <div class="kpi kpi-rojo">
             <div class="kpi-label">Scrap Total</div>
             <div class="kpi-value">{{ scrap_total }}</div>
+            <div class="kpi-sub">kg de desperdicio acumulado</div>
         </div>
     </div>
 
-    <div class="section-grid">
+    <!-- Gráficas -->
+    <div class="grid3">
         <div class="panel">
-            <h2>Estado de Materia Prima</h2>
-            <div class="estado-grid">
-                <div class="estado-card disponible">
-                    <div class="titulo">Disponible</div>
-                    <div class="valor">{{ mp_disponible }}</div>
-                </div>
-
-                <div class="estado-card enproceso">
-                    <div class="titulo">En Proceso</div>
-                    <div class="valor">{{ mp_proceso }}</div>
-                </div>
-
-                <div class="estado-card terminada">
-                    <div class="titulo">Terminada</div>
-                    <div class="valor">{{ mp_terminada }}</div>
-                </div>
-
-                <div class="estado-card pendiente">
-                    <div class="titulo">Total Registrada</div>
-                    <div class="valor">{{ total_mp }}</div>
-                </div>
+            <h2>Estado Materia Prima</h2>
+            <div class="chart-wrap">
+                <canvas id="chartMP"></canvas>
             </div>
         </div>
-
         <div class="panel">
-            <h2>Estado de Órdenes</h2>
-            <div class="estado-grid">
-                <div class="estado-card pendiente">
-                    <div class="titulo">Pendientes</div>
-                    <div class="valor">{{ ordenes_pendientes }}</div>
-                </div>
-
-                <div class="estado-card enproceso">
-                    <div class="titulo">En Proceso</div>
-                    <div class="valor">{{ ordenes_proceso }}</div>
-                </div>
-
-                <div class="estado-card disponible">
-                    <div class="titulo">Terminadas</div>
-                    <div class="valor">{{ ordenes_terminadas }}</div>
-                </div>
-
-                <div class="estado-card terminada">
-                    <div class="titulo">Total Órdenes</div>
-                    <div class="valor">{{ total_ordenes }}</div>
-                </div>
+            <h2>Estado Órdenes</h2>
+            <div class="chart-wrap">
+                <canvas id="chartOrdenes"></canvas>
+            </div>
+        </div>
+        <div class="panel">
+            <h2>Órdenes por Proceso</h2>
+            <div class="chart-wrap">
+                <canvas id="chartProceso"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="section-grid">
-        <div class="panel">
-            <h2>Producción y Consumo</h2>
-            <div class="estado-grid">
-                <div class="estado-card consumo">
-                    <div class="titulo">Peso Consumido</div>
-                    <div class="valor">{{ peso_consumido }}</div>
-                </div>
-
-                <div class="estado-card produccion">
-                    <div class="titulo">Peso Producido</div>
-                    <div class="valor">{{ peso_producido }}</div>
-                </div>
-
-                <div class="estado-card scrap">
-                    <div class="titulo">Scrap Total</div>
-                    <div class="valor">{{ scrap_total }}</div>
-                </div>
-
-                <div class="estado-card enproceso">
-                    <div class="titulo">Órdenes en Proceso</div>
-                    <div class="valor">{{ ordenes_proceso }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>Acciones Rápidas</h2>
-            <div class="acciones-rapidas">
-                <a class="accion-btn" href="/captura-mp/">Capturar MP</a>
-                <a class="accion-btn" href="/lista-mp/">Ver Materia Prima</a>
-                <a class="accion-btn" href="/captura/">Capturar Orden</a>
-                <a class="accion-btn" href="/ordenes/">Ver Órdenes</a>
-            </div>
+    <!-- Gráfica de línea (semana) -->
+    <div class="panel">
+        <h2>Órdenes registradas — últimos 7 días</h2>
+        <div style="height:180px;">
+            <canvas id="chartSemana"></canvas>
         </div>
     </div>
 
-    <div class="section-grid">
+    <!-- Tablas + acciones -->
+    <div class="grid2">
         <div class="panel">
             <h2>Últimas Órdenes</h2>
             <table>
                 <thead>
-                    <tr>
-                        <th>Folio</th>
-                        <th>Proceso</th>
-                        <th>Cliente</th>
-                        <th>Línea</th>
-                        <th>Estado</th>
-                    </tr>
+                    <tr><th>Folio</th><th>Proceso</th><th>Cliente</th><th>Estado</th></tr>
                 </thead>
                 <tbody>
-                    {% for orden in ultimas_ordenes %}
+                    {% for o in ultimas_ordenes %}
                     <tr>
-                        <td>{{ orden.folio_orden|default:"Sin folio" }}</td>
-                        <td>{{ orden.get_tipo_proceso_display }}</td>
-                        <td>{{ orden.cliente|default:"-" }}</td>
-                        <td>{{ orden.linea }}</td>
+                        <td><a href="{% url 'detalle_orden' o.id %}" style="color:#1f2d3d;font-weight:600;">
+                            {{ o.folio_orden|default:"Sin folio" }}</a></td>
+                        <td>{{ o.get_tipo_proceso_display }}</td>
+                        <td>{{ o.cliente|default:"-" }}</td>
                         <td>
-                            {% if orden.estado == 'pendiente' %}
-                                <span class="badge pendiente">Pendiente</span>
-                            {% elif orden.estado == 'proceso' %}
-                                <span class="badge proceso">En Proceso</span>
-                            {% elif orden.estado == 'terminado' %}
-                                <span class="badge terminado">Terminado</span>
-                            {% endif %}
+                            <span class="badge {{ o.estado }}">
+                                {% if o.estado == 'pendiente' %}Pendiente
+                                {% elif o.estado == 'proceso' %}En Proceso
+                                {% else %}Terminado{% endif %}
+                            </span>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="5">No hay órdenes registradas.</td>
-                    </tr>
+                    <tr><td colspan="4" style="color:#9ca3af;text-align:center;padding:20px;">Sin órdenes.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
         <div class="panel">
-            <h2>MP Crítica</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>MP</th>
-                        <th>Cliente</th>
-                        <th>Peso restante</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for mp in mp_critica %}
-                    <tr>
-                        <td>{{ mp.numero_mp }}</td>
-                        <td>{{ mp.cliente|default:"-" }}</td>
-                        <td>{{ mp.peso_restante }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3">No hay materia prima registrada.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <h2>Acciones Rápidas</h2>
+            <div class="acciones-grid">
+                <a class="accion-btn" href="{% url 'captura_mp' %}">📦 Capturar MP</a>
+                <a class="accion-btn" href="{% url 'lista_mp' %}">📋 Ver Materia Prima</a>
+                <a class="accion-btn" href="{% url 'captura_orden' %}">⚙️ Capturar Orden</a>
+                <a class="accion-btn" href="{% url 'lista_ordenes' %}">📄 Ver Órdenes</a>
+                <a class="accion-btn" href="{% url 'lista_pt' %}">🏭 Producto Terminado</a>
+                <a class="accion-btn" href="{% url 'reportes_index' %}">📊 Generar Reporte</a>
+            </div>
+
+            <div style="margin-top:20px;">
+                <h2 style="font-size:15px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">
+                    MP Crítica (menor peso)
+                </h2>
+                <table>
+                    <thead><tr><th>N° MP</th><th>Cliente</th><th>Peso restante</th></tr></thead>
+                    <tbody>
+                        {% for mp in mp_critica %}
+                        <tr>
+                            <td><a href="{% url 'detalle_mp' mp.id %}" style="color:#1f2d3d;">{{ mp.numero_mp }}</a></td>
+                            <td>{{ mp.cliente|default:"-" }}</td>
+                            <td><strong>{{ mp.peso_restante }} kg</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" style="color:#9ca3af;text-align:center;padding:12px;">Sin registros.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const mpData       = {{ mp_chart|safe }};
+const ordenesData  = {{ ordenes_estado_chart|safe }};
+const procesoData  = {{ ordenes_proceso_chart|safe }};
+const semanaData   = {{ ordenes_semana_chart|safe }};
+
+const donutOpts = (data) => ({
+    type: 'doughnut',
+    data: {
+        labels: data.labels,
+        datasets: [{ data: data.data, backgroundColor: data.colors, borderWidth: 2 }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } } }
+    }
+});
+
+new Chart(document.getElementById('chartMP'),      donutOpts(mpData));
+new Chart(document.getElementById('chartOrdenes'), donutOpts(ordenesData));
+
+new Chart(document.getElementById('chartProceso'), {
+    type: 'bar',
+    data: {
+        labels: procesoData.labels,
+        datasets: [{ label: 'Órdenes', data: procesoData.data,
+                     backgroundColor: ['#2980b9','#27ae60','#f39c12','#8e44ad'], borderRadius: 6 }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+
+new Chart(document.getElementById('chartSemana'), {
+    type: 'line',
+    data: {
+        labels: semanaData.labels,
+        datasets: [{
+            label: 'Órdenes', data: semanaData.data,
+            borderColor: '#2980b9', backgroundColor: 'rgba(41,128,185,0.1)',
+            tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#2980b9'
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+</script>
 {% endblock %}

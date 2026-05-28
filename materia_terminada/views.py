@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from core.decorators import roles_required
 from .models import ProductoTerminado
 
@@ -8,17 +9,23 @@ from .models import ProductoTerminado
 @login_required
 def lista_pt(request):
     estado = request.GET.get('estado', '')
-    q = request.GET.get('q', '')
+    q      = request.GET.get('q', '')
 
-    productos = ProductoTerminado.objects.select_related('cliente', 'orden')
+    qs = ProductoTerminado.objects.select_related('cliente', 'orden').order_by('-fecha_ingreso')
 
     if estado:
-        productos = productos.filter(estado=estado)
+        qs = qs.filter(estado=estado)
     if q:
-        productos = productos.filter(numero_pt__icontains=q)
+        qs = qs.filter(numero_pt__icontains=q)
+
+    total = qs.count()
+    paginator = Paginator(qs, 25)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
 
     return render(request, 'materia_terminada/lista_pt.html', {
-        'productos': productos,
+        'productos': page_obj,
+        'page_obj': page_obj,
+        'total': total,
         'estado_filtro': estado,
         'q': q,
     })

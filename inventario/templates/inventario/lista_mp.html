@@ -148,8 +148,11 @@
             <option value="Terminado" {% if estado == 'Terminado' %}selected{% endif %}>Terminado</option>
         </select>
 
+        <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" title="Fecha entrada desde">
+        <input type="date" name="fecha_fin"    value="{{ fecha_fin }}"    title="Fecha entrada hasta">
+
         <button type="submit">Filtrar</button>
-        <a href="/lista-mp/">Limpiar</a>
+        <a href="{% url 'lista_mp' %}">Limpiar</a>
     </form>
 
     <table>
@@ -235,5 +238,7 @@
             {% endfor %}
         </tbody>
     </table>
+
+    {% include 'partials/paginacion.html' %}
 </div>
 {% endblock %}

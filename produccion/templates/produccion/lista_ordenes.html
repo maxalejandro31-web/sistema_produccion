@@ -74,6 +74,34 @@
         <a href="{% url 'captura_orden' %}">+ Nueva orden</a>
     </div>
 
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+        <input type="text" name="q" placeholder="Buscar folio…" value="{{ q }}"
+               style="padding:8px 12px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
+
+        <select name="estado" style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
+            <option value="">Todos los estados</option>
+            <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+            <option value="proceso"   {% if estado == 'proceso'   %}selected{% endif %}>En Proceso</option>
+            <option value="terminado" {% if estado == 'terminado' %}selected{% endif %}>Terminado</option>
+        </select>
+
+        <select name="tipo_proceso" style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
+            <option value="">Todos los procesos</option>
+            <option value="slitter"     {% if tipo_proceso == 'slitter'     %}selected{% endif %}>Slitter</option>
+            <option value="corte_liso"  {% if tipo_proceso == 'corte_liso'  %}selected{% endif %}>Corte Liso</option>
+            <option value="mini_slitter"{% if tipo_proceso == 'mini_slitter'%}selected{% endif %}>Mini Slitter</option>
+            <option value="fleje"       {% if tipo_proceso == 'fleje'       %}selected{% endif %}>Fleje</option>
+        </select>
+
+        <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" title="Desde"
+               style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
+        <input type="date" name="fecha_fin"    value="{{ fecha_fin }}"    title="Hasta"
+               style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
+
+        <button type="submit" style="padding:8px 16px;background:#2c3e50;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Filtrar</button>
+        <a href="{% url 'lista_ordenes' %}" style="padding:8px 14px;background:#7f8c8d;color:white;border-radius:8px;text-decoration:none;font-size:13px;">Limpiar</a>
+    </form>
+
     <table>
         <thead>
             <tr>
@@ -131,10 +159,12 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="13">No hay órdenes registradas.</td>
+                <td colspan="13" style="text-align:center;color:#9ca3af;padding:30px;">No hay órdenes registradas.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    {% include 'partials/paginacion.html' %}
 </div>
 {% endblock %}

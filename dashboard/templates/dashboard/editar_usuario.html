@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block title %}Editar Usuario — {{ usuario.username }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Dashboard</a><span class="sep">›</span>
+    <a href="{% url 'lista_usuarios' %}">Usuarios</a><span class="sep">›</span>
+    <span class="current">{{ usuario.username }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:860px; margin:20px auto; }
+    .card { background:white; border-radius:14px; padding:28px; box-shadow:0 3px 14px rgba(0,0,0,0.08); }
+    .card h2 { margin-top:0; font-size:17px; color:#1f2d3d; margin-bottom:20px;
+               padding-bottom:12px; border-bottom:1px solid #e5e7eb; }
+    label { display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:5px; }
+    input[type=password], select {
+        width:100%; padding:9px 12px; border:1px solid #d1d5db;
+        border-radius:8px; font-size:14px; box-sizing:border-box; margin-bottom:14px; background:white;
+    }
+    input:focus, select:focus { outline:none; border-color:#1f2d3d; }
+    .check-row { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .check-row input { width:auto; margin:0; }
+    .btn { width:100%; padding:11px; border:none; border-radius:9px; font-size:14px;
+           font-weight:bold; cursor:pointer; color:white; }
+    .btn-primary { background:#1f2d3d; }
+    .btn-primary:hover { background:#2c3e50; }
+    .btn-danger  { background:#dc2626; }
+    .btn-danger:hover  { background:#b91c1c; }
+    .btn-success { background:#16a34a; }
+    .btn-success:hover { background:#15803d; }
+    .hint { font-size:12px; color:#9ca3af; margin-top:-10px; margin-bottom:14px; }
+    .error-msg { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;
+                 border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px; }
+    .info-row { display:flex; justify-content:space-between; font-size:13px;
+                padding:8px 0; border-bottom:1px solid #f3f4f6; }
+    .info-row .lbl { color:#6b7280; }
+    .info-row .val { font-weight:600; color:#1f2d3d; }
+    .badge-activo   { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:20px; font-size:12px; }
+    .badge-inactivo { background:#fee2e2; color:#991b1b; padding:3px 10px; border-radius:20px; font-size:12px; }
+    @media(max-width:700px){ .grid2{ grid-template-columns:1fr; } }
+</style>
+
+<div style="max-width:860px;margin:20px auto;">
+    <h1 style="margin:0 0 20px;font-size:22px;color:#1f2d3d;">
+        Editar usuario: <strong>{{ usuario.username }}</strong>
+    </h1>
+
+    {% if error %}<div class="error-msg">❌ {{ error }}</div>{% endif %}
+
+    <div class="grid2">
+
+        <!-- Info del usuario -->
+        <div class="card">
+            <h2>📋 Información</h2>
+            <div class="info-row"><span class="lbl">Usuario</span><span class="val">{{ usuario.username }}</span></div>
+            <div class="info-row">
+                <span class="lbl">Estado</span>
+                <span class="val">
+                    {% if usuario.is_active %}
+                        <span class="badge-activo">Activo</span>
+                    {% else %}
+                        <span class="badge-inactivo">Inactivo</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="lbl">Rol actual</span>
+                <span class="val">
+                    {% if usuario.is_superuser %}Admin Total
+                    {% elif grupo_actual %}{{ grupo_actual.name }}
+                    {% else %}Sin rol{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="lbl">Último acceso</span>
+                <span class="val">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Nunca" }}</span>
+            </div>
+
+            {% if usuario != request.user %}
+            <form method="POST" style="margin-top:20px;">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="toggle_activo">
+                {% if usuario.is_active %}
+                    <button type="submit" class="btn btn-danger">Desactivar usuario</button>
+                {% else %}
+                    <button type="submit" class="btn btn-success">Activar usuario</button>
+                {% endif %}
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Cambiar rol -->
+        <div class="card">
+            <h2>🎭 Cambiar rol</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="cambiar_rol">
+
+                <label>Grupo</label>
+                <select name="grupo">
+                    <option value="">— Sin grupo —</option>
+                    {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupo_actual and grupo_actual.id == g.id %}selected{% endif %}>
+                        {{ g.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <div class="check-row">
+                    <input type="checkbox" name="es_admin" id="es_admin" value="1"
+                           {% if usuario.is_superuser %}checked{% endif %}>
+                    <label for="es_admin">Admin Total</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Guardar rol</button>
+            </form>
+        </div>
+
+        <!-- Cambiar contraseña -->
+        <div class="card">
+            <h2>🔑 Cambiar contraseña</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="cambiar_password">
+
+                <label>Nueva contraseña</label>
+                <input type="password" name="nueva_password" required>
+                <p class="hint">Mínimo 6 caracteres.</p>
+
+                <label>Confirmar contraseña</label>
+                <input type="password" name="confirmar_password" required>
+
+                <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+            </form>
+        </div>
+
+    </div>
+
+    <div style="margin-top:10px;">
+        <a href="{% url 'lista_usuarios' %}" style="color:#6b7280;font-size:14px;text-decoration:none;">
+            ← Volver a usuarios
+        </a>
+    </div>
+</div>
+{% endblock %}

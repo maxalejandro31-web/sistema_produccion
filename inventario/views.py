@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Sum
 
 from .forms import MateriaPrimaForm, ClienteForm
@@ -29,26 +30,36 @@ def captura_mp(request):
 
 @login_required
 def lista_mp(request):
-    busqueda = request.GET.get('q', '')
-    tipo = request.GET.get('tipo', '')
-    estado = request.GET.get('estado', '')
+    busqueda      = request.GET.get('q', '')
+    tipo          = request.GET.get('tipo', '')
+    estado        = request.GET.get('estado', '')
+    fecha_inicio  = request.GET.get('fecha_inicio', '')
+    fecha_fin     = request.GET.get('fecha_fin', '')
 
-    materias_primas = MateriaPrima.objects.all().order_by('-id')
+    qs = MateriaPrima.objects.select_related('cliente').order_by('-id')
 
     if busqueda:
-        materias_primas = materias_primas.filter(numero_mp__icontains=busqueda)
-
+        qs = qs.filter(numero_mp__icontains=busqueda)
     if tipo:
-        materias_primas = materias_primas.filter(tipo_mp=tipo)
-
+        qs = qs.filter(tipo_mp=tipo)
     if estado:
-        materias_primas = materias_primas.filter(estado=estado)
+        qs = qs.filter(estado=estado)
+    if fecha_inicio:
+        qs = qs.filter(fecha_entrada__gte=fecha_inicio)
+    if fecha_fin:
+        qs = qs.filter(fecha_entrada__lte=fecha_fin)
+
+    paginator = Paginator(qs, 25)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
 
     return render(request, 'inventario/lista_mp.html', {
-        'materias_primas': materias_primas,
+        'materias_primas': page_obj,
+        'page_obj': page_obj,
         'busqueda': busqueda,
         'tipo': tipo,
         'estado': estado,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
     })
 
 
@@ -120,13 +131,16 @@ def lista_clientes(request):
         return HttpResponse("No tienes permiso para ver clientes.")
 
     busqueda = request.GET.get('q', '')
-    clientes = Cliente.objects.all().order_by('nombre')
-
+    qs = Cliente.objects.all().order_by('nombre')
     if busqueda:
-        clientes = clientes.filter(nombre__icontains=busqueda)
+        qs = qs.filter(nombre__icontains=busqueda)
+
+    paginator = Paginator(qs, 25)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
 
     return render(request, 'inventario/lista_clientes.html', {
-        'clientes': clientes,
+        'clientes': page_obj,
+        'page_obj': page_obj,
         'busqueda': busqueda,
     })
 
