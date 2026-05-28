@@ -1,4 +1,6 @@
 def permisos_usuario(request):
+    from dashboard.models import ConfiguracionEmpresa
+
     if not request.user.is_authenticated:
         return {
             'es_admin_total': False,
@@ -6,6 +8,7 @@ def permisos_usuario(request):
             'es_supervisor': False,
             'es_almacen': False,
             'es_operador': False,
+            'config_empresa': ConfiguracionEmpresa.get(),
         }
 
     es_superuser = request.user.is_superuser
@@ -17,4 +20,5 @@ def permisos_usuario(request):
         'es_supervisor': 'Supervisor' in grupos,
         'es_almacen': 'Almacen' in grupos,
         'es_operador': 'Operador' in grupos,
+        'config_empresa': ConfiguracionEmpresa.get(),
     }

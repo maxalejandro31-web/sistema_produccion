@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}Configuración de Empresa{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <span class="current">Configuración de Empresa</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .card-config {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 14px;
+        padding: 32px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 { margin-top: 0; margin-bottom: 6px; font-size: 22px; color: #1f2d3d; }
+    .subtitulo { color: #6b7280; font-size: 13px; margin-bottom: 28px; }
+    .campo { margin-bottom: 20px; }
+    .campo label { display: block; font-weight: 600; margin-bottom: 6px; color: #374151; font-size: 14px; }
+    .campo small { display: block; color: #9ca3af; font-size: 12px; margin-top: 4px; }
+    .logo-actual {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: #f8f9fb;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 20px;
+    }
+    .logo-actual img { max-height: 60px; max-width: 200px; border-radius: 6px; }
+    .logo-actual span { font-size: 13px; color: #6b7280; }
+    .preview-nombre {
+        background: #1f2d3d;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-size: 17px;
+        font-weight: bold;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .preview-nombre img { height: 28px; border-radius: 4px; }
+    .preview-nombre small { font-size: 12px; font-weight: normal; opacity: 0.75; display: block; }
+    .acciones { margin-top: 28px; display: flex; gap: 12px; }
+    .btn-guardar {
+        background: #2c3e50; color: white; border: none;
+        padding: 11px 22px; border-radius: 8px; font-size: 14px;
+        cursor: pointer; font-weight: 600;
+    }
+    .btn-guardar:hover { background: #1a252f; }
+    .btn-cancelar {
+        background: #f1f5f9; color: #374151; text-decoration: none;
+        padding: 11px 22px; border-radius: 8px; font-size: 14px;
+    }
+</style>
+
+<div class="card-config">
+    <h1>Configuración de Empresa</h1>
+    <p class="subtitulo">El nombre y logo aparecen en el navbar y en toda la aplicación.</p>
+
+    {% if config.logo or config.nombre_empresa %}
+    <div class="preview-nombre">
+        {% if config.logo %}
+            <img src="{{ config.logo.url }}" alt="Logo actual">
+        {% endif %}
+        <div>
+            {{ config.nombre_empresa }}
+            {% if config.slogan %}<small>{{ config.slogan }}</small>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="campo">
+            <label>{{ form.nombre_empresa.label }}</label>
+            {{ form.nombre_empresa }}
+            {% if form.nombre_empresa.errors %}
+                <small style="color:red;">{{ form.nombre_empresa.errors }}</small>
+            {% endif %}
+        </div>
+
+        <div class="campo">
+            <label>{{ form.slogan.label }}</label>
+            {{ form.slogan }}
+            <small>Aparece debajo del nombre en la vista previa (opcional)</small>
+        </div>
+
+        <div class="campo">
+            <label>{{ form.logo.label }}</label>
+            {% if config.logo %}
+                <div class="logo-actual">
+                    <img src="{{ config.logo.url }}" alt="Logo actual">
+                    <span>Logo actual — sube uno nuevo para reemplazarlo</span>
+                </div>
+            {% endif %}
+            {{ form.logo }}
+            <small>PNG o JPG, fondo transparente recomendado. Altura ideal: 40–60 px</small>
+        </div>
+
+        <div class="acciones">
+            <button type="submit" class="btn-guardar">Guardar cambios</button>
+            <a href="{% url 'inicio' %}" class="btn-cancelar">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

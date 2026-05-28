@@ -16,6 +16,8 @@ from django.utils import timezone
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
+from .models import ConfiguracionEmpresa
+from .forms import ConfiguracionEmpresaForm
 
 
 # ── Carga de datos iniciales ──────────────────────────────────────────────────
@@ -303,4 +305,27 @@ def editar_usuario(request, user_id):
         'grupos': grupos,
         'grupo_actual': grupo_actual,
         'error': error,
+    })
+
+
+@login_required
+def configuracion_empresa(request):
+    if not request.user.is_superuser:
+        messages.error(request, 'Solo el Admin Total puede cambiar la configuración.')
+        return redirect('inicio')
+
+    config = ConfiguracionEmpresa.get()
+
+    if request.method == 'POST':
+        form = ConfiguracionEmpresaForm(request.POST, request.FILES, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Configuración actualizada correctamente.')
+            return redirect('configuracion_empresa')
+    else:
+        form = ConfiguracionEmpresaForm(instance=config)
+
+    return render(request, 'dashboard/configuracion_empresa.html', {
+        'form': form,
+        'config': config,
     })
