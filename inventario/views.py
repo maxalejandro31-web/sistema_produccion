@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Sum
@@ -11,21 +12,16 @@ from produccion.models import OrdenProduccion
 
 @login_required
 def captura_mp(request):
-    mensaje = ''
-
     if request.method == 'POST':
         form = MateriaPrimaForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            mensaje = 'Materia prima registrada correctamente'
+            messages.success(request, 'Materia prima registrada correctamente.')
             form = MateriaPrimaForm()
     else:
         form = MateriaPrimaForm()
 
-    return render(request, 'inventario/captura_mp.html', {
-        'form': form,
-        'mensaje': mensaje
-    })
+    return render(request, 'inventario/captura_mp.html', {'form': form})
 
 
 @login_required
@@ -153,21 +149,16 @@ def captura_cliente(request):
     ):
         return HttpResponse("No tienes permiso para capturar clientes.")
 
-    mensaje = ''
-
     if request.method == 'POST':
         form = ClienteForm(request.POST)
         if form.is_valid():
             form.save()
-            mensaje = 'Cliente registrado correctamente.'
+            messages.success(request, 'Cliente registrado correctamente.')
             form = ClienteForm()
     else:
         form = ClienteForm()
 
-    return render(request, 'inventario/captura_cliente.html', {
-        'form': form,
-        'mensaje': mensaje,
-    })
+    return render(request, 'inventario/captura_cliente.html', {'form': form})
 
 
 @login_required

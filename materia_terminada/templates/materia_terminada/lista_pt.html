@@ -2,6 +2,14 @@
 
 {% block title %}Producto Terminado{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <span class="current">Producto Terminado</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <style>
     .contenedor {
@@ -91,6 +99,11 @@
     }
     .card-resumen .num { font-size: 28px; font-weight: bold; color: #2c3e50; }
     .card-resumen .lbl { font-size: 12px; color: #666; margin-top: 4px; }
+
+    @media (max-width: 900px) {
+        .contenedor { padding: 14px; overflow-x: auto; }
+        table { min-width: 760px; }
+    }
 </style>
 
 <div class="contenedor">

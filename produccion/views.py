@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
+from django.contrib import messages
 from django.core.paginator import Paginator
 
 from .models import OrdenProduccion
@@ -9,9 +10,6 @@ from core.decorators import roles_required
 
 @roles_required('Administrador', 'Supervisor', 'Operador')
 def captura_orden(request):
-    mensaje = ''
-    error = ''
-
     if request.method == 'POST':
         form = OrdenProduccionForm(request.POST)
         formset = DetalleSlitterFormSet(request.POST, prefix='detalles')
@@ -47,7 +45,7 @@ def captura_orden(request):
             for obj in formset.deleted_objects:
                 obj.delete()
 
-            mensaje = 'Orden registrada correctamente.'
+            messages.success(request, 'Orden registrada correctamente.')
             form = OrdenProduccionForm()
             formset = DetalleSlitterFormSet(prefix='detalles')
     else:
@@ -57,8 +55,6 @@ def captura_orden(request):
     return render(request, 'produccion/captura_orden.html', {
         'form': form,
         'formset': formset,
-        'mensaje': mensaje,
-        'error': error,
     })
 
 

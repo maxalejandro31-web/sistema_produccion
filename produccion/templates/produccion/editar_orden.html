@@ -2,6 +2,16 @@
 
 {% block title %}Editar Orden{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_ordenes' %}">Órdenes</a>
+    <span class="sep">›</span>
+    <span class="current">Editar {{ orden.folio_orden|default:"Orden" }}</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <style>
     .contenedor {

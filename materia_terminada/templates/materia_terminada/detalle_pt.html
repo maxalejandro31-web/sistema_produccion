@@ -2,6 +2,16 @@
 
 {% block title %}Detalle PT - {{ producto.numero_pt }}{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_pt' %}">Producto Terminado</a>
+    <span class="sep">›</span>
+    <span class="current">{{ producto.numero_pt }}</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <style>
     .contenedor {

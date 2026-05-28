@@ -2,6 +2,14 @@
 
 {% block title %}Lista de Órdenes{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <span class="current">Órdenes de Producción</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <style>
     .contenedor {
@@ -54,6 +62,11 @@
     .btn-iniciar { background: #2980b9; }
     .btn-finalizar { background: #27ae60; }
     .btn-pendiente { background: #f39c12; }
+
+    @media (max-width: 900px) {
+        .contenedor { padding: 14px; overflow-x: auto; }
+        table { min-width: 960px; }
+    }
 
     .acciones-superior {
         margin-bottom: 20px;

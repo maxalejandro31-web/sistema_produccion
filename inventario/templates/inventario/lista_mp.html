@@ -2,6 +2,14 @@
 
 {% block title %}Lista MP{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <span class="current">Materia Prima</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <style>
     .contenedor {
@@ -101,6 +109,12 @@
     .cobro-vencer   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
     .cobro-vencido  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .cobro-sinfecha { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+
+    @media (max-width: 900px) {
+        .contenedor { padding: 14px; overflow-x: auto; }
+        table { min-width: 860px; }
+        .filtros { gap: 8px; }
+    }
 
     .alerta-cobros {
         background: #fff7ed;

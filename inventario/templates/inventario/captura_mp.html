@@ -2,6 +2,16 @@
 
 {% block title %}Captura Materia Prima{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_mp' %}">Materia Prima</a>
+    <span class="sep">›</span>
+    <span class="current">Capturar</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <style>
     .contenedor {
@@ -47,14 +57,6 @@
 
     .campo-completo {
         grid-column: 1 / -1;
-    }
-
-    .mensaje {
-        background: #dff0d8;
-        color: #2e7d32;
-        padding: 10px;
-        border-radius: 8px;
-        margin-bottom: 15px;
     }
 
     .errores-generales {
@@ -143,19 +145,13 @@
     }
 
     @media (max-width: 900px) {
-        .grid,
-        .convertidor-grid {
-            grid-template-columns: 1fr;
-        }
+        .grid, .convertidor-grid { grid-template-columns: 1fr; }
+        .contenedor { padding: 14px; }
     }
 </style>
 
 <div class="contenedor">
     <h1>Captura de Materia Prima</h1>
-
-    {% if mensaje %}
-        <div class="mensaje">{{ mensaje }}</div>
-    {% endif %}
 
     {% if form.non_field_errors %}
         <div class="errores-generales">

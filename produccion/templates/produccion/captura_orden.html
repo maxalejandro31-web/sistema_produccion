@@ -1,6 +1,16 @@
 {% extends 'base.html' %}
 
-{% block title %}Captura Orden Slitter{% endblock %}
+{% block title %}Captura Orden{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_ordenes' %}">Órdenes</a>
+    <span class="sep">›</span>
+    <span class="current">Capturar Orden</span>
+</div>
+{% endblock %}
 
 {% block content %}
 <style>
@@ -35,14 +45,6 @@
         padding: 10px;
         border-radius: 8px;
         border: 1px solid #ccc;
-    }
-
-    .mensaje {
-        background: #dff0d8;
-        color: #2e7d32;
-        padding: 10px;
-        border-radius: 8px;
-        margin-bottom: 15px;
     }
 
     .acciones {
@@ -172,16 +174,6 @@
 
 <div class="contenedor">
     <h1>Captura de Orden de Producción</h1>
-
-    {% if mensaje %}
-        <div class="mensaje">{{ mensaje }}</div>
-    {% endif %}
-
-    {% if error %}
-        <div style="background:#fdecea;color:#b71c1c;padding:10px;border-radius:8px;margin-bottom:15px;">
-            {{ error }}
-        </div>
-    {% endif %}
 
     <form method="post" id="ordenForm">
         {% csrf_token %}
