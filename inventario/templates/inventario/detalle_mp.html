@@ -88,10 +88,120 @@
     .acciones a.secundario {
         background: #6b7280;
     }
+
+    .panel-cobro {
+        border-radius: 12px;
+        padding: 18px 22px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .panel-cobro.libre    { background: #d1fae5; border: 2px solid #6ee7b7; }
+    .panel-cobro.vencer   { background: #fef3c7; border: 2px solid #fcd34d; }
+    .panel-cobro.vencido  { background: #fee2e2; border: 2px solid #fca5a5; }
+    .panel-cobro.sinfecha { background: #f1f5f9; border: 2px solid #cbd5e1; }
+
+    .cobro-icono { font-size: 32px; }
+    .cobro-info { flex: 1; }
+    .cobro-titulo { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .cobro-libre .cobro-titulo    { color: #065f46; }
+    .cobro-vencer .cobro-titulo   { color: #92400e; }
+    .cobro-vencido .cobro-titulo  { color: #991b1b; }
+    .cobro-sinfecha .cobro-titulo { color: #475569; }
+    .cobro-detalle { font-size: 13px; opacity: 0.85; }
+
+    .cobro-meses {
+        text-align: center;
+        background: rgba(0,0,0,0.06);
+        border-radius: 10px;
+        padding: 10px 20px;
+        min-width: 120px;
+    }
+    .cobro-meses-num { font-size: 28px; font-weight: bold; line-height: 1; }
+    .cobro-meses-label { font-size: 12px; margin-top: 3px; opacity: 0.8; }
+
+    .barra-estancia {
+        margin-top: 10px;
+        height: 8px;
+        background: rgba(0,0,0,0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        width: 100%;
+        max-width: 320px;
+    }
+    .barra-progreso {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s;
+    }
+    .libre   .barra-progreso { background: #059669; }
+    .vencer  .barra-progreso { background: #d97706; }
+    .vencido .barra-progreso { background: #dc2626; }
 </style>
 
 <div class="contenedor">
     <h1 class="titulo">Detalle de Materia Prima</h1>
+
+    {% if mp.estatus_cobro == 'libre' %}
+    <div class="panel-cobro libre">
+        <div class="cobro-icono">✅</div>
+        <div class="cobro-info">
+            <div class="cobro-titulo">Período gratuito — sin cobro</div>
+            <div class="cobro-detalle">
+                Lleva <strong>{{ mp.dias_en_fabrica_num }} día{{ mp.dias_en_fabrica_num|pluralize:"s" }}</strong>
+                en fábrica. Faltan <strong>{{ mp.dias_hasta_cobro }} día{{ mp.dias_hasta_cobro|pluralize:"s" }}</strong>
+                para que comience el cobro por estancia.
+            </div>
+            <div class="barra-estancia">
+                <div class="barra-progreso" style="width: {% widthratio mp.dias_en_fabrica_num 30 100 %}%"></div>
+            </div>
+        </div>
+        <div class="cobro-meses">
+            <div class="cobro-meses-num">0</div>
+            <div class="cobro-meses-label">meses cobrados</div>
+        </div>
+    </div>
+
+    {% elif mp.estatus_cobro == 'por_vencer' %}
+    <div class="panel-cobro vencer">
+        <div class="cobro-icono">⚠️</div>
+        <div class="cobro-info">
+            <div class="cobro-titulo">Próximo a generar cobro</div>
+            <div class="cobro-detalle">
+                Lleva <strong>{{ mp.dias_en_fabrica_num }} días</strong> en fábrica.
+                En <strong>{{ mp.dias_hasta_cobro }} día{{ mp.dias_hasta_cobro|pluralize:"s" }}</strong>
+                comenzará a generar costo de estancia.
+            </div>
+            <div class="barra-estancia">
+                <div class="barra-progreso" style="width: {% widthratio mp.dias_en_fabrica_num 30 100 %}%"></div>
+            </div>
+        </div>
+        <div class="cobro-meses">
+            <div class="cobro-meses-num">0</div>
+            <div class="cobro-meses-label">meses cobrados</div>
+        </div>
+    </div>
+
+    {% elif mp.estatus_cobro == 'vencido' %}
+    <div class="panel-cobro vencido">
+        <div class="cobro-icono">🔴</div>
+        <div class="cobro-info">
+            <div class="cobro-titulo">Cobro por estancia activo</div>
+            <div class="cobro-detalle">
+                Lleva <strong>{{ mp.dias_en_fabrica_num }} días</strong> en fábrica
+                ({{ mp.meses_a_cobrar }} mes{{ mp.meses_a_cobrar|pluralize:",es" }} adicionale{{ mp.meses_a_cobrar|pluralize:"s" }} cobrado{{ mp.meses_a_cobrar|pluralize:"s" }}).
+                El período gratuito de 30 días ya fue superado.
+            </div>
+        </div>
+        <div class="cobro-meses">
+            <div class="cobro-meses-num">{{ mp.meses_a_cobrar }}</div>
+            <div class="cobro-meses-label">mes{{ mp.meses_a_cobrar|pluralize:",es" }} cobrado{{ mp.meses_a_cobrar|pluralize:"s" }}</div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="grid">
         <div class="campo">

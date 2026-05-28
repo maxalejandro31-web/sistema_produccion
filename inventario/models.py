@@ -2,6 +2,7 @@ from django.db import models, transaction
 from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
+import math
 
 
 class Cliente(models.Model):
@@ -136,6 +137,48 @@ class MateriaPrima(models.Model):
         else:
             meses = dias // 30
             return f"{meses} mes(es)"
+
+    # ── Cobro por estancia ────────────────────────────────────────────────────
+    # Regla: primer mes (días 1-30) sin cobro. A partir del día 31, se cobra
+    # un mes adicional por cada 30 días o fracción que supere el período libre.
+
+    @property
+    def dias_en_fabrica_num(self):
+        if not self.fecha_entrada:
+            return None
+        return (timezone.localdate() - self.fecha_entrada).days
+
+    @property
+    def meses_a_cobrar(self):
+        dias = self.dias_en_fabrica_num
+        if dias is None or dias <= 30:
+            return 0
+        return math.ceil((dias - 30) / 30)
+
+    @property
+    def estatus_cobro(self):
+        """
+        libre       → dentro del período gratuito (> 7 días libres restantes)
+        por_vencer  → quedan 7 días o menos para que inicie el cobro
+        vencido     → ya se están cobrando meses adicionales
+        sin_fecha   → no tiene fecha de entrada registrada
+        """
+        dias = self.dias_en_fabrica_num
+        if dias is None:
+            return 'sin_fecha'
+        if dias > 30:
+            return 'vencido'
+        if dias >= 23:
+            return 'por_vencer'
+        return 'libre'
+
+    @property
+    def dias_hasta_cobro(self):
+        """Días que faltan para que comience el primer cobro (solo aplica en período libre)."""
+        dias = self.dias_en_fabrica_num
+        if dias is None or dias > 30:
+            return None
+        return 30 - dias
 
     def __str__(self):
         return self.numero_mp

@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}Reportes Excel{% endblock %}
+
+{% block content %}
+<style>
+  .reportes-titulo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1f2d3d;
+    margin-bottom: 6px;
+  }
+  .reportes-subtitulo {
+    color: #6c757d;
+    margin-bottom: 28px;
+    font-size: 14px;
+  }
+  .grid-reportes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 20px;
+  }
+  .card-reporte {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .card-header {
+    background: #1f2d3d;
+    color: white;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-body {
+    padding: 18px;
+  }
+  .filtros-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .filtros-grid.cols-1 {
+    grid-template-columns: 1fr;
+  }
+  .filtros-grid.cols-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  select, input[type="date"] {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 13px;
+    box-sizing: border-box;
+    background: #f8f9fa;
+  }
+  select:focus, input[type="date"]:focus {
+    outline: none;
+    border-color: #1f2d3d;
+    background: white;
+  }
+  .btn-excel {
+    width: 100%;
+    padding: 10px;
+    background: #217346;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  .btn-excel:hover {
+    background: #1a5c38;
+  }
+  .icon-excel {
+    font-size: 18px;
+  }
+</style>
+
+<div class="reportes-titulo">Reportes Excel</div>
+<div class="reportes-subtitulo">Selecciona los filtros y descarga el reporte en formato .xlsx</div>
+
+<div class="grid-reportes">
+
+  <!-- 1. Inventario MP -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icon-excel">📦</span> Inventario de Materia Prima
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_inventario_mp' %}">
+        <div class="filtros-grid">
+          <div>
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Estado</label>
+            <select name="estado">
+              <option value="">— Todos —</option>
+              <option value="Disponible">Disponible</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Terminado">Terminado</option>
+            </select>
+          </div>
+          <div>
+            <label>Tipo MP</label>
+            <select name="tipo_mp">
+              <option value="">— Todos —</option>
+              <option value="Rollo">Rollo</option>
+              <option value="Placa">Placa</option>
+              <option value="Cinta">Cinta</option>
+            </select>
+          </div>
+          <div>
+            <label>Origen</label>
+            <select name="origen_mp">
+              <option value="">— Todos —</option>
+              <option value="Cliente">Cliente</option>
+              <option value="Interna">Interna</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Movimientos MP -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icon-excel">🔄</span> Movimientos de Materia Prima
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_movimientos_mp' %}">
+        <div class="filtros-grid">
+          <div>
+            <label>Fecha inicio</label>
+            <input type="date" name="fecha_inicio">
+          </div>
+          <div>
+            <label>Fecha fin</label>
+            <input type="date" name="fecha_fin">
+          </div>
+          <div>
+            <label>Tipo movimiento</label>
+            <select name="tipo_movimiento">
+              <option value="">— Todos —</option>
+              <option value="ENTRADA">Entrada</option>
+              <option value="CONSUMO">Consumo</option>
+              <option value="AJUSTE_POSITIVO">Ajuste positivo</option>
+              <option value="AJUSTE_NEGATIVO">Ajuste negativo</option>
+              <option value="MERMA">Merma</option>
+              <option value="TRASPASO">Traspaso</option>
+              <option value="SALIDA">Salida</option>
+            </select>
+          </div>
+          <div>
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Órdenes de Producción -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icon-excel">⚙️</span> Órdenes de Producción
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_ordenes_produccion' %}">
+        <div class="filtros-grid">
+          <div>
+            <label>Fecha inicio</label>
+            <input type="date" name="fecha_inicio">
+          </div>
+          <div>
+            <label>Fecha fin</label>
+            <input type="date" name="fecha_fin">
+          </div>
+          <div>
+            <label>Estado</label>
+            <select name="estado">
+              <option value="">— Todos —</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="proceso">En Proceso</option>
+              <option value="terminado">Terminado</option>
+            </select>
+          </div>
+          <div>
+            <label>Tipo proceso</label>
+            <select name="tipo_proceso">
+              <option value="">— Todos —</option>
+              <option value="slitter">Slitter</option>
+              <option value="corte_liso">Corte Liso</option>
+              <option value="mini_slitter">Mini Slitter</option>
+              <option value="fleje">Fleje</option>
+            </select>
+          </div>
+          <div style="grid-column: span 2;">
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Detalles Slitter -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icon-excel">✂️</span> Detalles Slitter
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_detalles_slitter' %}">
+        <div class="filtros-grid">
+          <div>
+            <label>Fecha inicio</label>
+            <input type="date" name="fecha_inicio">
+          </div>
+          <div>
+            <label>Fecha fin</label>
+            <input type="date" name="fecha_fin">
+          </div>
+          <div style="grid-column: span 2;">
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Producto Terminado -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icon-excel">🏭</span> Producto Terminado
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_producto_terminado' %}">
+        <div class="filtros-grid">
+          <div>
+            <label>Fecha inicio</label>
+            <input type="date" name="fecha_inicio">
+          </div>
+          <div>
+            <label>Fecha fin</label>
+            <input type="date" name="fecha_fin">
+          </div>
+          <div>
+            <label>Estado</label>
+            <select name="estado">
+              <option value="">— Todos —</option>
+              <option value="en_almacen">En Almacén</option>
+              <option value="vendido">Vendido</option>
+              <option value="embarcado">Embarcado</option>
+            </select>
+          </div>
+          <div>
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Clientes -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icon-excel">👥</span> Clientes
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_clientes' %}">
+        <div class="filtros-grid cols-1">
+          <div>
+            <label>Mostrar</label>
+            <select name="activo">
+              <option value="">— Todos —</option>
+              <option value="1">Solo activos</option>
+              <option value="0">Solo inactivos</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

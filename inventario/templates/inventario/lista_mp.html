@@ -86,10 +86,50 @@
 
     .btn-editar { background: #2c3e50; }
     .btn-detalle { background: #16a085; }
+
+    .badge-cobro {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .cobro-libre    { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .cobro-vencer   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .cobro-vencido  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .cobro-sinfecha { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+
+    .alerta-cobros {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 18px;
+        font-size: 13px;
+        color: #9a3412;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 </style>
 
 <div class="contenedor">
     <h1>Lista de Materia Prima</h1>
+
+    {% with vencidos=materias_primas|length %}
+    {% comment %}Alerta general si hay MP con cobro activo o por vencer{% endcomment %}
+    {% for mp in materias_primas %}
+        {% if mp.estatus_cobro == 'vencido' and forloop.first %}
+        <div class="alerta-cobros">
+            ⚠️ <strong>Hay materia prima con cobro por estancia activo.</strong>
+            Revisa los materiales marcados en rojo.
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% endwith %}
 
     <form method="get" class="filtros">
         <input type="text" name="q" placeholder="Buscar número MP" value="{{ busqueda|default:'' }}">
@@ -123,6 +163,7 @@
                 <th>Peso restante</th>
                 <th>Ubicación</th>
                 <th>Estado</th>
+                <th>Estancia / Cobro</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -162,13 +203,34 @@
                 </td>
 
                 <td>
+                    {% if mp.estatus_cobro == 'libre' %}
+                        <span class="badge-cobro cobro-libre">
+                            ✓ {{ mp.dias_en_fabrica_num }} día{{ mp.dias_en_fabrica_num|pluralize:"s" }}
+                            &nbsp;·&nbsp; faltan {{ mp.dias_hasta_cobro }}
+                        </span>
+                    {% elif mp.estatus_cobro == 'por_vencer' %}
+                        <span class="badge-cobro cobro-vencer">
+                            ⚠ {{ mp.dias_en_fabrica_num }} días
+                            &nbsp;·&nbsp; vence en {{ mp.dias_hasta_cobro }} día{{ mp.dias_hasta_cobro|pluralize:"s" }}
+                        </span>
+                    {% elif mp.estatus_cobro == 'vencido' %}
+                        <span class="badge-cobro cobro-vencido">
+                            🔴 {{ mp.dias_en_fabrica_num }} días
+                            &nbsp;·&nbsp; {{ mp.meses_a_cobrar }} mes{{ mp.meses_a_cobrar|pluralize:",es" }} de cobro
+                        </span>
+                    {% else %}
+                        <span class="badge-cobro cobro-sinfecha">Sin fecha</span>
+                    {% endif %}
+                </td>
+
+                <td>
                     <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
                     <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9">No hay materia prima registrada.</td>
+                <td colspan="10">No hay materia prima registrada.</td>
             </tr>
             {% endfor %}
         </tbody>
