@@ -163,13 +163,18 @@
                     <a class="btn btn-detalle" href="{% url 'detalle_pt' pt.id %}">Detalle</a>
                     {% if es_admin_total or es_administrador or es_supervisor %}
                         {% if pt.estado == 'en_almacen' %}
-                            <a class="btn btn-vender" href="{% url 'cambiar_estado_pt' pt.id 'vendido' %}">Vender</a>
-                            <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}">Embarcar</a>
+                            <a class="btn btn-vender" href="{% url 'cambiar_estado_pt' pt.id 'vendido' %}"
+                               onclick="return confirm('¿Marcar {{ pt.numero_pt }} como Vendido?')">Vender</a>
+                            <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}"
+                               onclick="return confirm('¿Marcar {{ pt.numero_pt }} como Embarcado?')">Embarcar</a>
                         {% elif pt.estado == 'vendido' %}
-                            <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}">Embarcar</a>
-                            <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' pt.id 'en_almacen' %}">Regresar</a>
+                            <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}"
+                               onclick="return confirm('¿Marcar {{ pt.numero_pt }} como Embarcado?')">Embarcar</a>
+                            <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' pt.id 'en_almacen' %}"
+                               onclick="return confirm('¿Regresar {{ pt.numero_pt }} a En Almacén?')">Regresar</a>
                         {% elif pt.estado == 'embarcado' %}
-                            <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' pt.id 'en_almacen' %}">Regresar</a>
+                            <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' pt.id 'en_almacen' %}"
+                               onclick="return confirm('¿Regresar {{ pt.numero_pt }} a En Almacén?')">Regresar</a>
                         {% endif %}
                     {% endif %}
                 </td>

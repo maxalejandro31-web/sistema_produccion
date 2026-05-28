@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from core.decorators import roles_required
@@ -49,4 +50,7 @@ def cambiar_estado_pt(request, pt_id, nuevo_estado):
     producto = get_object_or_404(ProductoTerminado, id=pt_id)
     producto.estado = nuevo_estado
     producto.save()
+
+    etiquetas = {'en_almacen': 'En Almacén', 'vendido': 'Vendido', 'embarcado': 'Embarcado'}
+    messages.success(request, f'Producto {producto.numero_pt} marcado como {etiquetas[nuevo_estado]}.')
     return redirect('lista_pt')

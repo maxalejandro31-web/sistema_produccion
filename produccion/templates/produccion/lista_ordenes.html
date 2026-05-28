@@ -161,12 +161,16 @@
                     <a class="btn btn-editar" href="{% url 'editar_orden' orden.id %}">Editar</a>
 
                     {% if orden.estado == 'pendiente' %}
-                        <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}">Iniciar</a>
+                        <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}"
+                           onclick="return confirm('¿Iniciar la orden {{ orden.folio_orden|default:orden.id }}?')">Iniciar</a>
                     {% elif orden.estado == 'proceso' %}
-                        <a class="btn btn-finalizar" href="{% url 'cambiar_estado' orden.id 'terminado' %}">Finalizar</a>
-                        <a class="btn btn-pendiente" href="{% url 'cambiar_estado' orden.id 'pendiente' %}">Regresar</a>
+                        <a class="btn btn-finalizar" href="{% url 'cambiar_estado' orden.id 'terminado' %}"
+                           onclick="return confirm('¿Finalizar la orden {{ orden.folio_orden|default:orden.id }}?')">Finalizar</a>
+                        <a class="btn btn-pendiente" href="{% url 'cambiar_estado' orden.id 'pendiente' %}"
+                           onclick="return confirm('¿Regresar la orden a Pendiente?')">Regresar</a>
                     {% elif orden.estado == 'terminado' %}
-                        <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}">Reabrir</a>
+                        <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}"
+                           onclick="return confirm('¿Reabrir la orden {{ orden.folio_orden|default:orden.id }}?')">Reabrir</a>
                     {% endif %}
                 </td>
             </tr>

@@ -105,6 +105,8 @@ def cambiar_estado(request, orden_id, nuevo_estado):
     orden.estado = nuevo_estado
     orden.save()
 
+    etiquetas = {'pendiente': 'Pendiente', 'proceso': 'En Proceso', 'terminado': 'Terminado'}
+    messages.success(request, f'Orden {orden.folio_orden or orden.id} cambiada a {etiquetas[nuevo_estado]}.')
     return redirect('lista_ordenes')
 
 
