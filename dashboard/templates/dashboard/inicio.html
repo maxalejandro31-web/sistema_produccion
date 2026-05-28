@@ -80,21 +80,21 @@
     <div class="alertas">
         {% if mp_cobro_activo %}
         <div class="alerta alerta-roja">
-            🔴 <strong>{{ mp_cobro_activo }} materia{{ mp_cobro_activo|pluralize:"","s" }} prima con cobro por estancia activo</strong>
+            🔴 <strong>{{ mp_cobro_activo }} materia prima con cobro por estancia activo</strong>
             — superaron los 30 días de estadía gratuita.
             <a href="{% url 'lista_mp' %}">Ver MP</a>
         </div>
         {% endif %}
         {% if mp_por_vencer %}
         <div class="alerta alerta-naranja">
-            ⚠️ <strong>{{ mp_por_vencer }} materia{{ mp_por_vencer|pluralize:"","s" }} prima por vencer</strong>
+            ⚠️ <strong>{{ mp_por_vencer }} materia prima por vencer</strong>
             — quedan 7 días o menos para que inicie el cobro.
             <a href="{% url 'lista_mp' %}">Ver MP</a>
         </div>
         {% endif %}
         {% if ordenes_urgentes %}
         <div class="alerta alerta-azul">
-            🚨 <strong>{{ ordenes_urgentes }} orden{{ ordenes_urgentes|pluralize:"","es" }} urgente{{ ordenes_urgentes|pluralize:"","s" }} pendiente{{ ordenes_urgentes|pluralize:"","s" }}</strong>
+            🚨 <strong>{{ ordenes_urgentes }} orden{{ ordenes_urgentes|pluralize:",es" }} urgente{{ ordenes_urgentes|pluralize:"s" }} pendiente{{ ordenes_urgentes|pluralize:"s" }}</strong>
             — requieren atención inmediata.
             <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
         </div>
