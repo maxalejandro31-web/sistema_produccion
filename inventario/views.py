@@ -73,6 +73,7 @@ def editar_mp(request, mp_id):
         form = MateriaPrimaForm(request.POST, request.FILES, instance=mp)
         if form.is_valid():
             form.save()
+            messages.success(request, f'Materia prima {mp.numero_mp} actualizada correctamente.')
             return redirect('lista_mp')
     else:
         form = MateriaPrimaForm(instance=mp)
@@ -175,6 +176,7 @@ def editar_cliente(request, cliente_id):
         form = ClienteForm(request.POST, instance=cliente)
         if form.is_valid():
             form.save()
+            messages.success(request, f'Cliente {cliente.nombre} actualizado correctamente.')
             return redirect('lista_clientes')
     else:
         form = ClienteForm(instance=cliente)

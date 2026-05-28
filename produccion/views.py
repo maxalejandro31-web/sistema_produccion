@@ -118,6 +118,7 @@ def editar_orden(request, orden_id):
             if form.is_valid():
                 orden_actualizada = form.save(commit=False)
                 orden_actualizada.save()
+                messages.success(request, f'Orden {orden.folio_orden or orden.id} actualizada correctamente.')
                 return redirect('lista_ordenes')
         else:
             form = OrdenProduccionForm(instance=orden)
