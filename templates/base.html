@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -167,7 +168,10 @@
     <div class="logo">
         {% if config_empresa.logo_url %}
             <img src="{{ config_empresa.logo_url }}" alt="Logo"
-                 style="height:30px;margin-right:8px;vertical-align:middle;border-radius:4px;">
+                 style="height:34px;margin-right:10px;vertical-align:middle;border-radius:50%;">
+        {% else %}
+            <img src="{% static 'img/logo.webp' %}" alt="Logo"
+                 style="height:34px;margin-right:10px;vertical-align:middle;border-radius:50%;">
         {% endif %}
         {{ config_empresa.nombre_empresa }}
     </div>
