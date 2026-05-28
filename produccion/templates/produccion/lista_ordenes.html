@@ -106,6 +106,13 @@
             <option value="fleje"       {% if tipo_proceso == 'fleje'       %}selected{% endif %}>Fleje</option>
         </select>
 
+        <select name="cliente" style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
+            <option value="">Todos los clientes</option>
+            {% for c in clientes %}
+                <option value="{{ c.id }}" {% if cliente_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
+            {% endfor %}
+        </select>
+
         <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" title="Desde"
                style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
         <input type="date" name="fecha_fin"    value="{{ fecha_fin }}"    title="Hasta"

@@ -31,6 +31,7 @@ def lista_mp(request):
     estado        = request.GET.get('estado', '')
     fecha_inicio  = request.GET.get('fecha_inicio', '')
     fecha_fin     = request.GET.get('fecha_fin', '')
+    cliente_id    = request.GET.get('cliente', '')
 
     qs = MateriaPrima.objects.select_related('cliente').order_by('-id')
 
@@ -44,6 +45,8 @@ def lista_mp(request):
         qs = qs.filter(fecha_entrada__gte=fecha_inicio)
     if fecha_fin:
         qs = qs.filter(fecha_entrada__lte=fecha_fin)
+    if cliente_id:
+        qs = qs.filter(cliente_id=cliente_id)
 
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get('page', 1))
@@ -56,6 +59,8 @@ def lista_mp(request):
         'estado': estado,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
+        'cliente_id': cliente_id,
+        'clientes': Cliente.objects.filter(activo=True).order_by('nombre'),
     })
 
 

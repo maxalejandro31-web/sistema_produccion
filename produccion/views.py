@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from .models import OrdenProduccion
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet
 from core.decorators import roles_required
+from inventario.models import Cliente
 
 
 @roles_required('Administrador', 'Supervisor', 'Operador')
@@ -65,6 +66,7 @@ def lista_ordenes(request):
     fecha_inicio = request.GET.get('fecha_inicio', '')
     fecha_fin    = request.GET.get('fecha_fin', '')
     q            = request.GET.get('q', '')
+    cliente_id   = request.GET.get('cliente', '')
 
     qs = OrdenProduccion.objects.select_related(
         'cliente', 'mp', 'linea', 'operador'
@@ -80,6 +82,8 @@ def lista_ordenes(request):
         qs = qs.filter(fecha__lte=fecha_fin)
     if q:
         qs = qs.filter(folio_orden__icontains=q)
+    if cliente_id:
+        qs = qs.filter(cliente_id=cliente_id)
 
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get('page', 1))
@@ -92,6 +96,8 @@ def lista_ordenes(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'q': q,
+        'cliente_id': cliente_id,
+        'clientes': Cliente.objects.filter(activo=True).order_by('nombre'),
     })
 
 

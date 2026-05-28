@@ -162,6 +162,13 @@
             <option value="Terminado" {% if estado == 'Terminado' %}selected{% endif %}>Terminado</option>
         </select>
 
+        <select name="cliente">
+            <option value="">Todos los clientes</option>
+            {% for c in clientes %}
+                <option value="{{ c.id }}" {% if cliente_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
+            {% endfor %}
+        </select>
+
         <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" title="Fecha entrada desde">
         <input type="date" name="fecha_fin"    value="{{ fecha_fin }}"    title="Fecha entrada hasta">
 
