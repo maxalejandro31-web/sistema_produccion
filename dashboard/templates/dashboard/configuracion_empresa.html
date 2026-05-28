@@ -67,19 +67,17 @@
     <h1>Configuración de Empresa</h1>
     <p class="subtitulo">El nombre y logo aparecen en el navbar y en toda la aplicación.</p>
 
-    {% if config.logo or config.nombre_empresa %}
     <div class="preview-nombre">
-        {% if config.logo %}
-            <img src="{{ config.logo.url }}" alt="Logo actual">
+        {% if config.logo_url %}
+            <img src="{{ config.logo_url }}" alt="Logo actual">
         {% endif %}
         <div>
             {{ config.nombre_empresa }}
             {% if config.slogan %}<small>{{ config.slogan }}</small>{% endif %}
         </div>
     </div>
-    {% endif %}
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post">
         {% csrf_token %}
 
         <div class="campo">
@@ -97,15 +95,15 @@
         </div>
 
         <div class="campo">
-            <label>{{ form.logo.label }}</label>
-            {% if config.logo %}
+            <label>{{ form.logo_url.label }}</label>
+            {% if config.logo_url %}
                 <div class="logo-actual">
-                    <img src="{{ config.logo.url }}" alt="Logo actual">
-                    <span>Logo actual — sube uno nuevo para reemplazarlo</span>
+                    <img src="{{ config.logo_url }}" alt="Logo actual">
+                    <span>Logo actual</span>
                 </div>
             {% endif %}
-            {{ form.logo }}
-            <small>PNG o JPG, fondo transparente recomendado. Altura ideal: 40–60 px</small>
+            {{ form.logo_url }}
+            <small>Pega el enlace directo a tu imagen (PNG o JPG). Puedes usar Google Drive, Imgur u otro hosting de imágenes.</small>
         </div>
 
         <div class="acciones">

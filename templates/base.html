@@ -165,8 +165,8 @@
 {% if request.user.is_authenticated %}
 <nav class="navbar">
     <div class="logo">
-        {% if config_empresa.logo %}
-            <img src="{{ config_empresa.logo.url }}" alt="Logo"
+        {% if config_empresa.logo_url %}
+            <img src="{{ config_empresa.logo_url }}" alt="Logo"
                  style="height:30px;margin-right:8px;vertical-align:middle;border-radius:4px;">
         {% endif %}
         {{ config_empresa.nombre_empresa }}

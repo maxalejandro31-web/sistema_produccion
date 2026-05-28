@@ -4,7 +4,7 @@ from django.db import models
 class ConfiguracionEmpresa(models.Model):
     nombre_empresa = models.CharField(max_length=120, default='Sistema Control de Producción')
     slogan         = models.CharField(max_length=200, blank=True, default='')
-    logo           = models.ImageField(upload_to='branding/', blank=True, null=True)
+    logo_url       = models.URLField(blank=True, default='', verbose_name='URL del logo')
 
     class Meta:
         verbose_name = 'Configuración de Empresa'
