@@ -153,7 +153,7 @@ class MateriaPrima(models.Model):
         dias = self.dias_en_fabrica_num
         if dias is None or dias <= 30:
             return 0
-        return math.ceil((dias - 30) / 30)
+        return math.floor(dias / 30)
 
     @property
     def estatus_cobro(self):
