@@ -118,14 +118,14 @@ def inicio(request):
 
     mp_cobro_activo = MateriaPrima.objects.filter(
         fecha_entrada__isnull=False,
-        fecha_entrada__lt=hoy - datetime.timedelta(days=30),
+        fecha_entrada__lt=hoy - datetime.timedelta(days=60),
     ).count()
 
     mp_por_vencer = MateriaPrima.objects.filter(
         fecha_entrada__isnull=False,
         fecha_entrada__range=(
-            hoy - datetime.timedelta(days=30),
-            hoy - datetime.timedelta(days=23),
+            hoy - datetime.timedelta(days=60),
+            hoy - datetime.timedelta(days=53),
         ),
     ).count()
 
