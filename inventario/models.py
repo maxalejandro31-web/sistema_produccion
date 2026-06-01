@@ -151,9 +151,9 @@ class MateriaPrima(models.Model):
     @property
     def meses_a_cobrar(self):
         dias = self.dias_en_fabrica_num
-        if dias is None or dias <= 60:
+        if dias is None or dias <= 30:
             return 0
-        return math.ceil((dias - 60) / 30)
+        return math.ceil((dias - 30) / 30)
 
     @property
     def estatus_cobro(self):
@@ -166,9 +166,9 @@ class MateriaPrima(models.Model):
         dias = self.dias_en_fabrica_num
         if dias is None:
             return 'sin_fecha'
-        if dias > 60:
+        if dias > 30:
             return 'vencido'
-        if dias >= 53:
+        if dias >= 23:
             return 'por_vencer'
         return 'libre'
 
@@ -176,9 +176,9 @@ class MateriaPrima(models.Model):
     def dias_hasta_cobro(self):
         """Días que faltan para que comience el primer cobro (solo aplica en período libre)."""
         dias = self.dias_en_fabrica_num
-        if dias is None or dias > 60:
+        if dias is None or dias > 30:
             return None
-        return 60 - dias
+        return 30 - dias
 
     def __str__(self):
         return self.numero_mp
