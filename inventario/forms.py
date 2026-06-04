@@ -109,3 +109,23 @@ class MovimientoMPForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.setdefault('class', 'form-control')
+
+
+class RegistrarMovimientoForm(forms.ModelForm):
+    """Form para registrar un movimiento sobre una MP específica (sin campo mp)."""
+    class Meta:
+        model = MovimientoMP
+        fields = ['tipo_movimiento', 'peso', 'ubicacion_origen', 'ubicacion_destino', 'observaciones']
+        widgets = {
+            'tipo_movimiento': forms.Select(),
+            'peso': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Peso (kg)', 'min': '0.01'}),
+            'ubicacion_origen': forms.TextInput(attrs={'placeholder': 'Ubicación origen (opcional)'}),
+            'ubicacion_destino': forms.TextInput(attrs={'placeholder': 'Ubicación destino (opcional)'}),
+            'observaciones': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Observaciones (opcional)'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if not isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'form-control')

@@ -406,9 +406,62 @@
         </tbody>
     </table>
 
+    <h2 style="margin-top:32px;">Historial de movimientos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Peso (kg)</th>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Usuario</th>
+                <th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in movimientos %}
+            <tr>
+                <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if mov.tipo_movimiento == 'ENTRADA' %}
+                        <span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">Entrada</span>
+                    {% elif mov.tipo_movimiento == 'CONSUMO' %}
+                        <span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">Consumo</span>
+                    {% elif mov.tipo_movimiento == 'AJUSTE_POSITIVO' %}
+                        <span style="background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">Ajuste +</span>
+                    {% elif mov.tipo_movimiento == 'AJUSTE_NEGATIVO' %}
+                        <span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">Ajuste -</span>
+                    {% elif mov.tipo_movimiento == 'MERMA' %}
+                        <span style="background:#f3e8ff;color:#6b21a8;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">Merma</span>
+                    {% elif mov.tipo_movimiento == 'TRASPASO' %}
+                        <span style="background:#e0f2fe;color:#0369a1;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">Traspaso</span>
+                    {% elif mov.tipo_movimiento == 'SALIDA' %}
+                        <span style="background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">Salida</span>
+                    {% else %}
+                        {{ mov.get_tipo_movimiento_display }}
+                    {% endif %}
+                </td>
+                <td>{{ mov.peso }}</td>
+                <td>{{ mov.ubicacion_origen|default:"-" }}</td>
+                <td>{{ mov.ubicacion_destino|default:"-" }}</td>
+                <td>{{ mov.usuario.username|default:"-" }}</td>
+                <td>{{ mov.observaciones|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7">No hay movimientos registrados para esta MP.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
     <div class="acciones">
         <a href="{% url 'lista_mp' %}" class="secundario">Volver a la lista</a>
         <a href="{% url 'editar_mp' mp.id %}">Editar MP</a>
+        {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen %}
+        <a href="{% url 'registrar_movimiento' mp.id %}" style="background:#16a085;">Registrar Movimiento</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

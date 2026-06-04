@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Movimiento — {{ mp.numero_mp }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_mp' %}">Materia Prima</a>
+    <span class="sep">›</span>
+    <a href="{% url 'detalle_mp' mp.id %}">{{ mp.numero_mp }}</a>
+    <span class="sep">›</span>
+    <span class="current">Registrar Movimiento</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .card {
+        max-width: 640px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 14px;
+        padding: 32px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 { margin-top: 0; margin-bottom: 4px; font-size: 22px; color: #1f2d3d; }
+    .subtitulo { color: #6b7280; font-size: 13px; margin-bottom: 28px; }
+
+    .mp-info {
+        background: #f8f9fb;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 28px;
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        font-size: 13px;
+    }
+    .mp-info span { color: #6b7280; }
+    .mp-info strong { color: #1f2d3d; }
+
+    .campo { margin-bottom: 18px; }
+    .campo label { display: block; font-weight: 600; margin-bottom: 6px; color: #374151; font-size: 14px; }
+    .campo select, .campo input, .campo textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    .campo select:focus, .campo input:focus, .campo textarea:focus {
+        outline: none;
+        border-color: #1f2d3d;
+    }
+    .campo small { display: block; color: #9ca3af; font-size: 12px; margin-top: 4px; }
+
+    .tipo-info {
+        display: none;
+        margin-top: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    .tipo-suma  { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .tipo-resta { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .tipo-trasp { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+    .acciones { margin-top: 28px; display: flex; gap: 12px; }
+    .btn-guardar {
+        background: #1f2d3d; color: white; border: none;
+        padding: 11px 24px; border-radius: 8px; font-size: 14px;
+        cursor: pointer; font-weight: 600;
+    }
+    .btn-guardar:hover { background: #2c3e50; }
+    .btn-cancelar {
+        background: #f1f5f9; color: #374151; text-decoration: none;
+        padding: 11px 22px; border-radius: 8px; font-size: 14px;
+    }
+</style>
+
+<div class="card">
+    <h1>Registrar Movimiento</h1>
+    <p class="subtitulo">El movimiento ajustará el peso restante de la MP automáticamente.</p>
+
+    <div class="mp-info">
+        <div><span>MP: </span><strong>{{ mp.numero_mp }}</strong></div>
+        <div><span>Cliente: </span><strong>{{ mp.cliente|default:"—" }}</strong></div>
+        <div><span>Peso restante: </span><strong>{{ mp.peso_restante|default:"—" }} kg</strong></div>
+        <div><span>Estado: </span><strong>{{ mp.estado }}</strong></div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="campo">
+            <label for="{{ form.tipo_movimiento.id_for_label }}">Tipo de movimiento</label>
+            {{ form.tipo_movimiento }}
+            <div id="tipo-info" class="tipo-info"></div>
+        </div>
+
+        <div class="campo">
+            <label for="{{ form.peso.id_for_label }}">Peso (kg)</label>
+            {{ form.peso }}
+            {% if form.peso.errors %}<small style="color:red;">{{ form.peso.errors }}</small>{% endif %}
+        </div>
+
+        <div class="campo">
+            <label for="{{ form.ubicacion_origen.id_for_label }}">Ubicación origen</label>
+            {{ form.ubicacion_origen }}
+        </div>
+
+        <div class="campo">
+            <label for="{{ form.ubicacion_destino.id_for_label }}">Ubicación destino</label>
+            {{ form.ubicacion_destino }}
+        </div>
+
+        <div class="campo">
+            <label for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+            {{ form.observaciones }}
+        </div>
+
+        <div class="acciones">
+            <button type="submit" class="btn-guardar">Guardar movimiento</button>
+            <a href="{% url 'detalle_mp' mp.id %}" class="btn-cancelar">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+const tipoSelect = document.getElementById('{{ form.tipo_movimiento.id_for_label }}');
+const infoDiv   = document.getElementById('tipo-info');
+
+const descripciones = {
+    'ENTRADA':          { css: 'tipo-suma',  texto: '+ Suma al peso restante' },
+    'AJUSTE_POSITIVO':  { css: 'tipo-suma',  texto: '+ Suma al peso restante' },
+    'CONSUMO':          { css: 'tipo-resta', texto: '− Resta del peso restante' },
+    'AJUSTE_NEGATIVO':  { css: 'tipo-resta', texto: '− Resta del peso restante' },
+    'MERMA':            { css: 'tipo-resta', texto: '− Resta del peso restante' },
+    'SALIDA':           { css: 'tipo-resta', texto: '− Resta del peso restante' },
+    'TRASPASO':         { css: 'tipo-trasp', texto: '↔ Cambia la ubicación de la MP (no afecta el peso)' },
+};
+
+function actualizarInfo() {
+    const val = tipoSelect.value;
+    if (val && descripciones[val]) {
+        const d = descripciones[val];
+        infoDiv.className = 'tipo-info ' + d.css;
+        infoDiv.textContent = d.texto;
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+
+tipoSelect.addEventListener('change', actualizarInfo);
+actualizarInfo();
+</script>
+{% endblock %}

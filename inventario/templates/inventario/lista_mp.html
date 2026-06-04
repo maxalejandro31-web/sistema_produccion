@@ -110,6 +110,11 @@
     .cobro-vencido  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .cobro-sinfecha { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
 
+    tr.fila-vencida   { background: #fff5f5; }
+    tr.fila-vencida:hover { background: #fee2e2; }
+    tr.fila-por-vencer { background: #fffbeb; }
+    tr.fila-por-vencer:hover { background: #fef3c7; }
+
     @media (max-width: 900px) {
         .contenedor { padding: 14px; overflow-x: auto; }
         table { min-width: 860px; }
@@ -127,23 +132,25 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        flex-wrap: wrap;
     }
 </style>
 
 <div class="contenedor">
     <h1>Lista de Materia Prima</h1>
 
-    {% with vencidos=materias_primas|length %}
-    {% comment %}Alerta general si hay MP con cobro activo o por vencer{% endcomment %}
-    {% for mp in materias_primas %}
-        {% if mp.estatus_cobro == 'vencido' and forloop.first %}
-        <div class="alerta-cobros">
-            ⚠️ <strong>Hay materia prima con cobro por estancia activo.</strong>
-            Revisa los materiales marcados en rojo.
-        </div>
+    {% if mp_vencidas_count > 0 or mp_por_vencer_count > 0 %}
+    <div class="alerta-cobros">
+        ⚠️
+        {% if mp_vencidas_count > 0 %}
+            <strong>{{ mp_vencidas_count }} MP con cobro activo.</strong>
         {% endif %}
-    {% endfor %}
-    {% endwith %}
+        {% if mp_por_vencer_count > 0 %}
+            <strong>{{ mp_por_vencer_count }} MP por vencer pronto.</strong>
+        {% endif %}
+        Las filas en rojo ya generan cobro; en amarillo están próximas a generarlo.
+    </div>
+    {% endif %}
 
     <form method="get" class="filtros">
         <input type="text" name="q" placeholder="Buscar número MP" value="{{ busqueda|default:'' }}">
@@ -167,6 +174,13 @@
             {% for c in clientes %}
                 <option value="{{ c.id }}" {% if cliente_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
             {% endfor %}
+        </select>
+
+        <select name="cobro">
+            <option value="">Todos (cobro)</option>
+            <option value="vencido"    {% if cobro == 'vencido' %}selected{% endif %}>Con cobro activo</option>
+            <option value="por_vencer" {% if cobro == 'por_vencer' %}selected{% endif %}>Por vencer</option>
+            <option value="libre"      {% if cobro == 'libre' %}selected{% endif %}>Sin cobro</option>
         </select>
 
         <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" title="Fecha entrada desde">
@@ -193,7 +207,7 @@
         </thead>
         <tbody>
             {% for mp in materias_primas %}
-            <tr>
+            <tr {% if mp.estatus_cobro == 'vencido' %}class="fila-vencida"{% elif mp.estatus_cobro == 'por_vencer' %}class="fila-por-vencer"{% endif %}>
                 <td>{{ mp.numero_mp|default:"-" }}</td>
 
                 <td>

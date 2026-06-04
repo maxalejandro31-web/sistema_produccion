@@ -332,6 +332,39 @@
     </div>
   </div>
 
+  <!-- 7. Cobros por Estancia -->
+  <div class="card-reporte">
+    <div class="card-header" style="background:#991b1b;">
+      <span class="icon-excel">📅</span> Cobros por Estancia
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_cobros_estancia' %}">
+        <div class="filtros-grid">
+          <div>
+            <label>Mostrar</label>
+            <select name="solo">
+              <option value="">Cobro activo + por vencer</option>
+              <option value="vencido">Solo con cobro activo</option>
+              <option value="por_vencer">Solo por vencer</option>
+            </select>
+          </div>
+          <div>
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel" style="background:#991b1b;">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- 6. Clientes -->
   <div class="card-reporte">
     <div class="card-header">

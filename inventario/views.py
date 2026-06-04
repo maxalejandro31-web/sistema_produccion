@@ -1,12 +1,15 @@
+import datetime
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Sum
+from django.utils import timezone
 
-from .forms import MateriaPrimaForm, ClienteForm
-from .models import MateriaPrima, Cliente
+from .forms import MateriaPrimaForm, ClienteForm, RegistrarMovimientoForm
+from .models import MateriaPrima, Cliente, MovimientoMP
 from produccion.models import OrdenProduccion
 
 
@@ -32,6 +35,9 @@ def lista_mp(request):
     fecha_inicio  = request.GET.get('fecha_inicio', '')
     fecha_fin     = request.GET.get('fecha_fin', '')
     cliente_id    = request.GET.get('cliente', '')
+    cobro         = request.GET.get('cobro', '')
+
+    hoy = timezone.localdate()
 
     qs = MateriaPrima.objects.select_related('cliente').order_by('-id')
 
@@ -47,6 +53,19 @@ def lista_mp(request):
         qs = qs.filter(fecha_entrada__lte=fecha_fin)
     if cliente_id:
         qs = qs.filter(cliente_id=cliente_id)
+    if cobro == 'vencido':
+        qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30))
+    elif cobro == 'por_vencer':
+        qs = qs.filter(
+            fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
+        )
+    elif cobro == 'libre':
+        qs = qs.filter(fecha_entrada__gte=hoy - datetime.timedelta(days=22))
+
+    mp_vencidas_count   = MateriaPrima.objects.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).count()
+    mp_por_vencer_count = MateriaPrima.objects.filter(
+        fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
+    ).count()
 
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get('page', 1))
@@ -60,6 +79,9 @@ def lista_mp(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
+        'cobro': cobro,
+        'mp_vencidas_count': mp_vencidas_count,
+        'mp_por_vencer_count': mp_por_vencer_count,
         'clientes': Cliente.objects.filter(activo=True).order_by('nombre'),
     })
 
@@ -114,6 +136,8 @@ def detalle_mp(request, mp_id):
     total_scrap = resumen['total_scrap'] or 0
     cantidad_ordenes = ordenes_relacionadas.count()
 
+    movimientos = MovimientoMP.objects.filter(mp=mp).select_related('usuario').order_by('-fecha')
+
     return render(request, 'inventario/detalle_mp.html', {
         'mp': mp,
         'ordenes_relacionadas': ordenes_relacionadas,
@@ -121,6 +145,7 @@ def detalle_mp(request, mp_id):
         'total_producido': total_producido,
         'total_scrap': total_scrap,
         'cantidad_ordenes': cantidad_ordenes,
+        'movimientos': movimientos,
     })
 
 
@@ -189,4 +214,53 @@ def editar_cliente(request, cliente_id):
     return render(request, 'inventario/editar_cliente.html', {
         'form': form,
         'cliente': cliente,
+    })
+
+
+@login_required
+def registrar_movimiento(request, mp_id):
+    if not (
+        request.user.is_superuser or
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Almacen']).exists()
+    ):
+        messages.error(request, 'No tienes permiso para registrar movimientos.')
+        return redirect('detalle_mp', mp_id=mp_id)
+
+    mp = get_object_or_404(MateriaPrima, id=mp_id)
+
+    if request.method == 'POST':
+        form = RegistrarMovimientoForm(request.POST)
+        if form.is_valid():
+            mov = form.save(commit=False)
+            mov.mp = mp
+            mov.usuario = request.user
+            mov.save()
+            etiquetas = {
+                'ENTRADA': 'Entrada', 'CONSUMO': 'Consumo',
+                'AJUSTE_POSITIVO': 'Ajuste positivo', 'AJUSTE_NEGATIVO': 'Ajuste negativo',
+                'MERMA': 'Merma', 'TRASPASO': 'Traspaso', 'SALIDA': 'Salida',
+            }
+            messages.success(request, f'Movimiento "{etiquetas.get(mov.tipo_movimiento, mov.tipo_movimiento)}" de {mov.peso} kg registrado correctamente.')
+            return redirect('detalle_mp', mp_id=mp.id)
+    else:
+        form = RegistrarMovimientoForm()
+
+    return render(request, 'inventario/registrar_movimiento.html', {
+        'mp': mp,
+        'form': form,
+    })
+
+
+@login_required
+def api_datos_mp(request, mp_id):
+    mp = get_object_or_404(MateriaPrima, id=mp_id)
+    return JsonResponse({
+        'cliente_id': mp.cliente_id,
+        'cliente_nombre': str(mp.cliente) if mp.cliente else '',
+        'material': mp.material or '',
+        'espesor_valor': str(mp.espesor_valor) if mp.espesor_valor else '',
+        'unidad_espesor': mp.unidad_espesor or '',
+        'ancho': str(mp.ancho) if mp.ancho else '',
+        'peso_restante': str(mp.peso_restante) if mp.peso_restante else '',
+        'ubicacion': mp.ubicacion or '',
     })

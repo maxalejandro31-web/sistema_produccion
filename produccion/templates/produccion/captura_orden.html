@@ -485,6 +485,121 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     toggleBloqueSlitter();
+
+    // ── Buscador en el selector de MP ─────────────────────────────────────────
+    const mpSelect = document.getElementById('id_mp');
+    if (mpSelect) {
+        const buscarMP = document.createElement('input');
+        buscarMP.type = 'text';
+        buscarMP.placeholder = 'Buscar MP por número o descripción...';
+        buscarMP.autocomplete = 'off';
+        buscarMP.style.cssText = 'width:100%;padding:8px 10px;border-radius:8px;border:1px solid #ccc;margin-bottom:5px;font-size:13px;box-sizing:border-box;';
+        mpSelect.parentNode.insertBefore(buscarMP, mpSelect);
+
+        const opcionesOriginales = Array.from(mpSelect.options).map(function (o) {
+            return { value: o.value, text: o.text };
+        });
+
+        buscarMP.addEventListener('input', function () {
+            const q = this.value.toLowerCase().trim();
+            const valActual = mpSelect.value;
+            mpSelect.innerHTML = '';
+            opcionesOriginales.forEach(function (o) {
+                if (!o.value || o.text.toLowerCase().includes(q)) {
+                    const el = document.createElement('option');
+                    el.value = o.value;
+                    el.text = o.text;
+                    if (o.value === valActual) el.selected = true;
+                    mpSelect.appendChild(el);
+                }
+            });
+        });
+    }
+
+    // ── Auto-relleno + validación de peso al seleccionar MP ───────────────────
+    const clienteSelect   = document.getElementById('id_cliente');
+    const infoBanner      = document.createElement('div');
+    infoBanner.id         = 'mp-info-banner';
+    infoBanner.style.cssText = 'display:none;background:#eef6ff;border:1px solid #cfe2f3;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;';
+    if (mpSelect) {
+        mpSelect.closest('.campo').insertAdjacentElement('afterend', infoBanner);
+    }
+
+    const avisoPeso = document.createElement('div');
+    avisoPeso.id = 'aviso-peso';
+    avisoPeso.style.cssText = 'display:none;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;';
+    if (pesoUsadoInput) {
+        pesoUsadoInput.parentNode.appendChild(avisoPeso);
+    }
+
+    let pesoDisponible = null;
+
+    function validarPesoUsado() {
+        if (!pesoUsadoInput || pesoDisponible === null) return;
+        const val = parseFloat(pesoUsadoInput.value);
+        if (isNaN(val) || val <= 0) {
+            avisoPeso.style.display = 'none';
+            pesoUsadoInput.style.borderColor = '#d1d5db';
+            return;
+        }
+        if (val > pesoDisponible) {
+            avisoPeso.innerHTML = `⚠️ Excede el peso disponible (${pesoDisponible} kg). Diferencia: ${(val - pesoDisponible).toFixed(2)} kg`;
+            avisoPeso.style.cssText = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
+            pesoUsadoInput.style.borderColor = '#ef4444';
+        } else {
+            const restante = (pesoDisponible - val).toFixed(2);
+            avisoPeso.innerHTML = `✓ Quedarán ${restante} kg disponibles en esta MP`;
+            avisoPeso.style.cssText = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;';
+            pesoUsadoInput.style.borderColor = '#22c55e';
+        }
+    }
+
+    function cargarDatosMP(mpId) {
+        if (!mpId) {
+            infoBanner.style.display = 'none';
+            pesoDisponible = null;
+            avisoPeso.style.display = 'none';
+            if (pesoUsadoInput) pesoUsadoInput.style.borderColor = '#d1d5db';
+            return;
+        }
+        fetch(`/api/mp/${mpId}/`)
+            .then(r => r.json())
+            .then(data => {
+                if (clienteSelect && data.cliente_id) {
+                    clienteSelect.value = data.cliente_id;
+                }
+                pesoDisponible = data.peso_restante ? parseFloat(data.peso_restante) : null;
+                const partes = [];
+                if (data.material) partes.push(`<strong>Material:</strong> ${data.material}`);
+                if (data.espesor_valor) partes.push(`<strong>Espesor:</strong> ${data.espesor_valor} ${data.unidad_espesor}`);
+                if (data.ancho) partes.push(`<strong>Ancho:</strong> ${data.ancho} mm`);
+                if (data.peso_restante) partes.push(`<strong>Peso disponible:</strong> <span style="font-weight:700;color:#065f46;">${data.peso_restante} kg</span>`);
+                if (partes.length > 0) {
+                    infoBanner.innerHTML = partes.join(' &nbsp;|&nbsp; ');
+                    infoBanner.style.display = 'block';
+                } else {
+                    infoBanner.style.display = 'none';
+                }
+                validarPesoUsado();
+            })
+            .catch(() => {
+                infoBanner.style.display = 'none';
+                pesoDisponible = null;
+            });
+    }
+
+    if (pesoUsadoInput) {
+        pesoUsadoInput.addEventListener('input', validarPesoUsado);
+    }
+
+    if (mpSelect) {
+        mpSelect.addEventListener('change', function () {
+            cargarDatosMP(this.value);
+        });
+        if (mpSelect.value) {
+            cargarDatosMP(mpSelect.value);
+        }
+    }
 });
 </script>
 {% endblock %}

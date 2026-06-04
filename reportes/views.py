@@ -438,3 +438,79 @@ def reporte_clientes(request):
 
     fecha = timezone.localdate().strftime("%Y%m%d")
     return _make_response(wb, f"clientes_{fecha}.xlsx")
+
+
+# ── 7. Cobros por Estancia ────────────────────────────────────────────────────
+
+@login_required
+def reporte_cobros_estancia(request):
+    import datetime
+    hoy = timezone.localdate()
+
+    solo = request.GET.get("solo", "")  # "vencido" | "por_vencer" | ""
+    cliente_id = request.GET.get("cliente")
+
+    qs = MateriaPrima.objects.select_related("cliente").filter(fecha_entrada__isnull=False)
+
+    if solo == "vencido":
+        qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30))
+    elif solo == "por_vencer":
+        qs = qs.filter(
+            fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
+        )
+    else:
+        qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=23))
+
+    if cliente_id:
+        qs = qs.filter(cliente_id=cliente_id)
+
+    qs = qs.order_by("fecha_entrada")
+
+    ESTATUS_LABEL = {
+        'libre':      'Libre',
+        'por_vencer': 'Por vencer',
+        'vencido':    'Cobro activo',
+        'sin_fecha':  'Sin fecha',
+    }
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Cobros Estancia"
+
+    headers = [
+        "N° MP", "Cliente", "Tipo", "Material", "Peso Restante (kg)",
+        "Fecha Entrada", "Días en Fábrica", "Estatus Cobro", "Meses a Cobrar",
+        "Ubicación", "Observaciones",
+    ]
+    _apply_header(ws, headers)
+
+    VENCIDO_FILL  = PatternFill("solid", fgColor="FECACA")
+    VENCER_FILL   = PatternFill("solid", fgColor="FEF3C7")
+
+    for i, mp in enumerate(qs, start=2):
+        ws.append([
+            _fmt(mp.numero_mp),
+            _fmt(mp.cliente.nombre if mp.cliente else ""),
+            _fmt(mp.tipo_mp),
+            _fmt(mp.material),
+            float(mp.peso_restante) if mp.peso_restante else "",
+            mp.fecha_entrada.strftime("%d/%m/%Y") if mp.fecha_entrada else "",
+            mp.dias_en_fabrica_num if mp.dias_en_fabrica_num is not None else "",
+            ESTATUS_LABEL.get(mp.estatus_cobro, ""),
+            mp.meses_a_cobrar if mp.meses_a_cobrar else 0,
+            _fmt(mp.ubicacion),
+            _fmt(mp.observaciones),
+        ])
+        fila = ws[i]
+        for cell in fila:
+            cell.border    = BORDER
+            cell.alignment = LEFT
+            if mp.estatus_cobro == 'vencido':
+                cell.fill = VENCIDO_FILL
+            elif mp.estatus_cobro == 'por_vencer':
+                cell.fill = VENCER_FILL
+
+    _autowidth(ws)
+
+    fecha = timezone.localdate().strftime("%Y%m%d")
+    return _make_response(wb, f"cobros_estancia_{fecha}.xlsx")

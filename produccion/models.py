@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from inventario.models import MateriaPrima, Cliente
 
 
@@ -87,12 +88,19 @@ class OrdenProduccion(models.Model):
 
     def save(self, *args, **kwargs):
         es_nueva = self.pk is None
+        generar_folio = es_nueva and not self.folio_orden
 
         if es_nueva and self.mp and self.peso_usado:
             if self.mp.peso_restante is not None and self.mp.peso_restante < self.peso_usado:
                 raise ValueError("No hay suficiente peso disponible en la materia prima")
 
         super().save(*args, **kwargs)
+
+        if generar_folio:
+            año = timezone.localdate().year
+            folio = f'ORD-{año}-{self.pk:04d}'
+            OrdenProduccion.objects.filter(pk=self.pk).update(folio_orden=folio)
+            self.folio_orden = folio
 
         if es_nueva and self.mp and self.peso_usado:
             from inventario.models import MovimientoMP

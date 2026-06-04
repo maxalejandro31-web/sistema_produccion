@@ -7,6 +7,8 @@ from .views import (
     lista_clientes,
     captura_cliente,
     editar_cliente,
+    api_datos_mp,
+    registrar_movimiento,
 )
 
 urlpatterns = [
@@ -18,4 +20,6 @@ urlpatterns = [
     path('clientes/', lista_clientes, name='lista_clientes'),
     path('captura-cliente/', captura_cliente, name='captura_cliente'),
     path('editar-cliente/<int:cliente_id>/', editar_cliente, name='editar_cliente'),
+    path('api/mp/<int:mp_id>/', api_datos_mp, name='api_datos_mp'),
+    path('mp/<int:mp_id>/movimiento/', registrar_movimiento, name='registrar_movimiento'),
 ]
