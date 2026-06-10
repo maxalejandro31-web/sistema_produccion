@@ -7,6 +7,7 @@ from .models import OrdenProduccion
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet
 from core.decorators import roles_required
 from inventario.models import Cliente
+from dashboard.models import registrar_historial
 
 
 @roles_required('Administrador', 'Supervisor', 'Operador')
@@ -46,6 +47,8 @@ def captura_orden(request):
             for obj in formset.deleted_objects:
                 obj.delete()
 
+            registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'CREAR',
+                f'Orden {orden.folio_orden or orden.id} creada.')
             messages.success(request, 'Orden registrada correctamente.')
             form = OrdenProduccionForm()
             formset = DetalleSlitterFormSet(prefix='detalles')
@@ -112,6 +115,8 @@ def cambiar_estado(request, orden_id, nuevo_estado):
     orden.save()
 
     etiquetas = {'pendiente': 'Pendiente', 'proceso': 'En Proceso', 'terminado': 'Terminado'}
+    registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'ESTADO',
+        f'Estado cambiado a {etiquetas[nuevo_estado]}.')
     messages.success(request, f'Orden {orden.folio_orden or orden.id} cambiada a {etiquetas[nuevo_estado]}.')
     return redirect('lista_ordenes')
 
@@ -126,6 +131,8 @@ def editar_orden(request, orden_id):
             if form.is_valid():
                 orden_actualizada = form.save(commit=False)
                 orden_actualizada.save()
+                registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'EDITAR',
+                    f'Orden {orden.folio_orden or orden.id} actualizada.')
                 messages.success(request, f'Orden {orden.folio_orden or orden.id} actualizada correctamente.')
                 return redirect('lista_ordenes')
         else:
@@ -141,6 +148,19 @@ def editar_orden(request, orden_id):
 
 
 @roles_required('Administrador', 'Supervisor', 'Operador')
+def imprimir_orden(request, orden_id):
+    orden = get_object_or_404(
+        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),
+        id=orden_id
+    )
+    detalles = orden.detalles_slitter.all()
+    return render(request, 'produccion/imprimir_orden.html', {
+        'orden': orden,
+        'detalles': detalles,
+    })
+
+
+@roles_required('Administrador', 'Supervisor', 'Operador')
 def detalle_orden(request, orden_id):
     orden = get_object_or_404(
         OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),
@@ -148,7 +168,13 @@ def detalle_orden(request, orden_id):
     )
     detalles = orden.detalles_slitter.all()
 
+    from dashboard.models import HistorialCambio
+    historial = HistorialCambio.objects.filter(
+        tipo_objeto='OrdenProduccion', objeto_id=orden_id
+    ).select_related('usuario')
+
     return render(request, 'produccion/detalle_orden.html', {
         'orden': orden,
         'detalles': detalles,
+        'historial': historial,
     })

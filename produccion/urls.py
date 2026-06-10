@@ -5,6 +5,7 @@ from .views import (
     cambiar_estado,
     editar_orden,
     detalle_orden,
+    imprimir_orden,
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('orden/<int:orden_id>/<str:nuevo_estado>/', cambiar_estado, name='cambiar_estado'),
     path('editar-orden/<int:orden_id>/', editar_orden, name='editar_orden'),
     path('detalle-orden/<int:orden_id>/', detalle_orden, name='detalle_orden'),
+    path('imprimir-orden/<int:orden_id>/', imprimir_orden, name='imprimir_orden'),
 ]

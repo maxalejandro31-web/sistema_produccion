@@ -11,6 +11,7 @@ from django.utils import timezone
 from .forms import MateriaPrimaForm, ClienteForm, RegistrarMovimientoForm
 from .models import MateriaPrima, Cliente, MovimientoMP
 from produccion.models import OrdenProduccion
+from dashboard.models import registrar_historial
 
 
 @login_required
@@ -18,7 +19,8 @@ def captura_mp(request):
     if request.method == 'POST':
         form = MateriaPrimaForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            mp_nueva = form.save()
+            registrar_historial(request, 'MateriaPrima', mp_nueva.id, str(mp_nueva), 'CREAR', f'MP {mp_nueva.numero_mp} registrada.')
             messages.success(request, 'Materia prima registrada correctamente.')
             form = MateriaPrimaForm()
     else:
@@ -100,6 +102,7 @@ def editar_mp(request, mp_id):
         form = MateriaPrimaForm(request.POST, request.FILES, instance=mp)
         if form.is_valid():
             form.save()
+            registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'EDITAR', f'MP {mp.numero_mp} actualizada.')
             messages.success(request, f'Materia prima {mp.numero_mp} actualizada correctamente.')
             return redirect('lista_mp')
     else:
@@ -138,6 +141,11 @@ def detalle_mp(request, mp_id):
 
     movimientos = MovimientoMP.objects.filter(mp=mp).select_related('usuario').order_by('-fecha')
 
+    from dashboard.models import HistorialCambio
+    historial = HistorialCambio.objects.filter(
+        tipo_objeto='MateriaPrima', objeto_id=mp_id
+    ).select_related('usuario')
+
     return render(request, 'inventario/detalle_mp.html', {
         'mp': mp,
         'ordenes_relacionadas': ordenes_relacionadas,
@@ -146,6 +154,7 @@ def detalle_mp(request, mp_id):
         'total_scrap': total_scrap,
         'cantidad_ordenes': cantidad_ordenes,
         'movimientos': movimientos,
+        'historial': historial,
     })
 
 
@@ -240,7 +249,10 @@ def registrar_movimiento(request, mp_id):
                 'AJUSTE_POSITIVO': 'Ajuste positivo', 'AJUSTE_NEGATIVO': 'Ajuste negativo',
                 'MERMA': 'Merma', 'TRASPASO': 'Traspaso', 'SALIDA': 'Salida',
             }
-            messages.success(request, f'Movimiento "{etiquetas.get(mov.tipo_movimiento, mov.tipo_movimiento)}" de {mov.peso} kg registrado correctamente.')
+            tipo_label = etiquetas.get(mov.tipo_movimiento, mov.tipo_movimiento)
+            registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'MOVIMIENTO',
+                f'{tipo_label} de {mov.peso} kg en MP {mp.numero_mp}.')
+            messages.success(request, f'Movimiento "{tipo_label}" de {mov.peso} kg registrado correctamente.')
             return redirect('detalle_mp', mp_id=mp.id)
     else:
         form = RegistrarMovimientoForm()

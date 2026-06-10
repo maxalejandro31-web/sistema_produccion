@@ -166,6 +166,7 @@
                 <td>
                     <a class="btn btn-detalle" href="{% url 'detalle_orden' orden.id %}">Detalle</a>
                     <a class="btn btn-editar" href="{% url 'editar_orden' orden.id %}">Editar</a>
+                    <a class="btn" href="{% url 'imprimir_orden' orden.id %}" target="_blank" style="background:#16a085;">🖨️</a>
 
                     {% if orden.estado == 'pendiente' %}
                         <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}"

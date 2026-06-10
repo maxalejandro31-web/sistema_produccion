@@ -69,6 +69,73 @@
             border: 1px solid rgba(255,255,255,0.12);
         }
 
+        /* ── Campana notificaciones ── */
+        .bell-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .bell-btn {
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: white;
+            padding: 6px 11px;
+            border-radius: 7px;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+            line-height: 1;
+        }
+        .bell-btn:hover { background: rgba(255,255,255,0.2); }
+        .bell-badge {
+            position: absolute;
+            top: -4px; right: -4px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 17px; height: 17px;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 3px;
+            line-height: 1;
+        }
+        .notifs-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            min-width: 260px;
+            z-index: 200;
+            overflow: hidden;
+        }
+        .notifs-panel.open { display: block; }
+        .notifs-header {
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2d3d;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .notif-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            text-decoration: none;
+            color: #374151;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background .12s;
+        }
+        .notif-item:hover { background: #f9fafb; }
+        .notif-item.danger { border-left: 3px solid #ef4444; }
+        .notif-item.warning { border-left: 3px solid #f59e0b; }
+        .notifs-empty { padding: 14px 16px; font-size: 13px; color: #9ca3af; }
+
         /* ── Mensajes flash ── */
         .messages-wrap {
             padding: 10px 24px 0;
@@ -206,6 +273,27 @@
             <a href="{% url 'configuracion_empresa' %}">Configuración</a>
         {% endif %}
 
+        <div class="bell-wrap" id="bellWrap">
+            <button class="bell-btn" onclick="toggleNotifs(event)" title="Notificaciones">
+                🔔
+                {% if alertas_count > 0 %}
+                <span class="bell-badge">{{ alertas_count }}</span>
+                {% endif %}
+            </button>
+            <div class="notifs-panel" id="notifsPanel">
+                <div class="notifs-header">Alertas del sistema</div>
+                {% if alertas_items %}
+                    {% for a in alertas_items %}
+                    <a href="{{ a.url }}" class="notif-item {{ a.tipo }}">
+                        <span>{{ a.icono }}</span>
+                        <span>{{ a.texto }}</span>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="notifs-empty">Sin alertas activas ✓</div>
+                {% endif %}
+            </div>
+        </div>
         <a href="{% url 'cambiar_password' %}">Mi contraseña</a>
         <a href="{% url 'logout' %}" class="logout">Salir</a>
     </div>
@@ -238,5 +326,17 @@
 </footer>
 
 {% block extra_js %}{% endblock %}
+<script>
+function toggleNotifs(e) {
+    e.stopPropagation();
+    document.getElementById('notifsPanel').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('bellWrap');
+    if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('notifsPanel').classList.remove('open');
+    }
+});
+</script>
 </body>
 </html>

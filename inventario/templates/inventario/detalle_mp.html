@@ -406,6 +406,30 @@
         </tbody>
     </table>
 
+    <h2 style="margin-top:32px;">Historial de cambios</h2>
+    <table>
+        <thead>
+            <tr><th>Fecha</th><th>Accion</th><th>Descripcion</th><th>Usuario</th></tr>
+        </thead>
+        <tbody>
+            {% for h in historial %}
+            <tr>
+                <td>{{ h.fecha|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if h.accion == "CREAR" %}<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:5px;font-size:12px;">Creado</span>
+                    {% elif h.accion == "EDITAR" %}<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:5px;font-size:12px;">Editado</span>
+                    {% elif h.accion == "MOVIMIENTO" %}<span style="background:#f3e8ff;color:#6b21a8;padding:2px 8px;border-radius:5px;font-size:12px;">Movimiento</span>
+                    {% else %}<span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:5px;font-size:12px;">{{ h.get_accion_display }}</span>{% endif %}
+                </td>
+                <td>{{ h.descripcion|default:"-" }}</td>
+                <td>{{ h.usuario.username|default:"Sistema" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Sin historial registrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
     <h2 style="margin-top:32px;">Historial de movimientos</h2>
     <table>
         <thead>
