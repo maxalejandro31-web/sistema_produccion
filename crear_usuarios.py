@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group
 User = get_user_model()
 
 # Crear grupos si no existen
-for nombre in ['Administrador', 'Supervisor', 'Almacen', 'Operador']:
+for nombre in ['Administrador', 'Supervisor', 'Almacen', 'Operador', 'Capturista']:
     Group.objects.get_or_create(name=nombre)
 
 usuarios = [

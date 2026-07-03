@@ -10,7 +10,7 @@ from inventario.models import Cliente
 from dashboard.models import registrar_historial
 
 
-@roles_required('Administrador', 'Supervisor', 'Operador')
+@roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista')
 def captura_orden(request):
     if request.method == 'POST':
         form = OrdenProduccionForm(request.POST)
@@ -62,7 +62,7 @@ def captura_orden(request):
     })
 
 
-@roles_required('Administrador', 'Supervisor', 'Operador')
+@roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista')
 def lista_ordenes(request):
     estado       = request.GET.get('estado', '')
     tipo_proceso = request.GET.get('tipo_proceso', '')
@@ -147,7 +147,7 @@ def editar_orden(request, orden_id):
         return HttpResponse(f"Error al editar orden: {e}")
 
 
-@roles_required('Administrador', 'Supervisor', 'Operador')
+@roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista')
 def imprimir_orden(request, orden_id):
     orden = get_object_or_404(
         OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),
@@ -160,7 +160,7 @@ def imprimir_orden(request, orden_id):
     })
 
 
-@roles_required('Administrador', 'Supervisor', 'Operador')
+@roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista')
 def detalle_orden(request, orden_id):
     orden = get_object_or_404(
         OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),
