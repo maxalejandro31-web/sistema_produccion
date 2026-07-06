@@ -41,7 +41,7 @@ def detalle_pt(request, pt_id):
     return render(request, 'materia_terminada/detalle_pt.html', {'producto': producto})
 
 
-@roles_required('Administrador', 'Supervisor')
+@roles_required('Administrador', 'Supervisor', 'Coordinador')
 def cambiar_estado_pt(request, pt_id, nuevo_estado):
     estados_validos = ['en_almacen', 'vendido', 'embarcado']
     if nuevo_estado not in estados_validos:

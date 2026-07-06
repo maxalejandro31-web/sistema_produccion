@@ -92,7 +92,7 @@ def lista_mp(request):
 def editar_mp(request, mp_id):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Coordinador']).exists()
     ):
         return HttpResponse("No tienes permiso para editar materia prima.")
 
@@ -118,7 +118,7 @@ def editar_mp(request, mp_id):
 def detalle_mp(request, mp_id):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador', 'Almacen']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador', 'Almacen', 'Coordinador']).exists()
     ):
         return HttpResponse("No tienes permiso para ver la materia prima.")
 
@@ -162,7 +162,7 @@ def detalle_mp(request, mp_id):
 def lista_clientes(request):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Coordinador']).exists()
     ):
         return HttpResponse("No tienes permiso para ver clientes.")
 
@@ -185,7 +185,7 @@ def lista_clientes(request):
 def captura_cliente(request):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Coordinador']).exists()
     ):
         return HttpResponse("No tienes permiso para capturar clientes.")
 
@@ -205,7 +205,7 @@ def captura_cliente(request):
 def editar_cliente(request, cliente_id):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Coordinador']).exists()
     ):
         return HttpResponse("No tienes permiso para editar clientes.")
 
@@ -230,7 +230,7 @@ def editar_cliente(request, cliente_id):
 def registrar_movimiento(request, mp_id):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Almacen']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Almacen', 'Coordinador']).exists()
     ):
         messages.error(request, 'No tienes permiso para registrar movimientos.')
         return redirect('detalle_mp', mp_id=mp_id)
