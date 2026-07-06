@@ -108,9 +108,17 @@ def editar_mp(request, mp_id):
     else:
         form = MateriaPrimaForm(instance=mp)
 
+    pdf_url = None
+    if mp.archivo_pdf:
+        try:
+            pdf_url = mp.archivo_pdf.url
+        except Exception:
+            pass
+
     return render(request, 'inventario/editar_mp.html', {
         'form': form,
         'mp': mp,
+        'pdf_url': pdf_url,
     })
 
 

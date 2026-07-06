@@ -88,6 +88,7 @@ class MateriaPrima(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Disponible', blank=True, null=True)
 
     fecha_entrada = models.DateField(null=True, blank=True)
+    archivo_pdf   = models.FileField(upload_to='mp_pdfs/', null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):

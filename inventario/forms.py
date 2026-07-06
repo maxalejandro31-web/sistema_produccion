@@ -44,6 +44,7 @@ class MateriaPrimaForm(forms.ModelForm):
             'ubicacion',
             'estado',
             'fecha_entrada',
+            'archivo_pdf',
             'observaciones',
         ]
         widgets = {
