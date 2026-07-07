@@ -202,6 +202,7 @@
                 <th>Ubicación</th>
                 <th>Estado</th>
                 <th>Estancia / Cobro</th>
+                <th>PDF</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -262,13 +263,21 @@
                 </td>
 
                 <td>
+                    {% if mp.archivo_pdf %}
+                        <a href="{{ mp.archivo_pdf.url }}" target="_blank" style="color:#16a085;font-weight:600;font-size:13px;">Ver PDF</a>
+                    {% else %}
+                        <span style="color:#aaa;font-size:13px;">—</span>
+                    {% endif %}
+                </td>
+
+                <td>
                     <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
                     <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="10">No hay materia prima registrada.</td>
+                <td colspan="11">No hay materia prima registrada.</td>
             </tr>
             {% endfor %}
         </tbody>

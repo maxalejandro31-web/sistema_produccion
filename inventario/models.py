@@ -28,16 +28,6 @@ class MateriaPrima(models.Model):
         ('Interna', 'Interna'),
     ]
 
-    MATERIAL_CHOICES = [
-        ('Galvanizado', 'Galvanizado'),
-        ('Crudo', 'Crudo'),
-        ('Recocido RFR', 'Recocido RFR'),
-        ('Aluminizado', 'Aluminizado'),
-        ('Decapado', 'Decapado'),
-        ('Rolado en caliente', 'Rolado en caliente'),
-        ('Galvanizado y pintado', 'Galvanizado y pintado'),
-    ]
-
     UBICACION_CHOICES = [
         ('Patio A', 'Patio A'),
         ('Patio B', 'Patio B'),
@@ -67,7 +57,7 @@ class MateriaPrima(models.Model):
     codigo = models.CharField(max_length=100, blank=True, null=True)
     descripcion = models.CharField(max_length=255, blank=True, null=True)
 
-    material = models.CharField(max_length=50, choices=MATERIAL_CHOICES, blank=True, null=True)
+    material = models.CharField(max_length=150, blank=True, null=True)
     grado = models.CharField(max_length=100, blank=True, null=True)
     acabado = models.CharField(max_length=100, blank=True, null=True)
 
