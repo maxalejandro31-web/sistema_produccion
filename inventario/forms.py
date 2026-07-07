@@ -51,7 +51,6 @@ class MateriaPrimaForm(forms.ModelForm):
             'tipo_mp': forms.Select(),
             'cliente': forms.Select(),
             'origen_mp': forms.TextInput(attrs={'placeholder': 'Origen de la MP'}),
-            'lote': forms.TextInput(attrs={'placeholder': 'Lote'}),
             'codigo': forms.TextInput(attrs={'placeholder': 'Código'}),
             'descripcion': forms.TextInput(attrs={'placeholder': 'Descripción'}),
             'material': forms.TextInput(attrs={'placeholder': 'Material'}),
