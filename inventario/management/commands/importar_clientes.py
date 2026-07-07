@@ -16,6 +16,7 @@ CLIENTES = [
     ("33",  "ACEROTECA TRADING"),
     ("34",  "LST LEGNAR STEEL"),
     # MAQUILAS Y SERVICIOS JC
+    ("1",   "MAQUILAS Y SERVICIOS JC"),
     ("106", "ACEROMEX"),          # mismo cliente, empresa JC
     ("118", "GRUPO COLLADO"),
     ("125", "ACEROS DEL TORO"),
