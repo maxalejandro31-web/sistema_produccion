@@ -27,7 +27,6 @@ class MateriaPrimaForm(forms.ModelForm):
             'tipo_mp',
             'cliente',
             'origen_mp',
-            'lote',
             'codigo',
             'descripcion',
             'material',
