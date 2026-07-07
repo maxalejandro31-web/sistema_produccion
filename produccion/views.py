@@ -38,7 +38,14 @@ def captura_orden(request):
             else:
                 detalles = []
 
-            orden.save()
+            try:
+                orden.save()
+            except ValueError as e:
+                messages.error(request, str(e))
+                return render(request, 'produccion/captura_orden.html', {
+                    'form': form,
+                    'formset': formset,
+                })
 
             for d in detalles:
                 d.orden = orden
