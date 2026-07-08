@@ -330,8 +330,8 @@
         <div class="campo">
             <label>PDF</label>
             <div class="valor">
-                {% if mp.archivo_pdf %}
-                    <a href="{{ mp.archivo_pdf.url }}" target="_blank">Ver PDF</a>
+                {% if pdf_url %}
+                    <a href="{{ pdf_url }}" target="_blank">Ver PDF</a>
                 {% else %}
                     No disponible
                 {% endif %}

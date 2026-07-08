@@ -154,6 +154,13 @@ def detalle_mp(request, mp_id):
         tipo_objeto='MateriaPrima', objeto_id=mp_id
     ).select_related('usuario')
 
+    pdf_url = None
+    if mp.archivo_pdf:
+        try:
+            pdf_url = mp.archivo_pdf.url
+        except Exception:
+            pass
+
     return render(request, 'inventario/detalle_mp.html', {
         'mp': mp,
         'ordenes_relacionadas': ordenes_relacionadas,
@@ -163,6 +170,7 @@ def detalle_mp(request, mp_id):
         'cantidad_ordenes': cantidad_ordenes,
         'movimientos': movimientos,
         'historial': historial,
+        'pdf_url': pdf_url,
     })
 
 

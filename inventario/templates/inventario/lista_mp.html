@@ -264,7 +264,7 @@
 
                 <td>
                     {% if mp.archivo_pdf %}
-                        <a href="{{ mp.archivo_pdf.url }}" target="_blank" style="color:#16a085;font-weight:600;font-size:13px;">Ver PDF</a>
+                        <a href="{% url 'detalle_mp' mp.id %}" style="color:#16a085;font-weight:600;font-size:13px;">Ver PDF</a>
                     {% else %}
                         <span style="color:#aaa;font-size:13px;">—</span>
                     {% endif %}
