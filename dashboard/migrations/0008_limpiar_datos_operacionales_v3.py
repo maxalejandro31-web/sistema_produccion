@@ -2,17 +2,7 @@ from django.db import migrations
 
 
 def limpiar_datos_operacionales(apps, schema_editor):
-    ProductoTerminado = apps.get_model('materia_terminada', 'ProductoTerminado')
-    DetalleSlitter    = apps.get_model('produccion', 'DetalleSlitter')
-    MovimientoMP      = apps.get_model('inventario', 'MovimientoMP')
-    OrdenProduccion   = apps.get_model('produccion', 'OrdenProduccion')
-    MateriaPrima      = apps.get_model('inventario', 'MateriaPrima')
-
-    ProductoTerminado.objects.all().delete()
-    DetalleSlitter.objects.all().delete()
-    MovimientoMP.objects.all().delete()
-    OrdenProduccion.objects.all().delete()
-    MateriaPrima.objects.all().delete()
+    pass  # cancelado — ya hay datos reales en producción
 
 
 class Migration(migrations.Migration):
