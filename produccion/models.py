@@ -52,6 +52,12 @@ class OrdenProduccion(models.Model):
 
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
     mp = models.ForeignKey(MateriaPrima, on_delete=models.CASCADE, null=True, blank=True)
+    pt_origen = models.ForeignKey(
+        'materia_terminada.ProductoTerminado',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='ordenes_flejado',
+    )
     linea = models.ForeignKey(LineaProduccion, on_delete=models.CASCADE)
 
     operador = models.ForeignKey(Operador, on_delete=models.SET_NULL, null=True, blank=True)

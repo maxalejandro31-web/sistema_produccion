@@ -9,6 +9,12 @@ class ProductoTerminado(models.Model):
         ('embarcado', 'Embarcado'),
     ]
 
+    TIPO_PRODUCTO_CHOICES = [
+        ('cinta', 'Cinta'),
+        ('fleje', 'Fleje'),
+        ('otro', 'Otro'),
+    ]
+
     orden = models.OneToOneField(
         'produccion.OrdenProduccion',
         on_delete=models.CASCADE,
@@ -23,6 +29,7 @@ class ProductoTerminado(models.Model):
 
     numero_pt = models.CharField(max_length=100, unique=True)
     tipo_proceso = models.CharField(max_length=30)
+    tipo_producto = models.CharField(max_length=20, choices=TIPO_PRODUCTO_CHOICES, default='cinta')
 
     peso_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cantidad_paquetes = models.PositiveIntegerField(null=True, blank=True)

@@ -11,6 +11,7 @@ class OrdenProduccionForm(forms.ModelForm):
             'tipo_proceso',
             'cliente',
             'mp',
+            'pt_origen',
             'linea',
             'operador',
             'turno',
@@ -35,6 +36,15 @@ class OrdenProduccionForm(forms.ModelForm):
             'hora_fin': forms.TimeInput(attrs={'type': 'time'}),
             'observaciones': forms.Textarea(attrs={'rows': 4}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from materia_terminada.models import ProductoTerminado
+        self.fields['pt_origen'].queryset = ProductoTerminado.objects.filter(
+            tipo_producto='cinta', estado='en_almacen'
+        ).order_by('-fecha_ingreso')
+        self.fields['pt_origen'].label = 'Cinta origen (Fleje)'
+        self.fields['pt_origen'].required = False
 
 
 class DetalleSlitterForm(forms.ModelForm):

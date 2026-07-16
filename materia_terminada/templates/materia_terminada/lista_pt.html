@@ -150,7 +150,7 @@
             {% for pt in productos %}
             <tr>
                 <td><strong>{{ pt.numero_pt }}</strong></td>
-                <td>{{ pt.tipo_proceso|title }}</td>
+                <td>{{ pt.get_tipo_producto_display }}</td>
                 <td>{{ pt.cliente|default:"-" }}</td>
                 <td>{{ pt.peso_kg }}</td>
                 <td>{{ pt.cantidad_paquetes|default:"-" }}</td>

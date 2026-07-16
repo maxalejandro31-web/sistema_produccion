@@ -600,6 +600,28 @@ document.addEventListener('DOMContentLoaded', function () {
             cargarDatosMP(mpSelect.value);
         }
     }
+
+    // ── Mostrar/ocultar MP vs Cinta origen según tipo de proceso ─────────────
+    const ptOrigenCampo = document.getElementById('id_pt_origen');
+    const mpCampo       = document.getElementById('id_mp');
+
+    function toggleCamposFleje() {
+        if (!tipoProcesoSelect) return;
+        const esFleje = tipoProcesoSelect.value === 'fleje';
+        if (ptOrigenCampo) {
+            ptOrigenCampo.closest('.campo').style.display = esFleje ? '' : 'none';
+        }
+        if (mpCampo) {
+            mpCampo.closest('.campo').style.display = esFleje ? 'none' : '';
+            const banner = document.getElementById('mp-info-banner');
+            if (banner) banner.style.display = esFleje ? 'none' : '';
+        }
+    }
+
+    if (tipoProcesoSelect) {
+        tipoProcesoSelect.addEventListener('change', toggleCamposFleje);
+        toggleCamposFleje();
+    }
 });
 </script>
 {% endblock %}
