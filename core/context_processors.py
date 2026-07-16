@@ -30,7 +30,7 @@ def permisos_usuario(request):
 
         mp_vencidas = MateriaPrima.objects.filter(
             fecha_entrada__lt=hoy - datetime.timedelta(days=30)
-        ).count()
+        ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
         if mp_vencidas:
             alertas_items.append({
                 'tipo': 'danger',
@@ -44,7 +44,7 @@ def permisos_usuario(request):
                 hoy - datetime.timedelta(days=30),
                 hoy - datetime.timedelta(days=23),
             )
-        ).count()
+        ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
         if mp_por_vencer:
             alertas_items.append({
                 'tipo': 'warning',
