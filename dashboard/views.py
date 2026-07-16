@@ -90,8 +90,20 @@ def inicio(request):
     mp_proceso    = MateriaPrima.objects.filter(estado='En Proceso').count()
     mp_terminada  = MateriaPrima.objects.filter(estado='Terminado').count()
 
-    agg_mp = MateriaPrima.objects.aggregate(total_kg=Sum('peso_restante'))
-    total_kg_mp = round(float(agg_mp['total_kg'] or 0), 1)
+    agg_mp_propia = MateriaPrima.objects.filter(
+        cliente__nombre='MAQUILAS Y SERVICIOS JC'
+    ).aggregate(total_kg=Sum('peso_restante'))
+    total_kg_mp_propia = round(float(agg_mp_propia['total_kg'] or 0), 1)
+
+    agg_mp_clientes = MateriaPrima.objects.exclude(
+        cliente__nombre='MAQUILAS Y SERVICIOS JC'
+    ).aggregate(total_kg=Sum('peso_restante'))
+    total_kg_mp_clientes = round(float(agg_mp_clientes['total_kg'] or 0), 1)
+
+    mp_disponible_propia  = MateriaPrima.objects.filter(cliente__nombre='MAQUILAS Y SERVICIOS JC', estado='Disponible').count()
+    mp_proceso_propia     = MateriaPrima.objects.filter(cliente__nombre='MAQUILAS Y SERVICIOS JC', estado='En Proceso').count()
+    mp_disponible_cliente = MateriaPrima.objects.exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').filter(estado='Disponible').count()
+    mp_proceso_cliente    = MateriaPrima.objects.exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').filter(estado='En Proceso').count()
 
     total_ordenes      = OrdenProduccion.objects.count()
     ordenes_pendientes = OrdenProduccion.objects.filter(estado='pendiente').count()
@@ -174,7 +186,12 @@ def inicio(request):
     ordenes_semana_chart = json.dumps({'labels': dias_labels, 'data': dias_data})
 
     return render(request, 'dashboard/inicio.html', {
-        'total_kg_mp': total_kg_mp,
+        'total_kg_mp_propia': total_kg_mp_propia,
+        'total_kg_mp_clientes': total_kg_mp_clientes,
+        'mp_disponible_propia': mp_disponible_propia,
+        'mp_proceso_propia': mp_proceso_propia,
+        'mp_disponible_cliente': mp_disponible_cliente,
+        'mp_proceso_cliente': mp_proceso_cliente,
         'mp_disponible': mp_disponible,
         'mp_proceso': mp_proceso,
         'mp_terminada': mp_terminada,

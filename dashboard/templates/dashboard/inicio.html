@@ -105,9 +105,14 @@
     <!-- KPIs -->
     <div class="kpi-grid">
         <div class="kpi kpi-verde">
-            <div class="kpi-label">Materia Prima</div>
-            <div class="kpi-value">{{ total_kg_mp }} kg</div>
-            <div class="kpi-sub">{{ mp_disponible }} disponible · {{ mp_proceso }} en proceso</div>
+            <div class="kpi-label">MP Propia</div>
+            <div class="kpi-value">{{ total_kg_mp_propia }} kg</div>
+            <div class="kpi-sub">{{ mp_disponible_propia }} disponible · {{ mp_proceso_propia }} en proceso</div>
+        </div>
+        <div class="kpi kpi-verde">
+            <div class="kpi-label">MP Clientes</div>
+            <div class="kpi-value">{{ total_kg_mp_clientes }} kg</div>
+            <div class="kpi-sub">{{ mp_disponible_cliente }} disponible · {{ mp_proceso_cliente }} en proceso</div>
         </div>
         <div class="kpi kpi-azul">
             <div class="kpi-label">Órdenes de Producción</div>
