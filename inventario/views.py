@@ -64,10 +64,10 @@ def lista_mp(request):
     elif cobro == 'libre':
         qs = qs.filter(fecha_entrada__gte=hoy - datetime.timedelta(days=22))
 
-    mp_vencidas_count   = MateriaPrima.objects.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).count()
+    mp_vencidas_count   = MateriaPrima.objects.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
     mp_por_vencer_count = MateriaPrima.objects.filter(
         fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
-    ).count()
+    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
 
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get('page', 1))

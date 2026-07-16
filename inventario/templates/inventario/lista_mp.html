@@ -109,6 +109,7 @@
     .cobro-vencer   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
     .cobro-vencido  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .cobro-sinfecha { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+    .cobro-propia   { background: #ede9fe; color: #4c1d95; border: 1px solid #c4b5fd; }
 
     tr.fila-vencida   { background: #fff5f5; }
     tr.fila-vencida:hover { background: #fee2e2; }
@@ -242,7 +243,9 @@
                 </td>
 
                 <td>
-                    {% if mp.estatus_cobro == 'libre' %}
+                    {% if mp.estatus_cobro == 'propia' %}
+                        <span class="badge-cobro cobro-propia">MP Propia</span>
+                    {% elif mp.estatus_cobro == 'libre' %}
                         <span class="badge-cobro cobro-libre">
                             ✓ {{ mp.dias_en_fabrica_num }} día{{ mp.dias_en_fabrica_num|pluralize:"s" }}
                             &nbsp;·&nbsp; faltan {{ mp.dias_hasta_cobro }}

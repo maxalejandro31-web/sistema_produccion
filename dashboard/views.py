@@ -133,7 +133,7 @@ def inicio(request):
     mp_cobro_activo = MateriaPrima.objects.filter(
         fecha_entrada__isnull=False,
         fecha_entrada__lt=hoy - datetime.timedelta(days=30),
-    ).count()
+    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
 
     mp_por_vencer = MateriaPrima.objects.filter(
         fecha_entrada__isnull=False,
@@ -141,7 +141,7 @@ def inicio(request):
             hoy - datetime.timedelta(days=30),
             hoy - datetime.timedelta(days=23),
         ),
-    ).count()
+    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
 
     ordenes_urgentes = OrdenProduccion.objects.filter(
         estado__in=['pendiente', 'proceso'],

@@ -147,13 +147,13 @@ class MateriaPrima(models.Model):
         return math.floor(dias / 30)
 
     @property
+    def es_propia(self):
+        return bool(self.cliente_id and self.cliente.nombre == 'MAQUILAS Y SERVICIOS JC')
+
+    @property
     def estatus_cobro(self):
-        """
-        libre       → dentro del período gratuito (> 7 días libres restantes)
-        por_vencer  → quedan 7 días o menos para que inicie el cobro
-        vencido     → ya se están cobrando meses adicionales
-        sin_fecha   → no tiene fecha de entrada registrada
-        """
+        if self.es_propia:
+            return 'propia'
         dias = self.dias_en_fabrica_num
         if dias is None:
             return 'sin_fecha'
