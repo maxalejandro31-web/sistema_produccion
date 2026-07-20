@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Salida{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_salidas' %}">Salidas</a>
+    <span class="sep">›</span>
+    <span class="current">Nueva Salida</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor { background: white; border-radius: 14px; padding: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); max-width: 1000px; }
+    h1 { margin-top: 0; margin-bottom: 24px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .campo label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #2c3e50; }
+    .campo input, .campo select, .campo textarea { width: 100%; padding: 9px 11px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    h2 { font-size: 16px; margin: 24px 0 12px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+    .tabla-pt { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tabla-pt th, .tabla-pt td { padding: 9px 10px; border-bottom: 1px solid #eee; text-align: left; }
+    .tabla-pt th { background: #f5f7fa; }
+    .tabla-pt tr:hover { background: #f9f9f9; }
+    .badge-cinta { background: #2980b9; color: white; padding: 3px 8px; border-radius: 6px; font-size: 11px; }
+    .badge-fleje { background: #8e44ad; color: white; padding: 3px 8px; border-radius: 6px; font-size: 11px; }
+    .btn-guardar { background: #27ae60; color: white; padding: 11px 24px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 20px; }
+    .btn-guardar:hover { background: #1e8449; }
+    .seleccionados-info { background: #eef6ff; border: 1px solid #cfe2f3; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; }
+    .filtro-pt { display: flex; gap: 10px; margin-bottom: 12px; }
+    .filtro-pt input, .filtro-pt select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; }
+</style>
+
+<div class="contenedor">
+    <h1>Nueva Salida</h1>
+
+    {% if messages %}
+        {% for msg in messages %}
+        <div style="background:#fee2e2;border:1px solid #fca5a5;padding:10px 14px;border-radius:8px;margin-bottom:14px;color:#991b1b;">{{ msg }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="grid2">
+            <div class="campo">
+                <label>Tipo de salida *</label>
+                <select name="tipo" id="id_tipo" required>
+                    <option value="">-- Seleccionar --</option>
+                    <option value="maquila">Maquila (al cliente)</option>
+                    <option value="interno">Interno (Centro de Servicio)</option>
+                </select>
+            </div>
+            <div class="campo" id="campo-cliente">
+                <label>Cliente</label>
+                <select name="cliente">
+                    <option value="">-- Sin cliente --</option>
+                    {% for c in clientes %}
+                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="campo">
+                <label>Fecha y hora de salida</label>
+                <input type="datetime-local" name="fecha_salida" value="{{ now|date:'Y-m-d' }}T{% now 'H:i' %}">
+            </div>
+            <div class="campo">
+                <label>Observaciones</label>
+                <input type="text" name="observaciones" placeholder="Opcional...">
+            </div>
+        </div>
+
+        <h2>Seleccionar PT para esta salida</h2>
+
+        <div class="filtro-pt">
+            <input type="text" id="buscar-pt" placeholder="Buscar por número PT..." style="flex:1;">
+            <select id="filtro-tipo-producto">
+                <option value="">Todos los tipos</option>
+                <option value="cinta">Cinta</option>
+                <option value="fleje">Fleje</option>
+            </select>
+        </div>
+
+        <div class="seleccionados-info" id="info-seleccionados">
+            0 PT seleccionados · 0.00 kg
+        </div>
+
+        {% if pt_disponibles %}
+        <table class="tabla-pt">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="seleccionar-todos"></th>
+                    <th>Número PT</th>
+                    <th>Tipo</th>
+                    <th>Cliente</th>
+                    <th>Peso (kg)</th>
+                    <th>Piezas</th>
+                    <th>Fecha ingreso</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-pt-body">
+                {% for pt in pt_disponibles %}
+                <tr data-tipo="{{ pt.tipo_producto }}" data-peso="{{ pt.peso_kg }}" data-num="{{ pt.numero_pt|lower }}">
+                    <td><input type="checkbox" name="pt_seleccionados" value="{{ pt.id }}" class="chk-pt"></td>
+                    <td><strong>{{ pt.numero_pt }}</strong></td>
+                    <td>
+                        {% if pt.tipo_producto == 'cinta' %}
+                            <span class="badge-cinta">Cinta</span>
+                        {% elif pt.tipo_producto == 'fleje' %}
+                            <span class="badge-fleje">Fleje</span>
+                        {% else %}
+                            {{ pt.get_tipo_producto_display }}
+                        {% endif %}
+                    </td>
+                    <td>{{ pt.cliente|default:"—" }}</td>
+                    <td>{{ pt.peso_kg }}</td>
+                    <td>{{ pt.cantidad_piezas|default:"—" }}</td>
+                    <td>{{ pt.fecha_ingreso|date:"d/m/Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#888;">No hay PT en almacén disponibles para salida.</p>
+        {% endif %}
+
+        <button type="submit" class="btn-guardar">Registrar Salida</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkboxes   = document.querySelectorAll('.chk-pt');
+    const infoDiv      = document.getElementById('info-seleccionados');
+    const selectTodos  = document.getElementById('seleccionar-todos');
+    const buscarInput  = document.getElementById('buscar-pt');
+    const filtroTipo   = document.getElementById('filtro-tipo-producto');
+    const filas        = document.querySelectorAll('#tabla-pt-body tr');
+    const tipoSelect   = document.getElementById('id_tipo');
+    const campoCliente = document.getElementById('campo-cliente');
+
+    function actualizarInfo() {
+        let count = 0, pesoTotal = 0;
+        checkboxes.forEach(function (chk) {
+            if (chk.checked) {
+                count++;
+                const fila = chk.closest('tr');
+                pesoTotal += parseFloat(fila.dataset.peso || 0);
+            }
+        });
+        infoDiv.textContent = count + ' PT seleccionados · ' + pesoTotal.toFixed(2) + ' kg';
+    }
+
+    checkboxes.forEach(function (chk) {
+        chk.addEventListener('change', actualizarInfo);
+    });
+
+    selectTodos.addEventListener('change', function () {
+        filas.forEach(function (fila) {
+            if (fila.style.display !== 'none') {
+                const chk = fila.querySelector('.chk-pt');
+                if (chk) chk.checked = selectTodos.checked;
+            }
+        });
+        actualizarInfo();
+    });
+
+    function filtrar() {
+        const q    = buscarInput.value.toLowerCase().trim();
+        const tipo = filtroTipo.value;
+        filas.forEach(function (fila) {
+            const matchNum  = !q    || fila.dataset.num.includes(q);
+            const matchTipo = !tipo || fila.dataset.tipo === tipo;
+            fila.style.display = (matchNum && matchTipo) ? '' : 'none';
+        });
+    }
+
+    buscarInput.addEventListener('input', filtrar);
+    filtroTipo.addEventListener('change', filtrar);
+
+    // Mostrar/ocultar cliente según tipo
+    function toggleCliente() {
+        campoCliente.style.display = tipoSelect.value === 'maquila' ? '' : 'none';
+    }
+    tipoSelect.addEventListener('change', toggleCliente);
+    toggleCliente();
+});
+</script>
+{% endblock %}

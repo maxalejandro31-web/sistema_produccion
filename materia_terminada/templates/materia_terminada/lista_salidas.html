@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Salidas{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <span class="current">Salidas</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor { background: white; border-radius: 14px; padding: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    h1 { margin-top: 0; margin-bottom: 20px; }
+    .btn-nuevo { display: inline-block; background: #2c3e50; color: white; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 14px; margin-bottom: 20px; }
+    .btn-nuevo:hover { background: #1a252f; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #f5f7fa; }
+    .badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; color: white; display: inline-block; }
+    .badge-maquila  { background: #2980b9; }
+    .badge-interno  { background: #27ae60; }
+    .btn-ver { display: inline-block; padding: 5px 10px; background: #16a085; color: white; border-radius: 6px; text-decoration: none; font-size: 12px; }
+</style>
+
+<div class="contenedor">
+    <h1>Salidas de Material</h1>
+    {% if es_admin_total or es_administrador or es_supervisor or es_coordinador %}
+    <a href="{% url 'crear_salida' %}" class="btn-nuevo">+ Nueva Salida</a>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Folio</th>
+                <th>Tipo</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Peso total</th>
+                <th>PT incluidos</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for salida in salidas %}
+            <tr>
+                <td><strong>{{ salida.folio_remision }}</strong></td>
+                <td>
+                    {% if salida.tipo == 'maquila' %}
+                        <span class="badge badge-maquila">Maquila</span>
+                    {% else %}
+                        <span class="badge badge-interno">Interno</span>
+                    {% endif %}
+                </td>
+                <td>{{ salida.cliente|default:"—" }}</td>
+                <td>{{ salida.fecha_salida|date:"d/m/Y H:i" }}</td>
+                <td>{{ salida.peso_total }} kg</td>
+                <td>{{ salida.detalles.count }}</td>
+                <td><a href="{% url 'detalle_salida' salida.pk %}" class="btn-ver">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">No hay salidas registradas.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include 'partials/paginacion.html' %}
+</div>
+{% endblock %}
