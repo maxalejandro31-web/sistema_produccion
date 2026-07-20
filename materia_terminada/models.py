@@ -16,9 +16,15 @@ class ProductoTerminado(models.Model):
         ('otro', 'Otro'),
     ]
 
-    orden = models.OneToOneField(
+    orden = models.ForeignKey(
         'produccion.OrdenProduccion',
         on_delete=models.CASCADE,
+        related_name='productos_terminados',
+    )
+    detalle_slitter = models.ForeignKey(
+        'produccion.DetalleSlitter',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
         related_name='producto_terminado',
     )
     cliente = models.ForeignKey(

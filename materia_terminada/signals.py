@@ -2,10 +2,10 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 
 TIPO_PRODUCTO_MAP = {
-    'slitter':     'cinta',
-    'mini_slitter':'cinta',
-    'corte_liso':  'cinta',
-    'fleje':       'fleje',
+    'slitter':      'cinta',
+    'mini_slitter': 'cinta',
+    'corte_liso':   'cinta',
+    'fleje':        'fleje',
 }
 
 
@@ -28,24 +28,40 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
 
     from materia_terminada.models import ProductoTerminado
 
-    if hasattr(instance, 'producto_terminado'):
+    if instance.productos_terminados.exists():
         return
 
-    numero_pt = f"PT-{instance.folio_orden}" if instance.folio_orden else f"PT-{instance.pk}"
-    tipo_producto = TIPO_PRODUCTO_MAP.get(instance.tipo_proceso, 'otro')
+    if instance.tipo_proceso == 'slitter':
+        # Un PT por cada corte del detalle slitter
+        for detalle in instance.detalles_slitter.all():
+            if not detalle.peso:
+                continue
+            numero_pt = f"PT-{instance.folio_orden}-C{detalle.no_corte}"
+            ProductoTerminado.objects.create(
+                orden=instance,
+                detalle_slitter=detalle,
+                cliente=instance.cliente,
+                numero_pt=numero_pt,
+                tipo_proceso=instance.tipo_proceso,
+                tipo_producto='cinta',
+                peso_kg=detalle.peso,
+            )
+    else:
+        # Para fleje y otros: un PT por orden
+        numero_pt = f"PT-{instance.folio_orden}" if instance.folio_orden else f"PT-{instance.pk}"
+        tipo_producto = TIPO_PRODUCTO_MAP.get(instance.tipo_proceso, 'otro')
 
-    ProductoTerminado.objects.create(
-        orden=instance,
-        cliente=instance.cliente,
-        numero_pt=numero_pt,
-        tipo_proceso=instance.tipo_proceso,
-        tipo_producto=tipo_producto,
-        peso_kg=instance.peso_producido or 0,
-        cantidad_paquetes=instance.cantidad_paquetes,
-        cantidad_piezas=instance.cantidad_piezas,
-    )
+        ProductoTerminado.objects.create(
+            orden=instance,
+            cliente=instance.cliente,
+            numero_pt=numero_pt,
+            tipo_proceso=instance.tipo_proceso,
+            tipo_producto=tipo_producto,
+            peso_kg=instance.peso_producido or 0,
+            cantidad_paquetes=instance.cantidad_paquetes,
+            cantidad_piezas=instance.cantidad_piezas,
+        )
 
-    # Si es una orden de fleje con cinta origen, marcar esa cinta como embarcada
+    # Marcar la cinta origen como embarcada cuando se termina el fleje
     if instance.tipo_proceso == 'fleje' and instance.pt_origen_id:
-        from materia_terminada.models import ProductoTerminado as PT
-        PT.objects.filter(pk=instance.pt_origen_id).update(estado='embarcado')
+        ProductoTerminado.objects.filter(pk=instance.pt_origen_id).update(estado='embarcado')

@@ -604,6 +604,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Mostrar/ocultar MP vs Cinta origen según tipo de proceso ─────────────
     const ptOrigenCampo = document.getElementById('id_pt_origen');
     const mpCampo       = document.getElementById('id_mp');
+    const labelPiezas   = document.querySelector('label[for="id_cantidad_piezas"]');
+    const labelPesoProducido = document.querySelector('label[for="id_peso_producido"]');
 
     function toggleCamposFleje() {
         if (!tipoProcesoSelect) return;
@@ -615,6 +617,12 @@ document.addEventListener('DOMContentLoaded', function () {
             mpCampo.closest('.campo').style.display = esFleje ? 'none' : '';
             const banner = document.getElementById('mp-info-banner');
             if (banner) banner.style.display = esFleje ? 'none' : '';
+        }
+        if (labelPiezas) {
+            labelPiezas.textContent = esFleje ? 'Número de tiras' : 'Cantidad de piezas';
+        }
+        if (labelPesoProducido) {
+            labelPesoProducido.textContent = esFleje ? 'Peso de tiras (kg)' : 'Peso producido (kg)';
         }
     }
 

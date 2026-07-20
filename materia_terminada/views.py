@@ -37,10 +37,25 @@ def lista_pt(request):
 @login_required
 def detalle_pt(request, pt_id):
     producto = get_object_or_404(
-        ProductoTerminado.objects.select_related('cliente', 'orden', 'orden__linea', 'orden__operador'),
+        ProductoTerminado.objects.select_related(
+            'cliente', 'orden', 'orden__linea', 'orden__operador',
+            'detalle_slitter', 'orden__pt_origen',
+        ),
         id=pt_id,
     )
-    return render(request, 'materia_terminada/detalle_pt.html', {'producto': producto})
+
+    rendimiento = None
+    if producto.orden and producto.orden.peso_usado:
+        peso_entrada = float(producto.orden.peso_usado)
+        if producto.tipo_producto == 'fleje' and producto.orden.pt_origen:
+            peso_entrada = float(producto.orden.pt_origen.peso_kg or 0)
+        if peso_entrada > 0:
+            rendimiento = round((float(producto.peso_kg) / peso_entrada) * 100, 1)
+
+    return render(request, 'materia_terminada/detalle_pt.html', {
+        'producto': producto,
+        'rendimiento': rendimiento,
+    })
 
 
 @roles_required('Administrador', 'Supervisor', 'Coordinador')

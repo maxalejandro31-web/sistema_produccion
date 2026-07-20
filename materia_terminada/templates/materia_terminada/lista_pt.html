@@ -136,12 +136,13 @@
         <thead>
             <tr>
                 <th>N° PT</th>
-                <th>Proceso</th>
+                <th>Tipo</th>
                 <th>Cliente</th>
+                <th>Ancho</th>
+                <th>Espesor</th>
                 <th>Peso (kg)</th>
-                <th>Paquetes</th>
+                <th>Tiras / Piezas</th>
                 <th>Estado</th>
-                <th>Ubicación</th>
                 <th>Fecha ingreso</th>
                 <th>Acciones</th>
             </tr>
@@ -152,12 +153,13 @@
                 <td><strong>{{ pt.numero_pt }}</strong></td>
                 <td>{{ pt.get_tipo_producto_display }}</td>
                 <td>{{ pt.cliente|default:"-" }}</td>
+                <td>{% if pt.detalle_slitter %}{{ pt.detalle_slitter.ancho|default:"-" }}{% else %}-{% endif %}</td>
+                <td>{% if pt.detalle_slitter %}{{ pt.detalle_slitter.espesor|default:"-" }}{% else %}-{% endif %}</td>
                 <td>{{ pt.peso_kg }}</td>
-                <td>{{ pt.cantidad_paquetes|default:"-" }}</td>
+                <td>{{ pt.cantidad_piezas|default:"-" }}</td>
                 <td>
                     <span class="badge {{ pt.estado }}">{{ pt.get_estado_display }}</span>
                 </td>
-                <td>{{ pt.ubicacion }}</td>
                 <td>{{ pt.fecha_ingreso|date:"d/m/Y H:i" }}</td>
                 <td>
                     <a class="btn btn-detalle" href="{% url 'detalle_pt' pt.id %}">Detalle</a>
@@ -181,7 +183,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" style="text-align:center;color:#999;padding:30px;">
+                <td colspan="10" style="text-align:center;color:#999;padding:30px;">
                     No hay productos terminados.
                 </td>
             </tr>
