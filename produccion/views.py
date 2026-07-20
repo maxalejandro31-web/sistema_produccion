@@ -135,18 +135,30 @@ def editar_orden(request, orden_id):
     try:
         if request.method == 'POST':
             form = OrdenProduccionForm(request.POST, instance=orden)
-            if form.is_valid():
+            formset = DetalleSlitterFormSet(request.POST, instance=orden, prefix='detalles')
+
+            if form.is_valid() and formset.is_valid():
                 orden_actualizada = form.save(commit=False)
                 orden_actualizada.save()
+
+                detalles = formset.save(commit=False)
+                for d in detalles:
+                    d.orden = orden_actualizada
+                    d.save()
+                for obj in formset.deleted_objects:
+                    obj.delete()
+
                 registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'EDITAR',
                     f'Orden {orden.folio_orden or orden.id} actualizada.')
                 messages.success(request, f'Orden {orden.folio_orden or orden.id} actualizada correctamente.')
                 return redirect('lista_ordenes')
         else:
             form = OrdenProduccionForm(instance=orden)
+            formset = DetalleSlitterFormSet(instance=orden, prefix='detalles')
 
         return render(request, 'produccion/editar_orden.html', {
             'form': form,
+            'formset': formset,
             'orden': orden,
         })
 

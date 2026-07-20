@@ -14,58 +14,37 @@
 
 {% block content %}
 <style>
-    .contenedor {
-        background: white;
-        border-radius: 14px;
-        padding: 25px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        max-width: 1000px;
-    }
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
-    }
-    .campo {
-        display: flex;
-        flex-direction: column;
-    }
-    .campo label {
-        font-weight: bold;
-        margin-bottom: 6px;
-    }
-    .campo input,
-    .campo select,
-    .campo textarea {
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-    }
-    .acciones {
-        margin-top: 20px;
-    }
-    .acciones button,
-    .acciones a {
-        display: inline-block;
-        padding: 10px 14px;
-        border-radius: 8px;
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        margin-right: 10px;
-    }
-    .acciones button {
-        background: #2c3e50;
-        color: white;
-    }
-    .acciones a {
-        background: #95a5a6;
-        color: white;
-    }
+    .contenedor { background: white; border-radius: 14px; padding: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); max-width: 1100px; }
+    h1 { margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .campo { display: flex; flex-direction: column; }
+    .campo label { font-weight: bold; margin-bottom: 6px; font-size: 13px; color: #2c3e50; }
+    .campo input, .campo select, .campo textarea { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; }
+    .acciones { margin-top: 20px; }
+    .acciones button, .acciones a { display: inline-block; padding: 10px 14px; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; margin-right: 10px; }
+    .acciones button { background: #2c3e50; color: white; font-size: 14px; }
+    .acciones a { background: #95a5a6; color: white; }
+
+    .bloque-slitter { margin-top: 28px; }
+    .bloque-slitter h2 { font-size: 16px; margin-bottom: 12px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+    .aviso-terminado { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #9a3412; margin-bottom: 12px; }
+    table.tabla-detalles { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.tabla-detalles th, table.tabla-detalles td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; }
+    table.tabla-detalles th { background: #f5f7fa; }
+    table.tabla-detalles input, table.tabla-detalles select { width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+    .btn-agregar { background: #27ae60; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .btn-eliminar { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .resumen { background: #f0f4f8; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 10px; }
 </style>
 
 <div class="contenedor">
-    <h1>Editar Orden</h1>
+    <h1>Editar Orden — {{ orden.folio_orden|default:"Sin folio" }}</h1>
+
+    {% if messages %}
+        {% for msg in messages %}
+        <div style="background:#fee2e2;border:1px solid #fca5a5;padding:10px 14px;border-radius:8px;margin-bottom:14px;color:#991b1b;">{{ msg }}</div>
+        {% endfor %}
+    {% endif %}
 
     <form method="post">
         {% csrf_token %}
@@ -74,12 +53,65 @@
                 <div class="campo">
                     <label>{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}
-                        <small style="color:red;">{{ field.errors }}</small>
-                    {% endif %}
+                    {% if field.errors %}<small style="color:red;">{{ field.errors }}</small>{% endif %}
                 </div>
             {% endfor %}
         </div>
+
+        {% if orden.tipo_proceso == 'slitter' %}
+        <div class="bloque-slitter">
+            <h2>Detalle de Cortes Slitter</h2>
+
+            {% if orden.estado == 'terminado' %}
+            <div class="aviso-terminado">
+                ⚠️ Esta orden ya está terminada. Editar los cortes no actualiza automáticamente los PT generados.
+            </div>
+            {% endif %}
+
+            <div class="resumen" id="resumen-slitter">
+                <strong>Total cortes:</strong> <span id="total-peso">0.00</span> kg
+            </div>
+
+            {{ formset.management_form }}
+            <table class="tabla-detalles">
+                <thead>
+                    <tr>
+                        <th>No. corte</th>
+                        <th>Ancho</th>
+                        <th>Espesor</th>
+                        <th>Rebaba</th>
+                        <th>Peso (kg)</th>
+                        <th>Camber</th>
+                        <th>Mat. OK</th>
+                        <th>Obs.</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body">
+                    {% for detalle_form in formset %}
+                    <tr class="detalle-row">
+                        <td>
+                            {{ detalle_form.id }}
+                            {{ detalle_form.no_corte }}
+                        </td>
+                        <td>{{ detalle_form.ancho }}</td>
+                        <td>{{ detalle_form.espesor }}</td>
+                        <td>{{ detalle_form.rebaba }}</td>
+                        <td>{{ detalle_form.peso }}</td>
+                        <td>{{ detalle_form.camber }}</td>
+                        <td>{{ detalle_form.material_ok }}</td>
+                        <td>{{ detalle_form.observaciones }}</td>
+                        <td>
+                            {{ detalle_form.DELETE }}
+                            <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">✕</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="btn-agregar" style="margin-top:10px;" onclick="agregarFila()">+ Agregar corte</button>
+        </div>
+        {% endif %}
 
         <div class="acciones">
             <button type="submit">Guardar cambios</button>
@@ -87,4 +119,64 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const totalPesoSpan = document.getElementById('total-peso');
+
+    function calcularTotal() {
+        if (!totalPesoSpan) return;
+        let total = 0;
+        document.querySelectorAll('.detalle-row').forEach(function (fila) {
+            if (fila.style.display === 'none') return;
+            const deleteChk = fila.querySelector('input[type="checkbox"]');
+            if (deleteChk && deleteChk.checked) return;
+            const pesoInput = fila.querySelectorAll('input[type="number"], input:not([type])')[4];
+            const inputs = fila.querySelectorAll('td input');
+            inputs.forEach(function(inp) {
+                if ((inp.name || '').includes('-peso')) {
+                    total += parseFloat(inp.value || 0);
+                }
+            });
+        });
+        totalPesoSpan.textContent = total.toFixed(2);
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.name && e.target.name.includes('-peso')) calcularTotal();
+    });
+
+    calcularTotal();
+});
+
+function eliminarFila(btn) {
+    const fila = btn.closest('tr');
+    const deleteChk = fila.querySelector('input[type="checkbox"]');
+    if (deleteChk) {
+        deleteChk.checked = true;
+        fila.style.display = 'none';
+    } else {
+        fila.remove();
+    }
+}
+
+function agregarFila() {
+    const tbody = document.getElementById('tabla-body');
+    const totalForms = document.getElementById('id_detalles-TOTAL_FORMS');
+    const idx = parseInt(totalForms.value);
+
+    const nuevaFila = document.querySelector('.detalle-row').cloneNode(true);
+    nuevaFila.style.display = '';
+
+    nuevaFila.querySelectorAll('input, select, textarea').forEach(function (el) {
+        el.name  = el.name.replace(/-\d+-/, '-' + idx + '-');
+        el.id    = el.id.replace(/-\d+-/, '-' + idx + '-');
+        if (el.type !== 'checkbox') el.value = '';
+        if (el.type === 'checkbox') el.checked = false;
+    });
+
+    tbody.appendChild(nuevaFila);
+    totalForms.value = idx + 1;
+}
+</script>
 {% endblock %}
