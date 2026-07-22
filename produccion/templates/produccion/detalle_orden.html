@@ -89,7 +89,7 @@
         <div class="card"><strong>Cliente:</strong> {{ orden.cliente|default:"-" }}</div>
         <div class="card"><strong>MP:</strong> {{ orden.mp|default:"-" }}</div>
         <div class="card"><strong>Línea:</strong> {{ orden.linea }}</div>
-        <div class="card"><strong>Operador:</strong> {{ orden.operador|default:"-" }}</div>
+        <div class="card"><strong>Operador:</strong> {{ orden.operador_nombre_nombre|default:"-" }}</div>
         <div class="card"><strong>Turno:</strong> {{ orden.get_turno_display|default:"-" }}</div>
         <div class="card"><strong>Prioridad:</strong> {{ orden.get_prioridad_display }}</div>
         <div class="card"><strong>Hora inicio:</strong> {{ orden.hora_inicio|default:"-" }}</div>

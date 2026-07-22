@@ -105,7 +105,7 @@
         <div class="campo"><div class="campo-label">Materia Prima</div><div class="campo-valor">{{ orden.mp|default:"—" }}</div></div>
         <div class="campo"><div class="campo-label">Tipo de proceso</div><div class="campo-valor">{{ orden.get_tipo_proceso_display }}</div></div>
         <div class="campo"><div class="campo-label">Línea</div><div class="campo-valor">{{ orden.linea }}</div></div>
-        <div class="campo"><div class="campo-label">Operador</div><div class="campo-valor">{{ orden.operador|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Operador</div><div class="campo-valor">{{ orden.operador_nombre_nombre|default:"—" }}</div></div>
         <div class="campo"><div class="campo-label">Turno</div><div class="campo-valor">{{ orden.get_turno_display|default:"—" }}</div></div>
         <div class="campo"><div class="campo-label">Prioridad</div><div class="campo-valor">{{ orden.get_prioridad_display }}</div></div>
         <div class="campo">

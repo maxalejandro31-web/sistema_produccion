@@ -60,7 +60,7 @@ class OrdenProduccion(models.Model):
     )
     linea = models.ForeignKey(LineaProduccion, on_delete=models.CASCADE)
 
-    operador = models.ForeignKey(Operador, on_delete=models.SET_NULL, null=True, blank=True)
+    operador_nombre = models.CharField(max_length=120, null=True, blank=True, verbose_name='Operador')
     turno = models.CharField(max_length=10, choices=TURNO_CHOICES, null=True, blank=True)
     prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='media')
 

@@ -29,7 +29,7 @@ class OrdenProduccionAdmin(admin.ModelAdmin):
         'cliente',
         'mp',
         'linea',
-        'operador',
+        'operador_nombre',
         'turno',
         'prioridad',
         'peso_usado',
@@ -45,7 +45,7 @@ class OrdenProduccionAdmin(admin.ModelAdmin):
         'cliente__nombre',
         'mp__numero_mp',
         'linea__nombre',
-        'operador__nombre',
+        'operador_nombre',
     )
     list_filter = (
         'tipo_proceso',

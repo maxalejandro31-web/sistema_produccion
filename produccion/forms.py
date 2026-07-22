@@ -13,7 +13,7 @@ class OrdenProduccionForm(forms.ModelForm):
             'mp',
             'pt_origen',
             'linea',
-            'operador',
+            'operador_nombre',
             'turno',
             'prioridad',
             'hora_inicio',
