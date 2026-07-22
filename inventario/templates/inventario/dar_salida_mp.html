@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Dar Salida — {{ mp.numero_mp }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_mp' %}">Materia Prima</a>
+    <span class="sep">›</span>
+    <a href="{% url 'detalle_mp' mp.id %}">{{ mp.numero_mp }}</a>
+    <span class="sep">›</span>
+    <span class="current">Dar Salida</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .card { max-width: 580px; margin: 0 auto; background: white; border-radius: 14px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    h1 { margin-top: 0; font-size: 22px; color: #1f2d3d; margin-bottom: 6px; }
+    .subtitulo { color: #6b7280; font-size: 13px; margin-bottom: 24px; }
+    .mp-info { background: #f8f9fb; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
+    .mp-info .item label { display: block; color: #6b7280; font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
+    .mp-info .item strong { color: #1f2d3d; font-size: 15px; }
+    .campo { margin-bottom: 18px; }
+    .campo label { display: block; font-weight: 600; margin-bottom: 6px; color: #374151; font-size: 14px; }
+    .campo input, .campo select, .campo textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box; }
+    .campo input:focus, .campo select:focus { outline: none; border-color: #e74c3c; }
+    .aviso-peso { display: none; margin-top: 6px; padding: 7px 12px; border-radius: 7px; font-size: 13px; font-weight: 600; }
+    .aviso-ok    { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .aviso-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .acciones { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-salida { background: #e74c3c; color: white; border: none; padding: 11px 26px; border-radius: 8px; font-size: 15px; cursor: pointer; font-weight: 600; }
+    .btn-salida:hover { background: #c0392b; }
+    .btn-cancelar { background: #f1f5f9; color: #374151; text-decoration: none; padding: 11px 22px; border-radius: 8px; font-size: 14px; }
+</style>
+
+<div class="card">
+    <h1>Dar Salida de Material</h1>
+    <p class="subtitulo">Registra la salida de material. El peso disponible se actualizará automáticamente.</p>
+
+    {% if messages %}
+        {% for msg in messages %}
+        <div style="background:#fee2e2;border:1px solid #fca5a5;padding:10px 14px;border-radius:8px;margin-bottom:16px;color:#991b1b;">{{ msg }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="mp-info">
+        <div class="item">
+            <label>Material</label>
+            <strong>{{ mp.numero_mp }}</strong>
+        </div>
+        <div class="item">
+            <label>Cliente</label>
+            <strong>{{ mp.cliente|default:"—" }}</strong>
+        </div>
+        <div class="item">
+            <label>Peso restante</label>
+            <strong id="peso-actual">{{ mp.peso_restante|default:"—" }} kg</strong>
+        </div>
+        <div class="item">
+            <label>Ubicación</label>
+            <strong>{{ mp.ubicacion|default:"—" }}</strong>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="campo">
+            <label>Peso a dar salida (kg) *</label>
+            <input type="number" name="peso" id="id_peso" step="0.01" min="0.01"
+                   max="{{ mp.peso_restante }}" placeholder="Ej. 150.00" required>
+            <div class="aviso-peso" id="aviso-peso"></div>
+        </div>
+
+        <div class="campo">
+            <label>Cliente destino</label>
+            <select name="cliente_id">
+                <option value="">-- Sin especificar --</option>
+                {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="campo">
+            <label>Fecha y hora de salida *</label>
+            <input type="datetime-local" name="fecha_salida" id="id_fecha_salida" required>
+        </div>
+
+        <div class="campo">
+            <label>Observaciones</label>
+            <textarea name="observaciones" rows="2" placeholder="Opcional..."></textarea>
+        </div>
+
+        <div class="acciones">
+            <button type="submit" class="btn-salida">Registrar Salida</button>
+            <a href="{% url 'detalle_mp' mp.id %}" class="btn-cancelar">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Poner fecha/hora actual por defecto
+(function () {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('id_fecha_salida').value = local;
+})();
+
+// Validación visual del peso
+const pesoInput  = document.getElementById('id_peso');
+const avisoDiv   = document.getElementById('aviso-peso');
+const pesoActual = {{ mp.peso_restante|default:0 }};
+
+pesoInput.addEventListener('input', function () {
+    const val = parseFloat(this.value || 0);
+    if (!val) { avisoDiv.style.display = 'none'; return; }
+    if (val > pesoActual) {
+        avisoDiv.className = 'aviso-peso aviso-error';
+        avisoDiv.textContent = `⚠ Supera el peso disponible (${pesoActual} kg)`;
+    } else {
+        const restante = (pesoActual - val).toFixed(2);
+        avisoDiv.className = 'aviso-peso aviso-ok';
+        avisoDiv.textContent = `Peso restante después de la salida: ${restante} kg`;
+    }
+    avisoDiv.style.display = 'block';
+});
+</script>
+{% endblock %}

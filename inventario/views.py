@@ -280,6 +280,73 @@ def registrar_movimiento(request, mp_id):
 
 
 @login_required
+def dar_salida_mp(request, mp_id):
+    if not (
+        request.user.is_superuser or
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Almacen', 'Coordinador']).exists()
+    ):
+        messages.error(request, 'No tienes permiso para registrar salidas.')
+        return redirect('detalle_mp', mp_id=mp_id)
+
+    mp = get_object_or_404(MateriaPrima, id=mp_id)
+    clientes = Cliente.objects.filter(activo=True).order_by('nombre')
+
+    if request.method == 'POST':
+        peso_str      = request.POST.get('peso', '').replace(',', '.')
+        cliente_id    = request.POST.get('cliente_id') or None
+        fecha_salida  = request.POST.get('fecha_salida')
+        observaciones = request.POST.get('observaciones', '')
+
+        try:
+            peso = float(peso_str)
+            if peso <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            messages.error(request, 'El peso debe ser un número positivo.')
+            return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
+
+        if mp.peso_restante is not None and peso > float(mp.peso_restante):
+            messages.error(request, f'El peso ingresado ({peso} kg) supera el peso restante ({mp.peso_restante} kg).')
+            return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
+
+        cliente_nombre = ''
+        if cliente_id:
+            try:
+                cliente_nombre = Cliente.objects.get(pk=cliente_id).nombre
+            except Cliente.DoesNotExist:
+                pass
+
+        from django.utils import timezone as tz
+        fecha_dt = tz.now()
+        if fecha_salida:
+            try:
+                import datetime
+                fecha_dt = datetime.datetime.fromisoformat(fecha_salida)
+                if timezone.is_naive(fecha_dt):
+                    fecha_dt = timezone.make_aware(fecha_dt)
+            except Exception:
+                pass
+
+        MovimientoMP.objects.create(
+            mp=mp,
+            tipo_movimiento='SALIDA',
+            peso=peso,
+            fecha=fecha_dt,
+            ubicacion_origen=mp.ubicacion or '',
+            ubicacion_destino=cliente_nombre,
+            observaciones=observaciones,
+            usuario=request.user,
+        )
+
+        registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'MOVIMIENTO',
+            f'Salida de {peso} kg de MP {mp.numero_mp} hacia {cliente_nombre or "destino no especificado"}.')
+        messages.success(request, f'Salida de {peso} kg registrada. Peso restante: {mp.peso_restante} kg.')
+        return redirect('detalle_mp', mp_id=mp.id)
+
+    return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
+
+
+@login_required
 def api_datos_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
     return JsonResponse({

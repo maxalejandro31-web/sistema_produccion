@@ -276,6 +276,9 @@
                 <td>
                     <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
                     <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
+                    {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen or es_coordinador %}
+                    <a href="{% url 'dar_salida_mp' mp.id %}" style="display:inline-block;padding:6px 10px;background:#e74c3c;color:white;border-radius:6px;text-decoration:none;font-size:12px;margin-bottom:4px;">Salida</a>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

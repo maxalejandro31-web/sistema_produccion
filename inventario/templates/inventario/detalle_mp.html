@@ -483,7 +483,8 @@
     <div class="acciones">
         <a href="{% url 'lista_mp' %}" class="secundario">Volver a la lista</a>
         <a href="{% url 'editar_mp' mp.id %}">Editar MP</a>
-        {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen %}
+        {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen or es_coordinador %}
+        <a href="{% url 'dar_salida_mp' mp.id %}" style="background:#e74c3c;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:600;">Dar Salida</a>
         <a href="{% url 'registrar_movimiento' mp.id %}" style="background:#16a085;">Registrar Movimiento</a>
         {% endif %}
     </div>

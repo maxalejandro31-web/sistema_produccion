@@ -9,6 +9,7 @@ from .views import (
     editar_cliente,
     api_datos_mp,
     registrar_movimiento,
+    dar_salida_mp,
 )
 
 urlpatterns = [
@@ -22,4 +23,5 @@ urlpatterns = [
     path('editar-cliente/<int:cliente_id>/', editar_cliente, name='editar_cliente'),
     path('api/mp/<int:mp_id>/', api_datos_mp, name='api_datos_mp'),
     path('mp/<int:mp_id>/movimiento/', registrar_movimiento, name='registrar_movimiento'),
+    path('mp/<int:mp_id>/salida/', dar_salida_mp, name='dar_salida_mp'),
 ]

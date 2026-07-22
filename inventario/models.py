@@ -191,7 +191,7 @@ class MovimientoMP(models.Model):
         on_delete=models.CASCADE,
         related_name='movimientos'
     )
-    fecha = models.DateTimeField(auto_now_add=True)
+    fecha = models.DateTimeField(default=timezone.now)
     tipo_movimiento = models.CharField(max_length=30, choices=TIPO_MOVIMIENTO_CHOICES)
     peso = models.DecimalField(max_digits=12, decimal_places=2)
     ubicacion_origen = models.CharField(max_length=100, blank=True, null=True)
