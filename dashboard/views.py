@@ -120,7 +120,7 @@ def inicio(request):
     scrap_total    = round(float(agg['scrap']    or 0), 2)
 
     ultimas_ordenes = OrdenProduccion.objects.select_related(
-        'cliente', 'mp', 'linea', 'operador'
+        'cliente', 'mp', 'linea'
     ).order_by('-id')[:8]
 
     mp_critica = MateriaPrima.objects.filter(

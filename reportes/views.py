@@ -227,7 +227,7 @@ def reporte_movimientos_mp(request):
 @login_required
 def reporte_ordenes_produccion(request):
     qs = OrdenProduccion.objects.select_related(
-        "cliente", "mp", "linea", "operador"
+        "cliente", "mp", "linea"
     ).all()
 
     fecha_inicio  = request.GET.get("fecha_inicio")
@@ -272,7 +272,7 @@ def reporte_ordenes_produccion(request):
             _fmt(op.cliente.nombre if op.cliente else ""),
             _fmt(op.mp.numero_mp if op.mp else ""),
             _fmt(op.linea.nombre if op.linea else ""),
-            _fmt(op.operador.nombre if op.operador else ""),
+            _fmt(op.operador_nombre or ""),
             _fmt(op.get_turno_display() if op.turno else ""),
             _fmt(op.get_prioridad_display()),
             _fmt(op.get_estado_display()),

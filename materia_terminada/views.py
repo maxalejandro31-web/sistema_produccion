@@ -38,7 +38,7 @@ def lista_pt(request):
 def detalle_pt(request, pt_id):
     producto = get_object_or_404(
         ProductoTerminado.objects.select_related(
-            'cliente', 'orden', 'orden__linea', 'orden__operador',
+            'cliente', 'orden', 'orden__linea',
             'detalle_slitter', 'orden__pt_origen',
         ),
         id=pt_id,

@@ -133,7 +133,7 @@ def detalle_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
 
     ordenes_relacionadas = OrdenProduccion.objects.select_related(
-        'cliente', 'linea', 'operador'
+        'cliente', 'linea'
     ).filter(mp_id=mp.id).order_by('-id')
 
     resumen = ordenes_relacionadas.aggregate(

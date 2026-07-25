@@ -79,7 +79,7 @@ def lista_ordenes(request):
     cliente_id   = request.GET.get('cliente', '')
 
     qs = OrdenProduccion.objects.select_related(
-        'cliente', 'mp', 'linea', 'operador'
+        'cliente', 'mp', 'linea'
     ).order_by('-id')
 
     if estado:
@@ -169,7 +169,7 @@ def editar_orden(request, orden_id):
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def imprimir_orden(request, orden_id):
     orden = get_object_or_404(
-        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),
+        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea'),
         id=orden_id
     )
     detalles = orden.detalles_slitter.all()
@@ -182,7 +182,7 @@ def imprimir_orden(request, orden_id):
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def detalle_orden(request, orden_id):
     orden = get_object_or_404(
-        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'operador'),
+        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea'),
         id=orden_id
     )
     detalles = orden.detalles_slitter.all()
