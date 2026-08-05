@@ -25,7 +25,6 @@ class OrdenProduccionForm(forms.ModelForm):
             'peso_producido',
             'scrap_total',
             'merma_kg',
-            'rendimiento_porcentaje',
             'cantidad_paquetes',
             'cantidad_piezas',
             'observaciones',

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de Salidas de MP{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_mp' %}">Materia Prima</a>
+    <span class="sep">›</span>
+    <span class="current">Historial de Salidas</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        background: white;
+        border-radius: 14px;
+        padding: 25px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 { margin-top: 0; margin-bottom: 20px; }
+
+    .filtros {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .filtros input,
+    .filtros select,
+    .filtros button,
+    .filtros a {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        text-decoration: none;
+    }
+    .filtros button {
+        background: #2c3e50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
+    th { background: #f5f7fa; }
+
+    .badge-cantidad {
+        display: inline-block;
+        padding: 4px 9px;
+        border-radius: 7px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .cantidad-total   { background: #d1fae5; color: #065f46; }
+    .cantidad-parcial { background: #fef3c7; color: #92400e; }
+
+    @media (max-width: 900px) {
+        .contenedor { padding: 14px; overflow-x: auto; }
+        table { min-width: 900px; }
+        .filtros { gap: 8px; }
+    }
+</style>
+
+<div class="contenedor">
+    <h1>Historial de Salidas de Materia Prima</h1>
+
+    <form method="get" class="filtros">
+        <input type="text" name="q" placeholder="Buscar número MP" value="{{ busqueda|default:'' }}">
+
+        <select name="cliente">
+            <option value="">Todos los clientes (dueño)</option>
+            {% for c in clientes %}
+                <option value="{{ c.id }}" {% if cliente_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
+            {% endfor %}
+        </select>
+
+        <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" title="Fecha de salida desde">
+        <input type="date" name="fecha_fin"    value="{{ fecha_fin }}"    title="Fecha de salida hasta">
+
+        <button type="submit">Filtrar</button>
+        <a href="{% url 'lista_salidas_mp' %}">Limpiar</a>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha de salida</th>
+                <th>N° MP</th>
+                <th>Material</th>
+                <th>Dueño de la MP</th>
+                <th>Salió para</th>
+                <th>Cantidad</th>
+                <th>Registró</th>
+                <th>Observaciones</th>
+                <th>Detalle</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in salidas %}
+            <tr>
+                <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                <td>{{ mov.mp.numero_mp|default:"-" }}</td>
+                <td>{{ mov.mp.material|default:"-" }}</td>
+                <td>{{ mov.mp.cliente|default:"-" }}</td>
+                <td>{{ mov.ubicacion_destino|default:"Sin especificar" }}</td>
+                <td>
+                    <strong>{{ mov.peso }} kg</strong>
+                    {% if mov.peso == mov.mp.peso %}
+                        <span class="badge-cantidad cantidad-total">Salida completa</span>
+                    {% else %}
+                        <span class="badge-cantidad cantidad-parcial">Salida parcial</span>
+                        <div style="font-size:11px;color:#6b7280;margin-top:2px;">
+                            Peso restante de la MP: {{ mov.mp.peso_restante|default:"0" }} kg
+                        </div>
+                    {% endif %}
+                </td>
+                <td>{{ mov.usuario.username|default:"-" }}</td>
+                <td>{{ mov.observaciones|default:"-" }}</td>
+                <td><a href="{% url 'detalle_mp' mov.mp.id %}" style="color:#16a085;font-weight:600;">Ver MP</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align:center;color:#9ca3af;padding:30px;">No hay salidas registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include 'partials/paginacion.html' %}
+</div>
+{% endblock %}

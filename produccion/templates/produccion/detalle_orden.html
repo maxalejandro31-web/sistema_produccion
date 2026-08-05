@@ -101,7 +101,37 @@
         <div class="card"><strong>Peso producido:</strong> {{ orden.peso_producido|default:"-" }}</div>
         <div class="card"><strong>Scrap total:</strong> {{ orden.scrap_total|default:"-" }}</div>
         <div class="card"><strong>Merma:</strong> {{ orden.merma_kg|default:"-" }}</div>
-        <div class="card"><strong>Rendimiento:</strong> {{ orden.rendimiento_porcentaje|default:"-" }} %</div>
+        <div class="card">
+            <strong>Rendimiento:</strong> {{ orden.rendimiento_porcentaje|default:"-" }} %
+            {% with anom=orden.anomalia_rendimiento %}
+                {% if anom.bucket == 'bajo' %}
+                    <div style="margin-top:6px;">
+                        <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:600;">
+                            ⚠ Bajo vs. promedio histórico
+                        </span>
+                        <div style="font-size:11px;color:#6b7280;margin-top:3px;">
+                            Promedio de {{ orden.mp.material }} ({{ anom.muestra }} órdenes): {{ anom.promedio }}%
+                            — {{ anom.diferencia }} pp por debajo.
+                        </div>
+                    </div>
+                {% elif anom.bucket == 'normal' %}
+                    <div style="margin-top:6px;">
+                        <span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:600;">
+                            ✓ Dentro de lo normal
+                        </span>
+                        <div style="font-size:11px;color:#6b7280;margin-top:3px;">
+                            Promedio de {{ orden.mp.material }} ({{ anom.muestra }} órdenes): {{ anom.promedio }}%
+                        </div>
+                    </div>
+                {% elif anom.bucket == 'sin_datos' %}
+                    <div style="margin-top:6px;">
+                        <span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:600;">
+                            Sin datos históricos suficientes
+                        </span>
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
         <div class="card"><strong>Estado:</strong> {{ orden.get_estado_display }}</div>
         <div class="card"><strong>Fecha:</strong> {{ orden.fecha }}</div>
         <div class="card"><strong>Observaciones:</strong> {{ orden.observaciones|default:"-" }}</div>

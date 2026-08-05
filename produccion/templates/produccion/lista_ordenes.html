@@ -46,6 +46,9 @@
     .pendiente { background: #f39c12; }
     .proceso { background: #2980b9; }
     .terminado { background: #27ae60; }
+    .rend-normal   { background: #d1fae5; color: #065f46; }
+    .rend-bajo     { background: #fee2e2; color: #991b1b; }
+    .rend-sindatos { background: #f1f5f9; color: #475569; }
 
     .btn {
         display: inline-block;
@@ -135,6 +138,7 @@
                 <th>Prioridad</th>
                 <th>Peso usado</th>
                 <th>Peso producido</th>
+                <th>Rendimiento</th>
                 <th>Estado</th>
                 <th>Fecha</th>
                 <th>Acciones</th>
@@ -153,6 +157,16 @@
                 <td>{{ orden.get_prioridad_display }}</td>
                 <td>{{ orden.peso_usado|default:"-" }}</td>
                 <td>{{ orden.peso_producido|default:"-" }}</td>
+                <td>
+                    {{ orden.rendimiento_porcentaje|default:"-" }}{% if orden.rendimiento_porcentaje %}%{% endif %}
+                    {% with anom=orden.anomalia_rendimiento %}
+                        {% if anom.bucket == 'bajo' %}
+                            <span class="badge rend-bajo" title="Promedio {{ anom.promedio }}% ({{ anom.muestra }} órdenes)">⚠ Bajo</span>
+                        {% elif anom.bucket == 'normal' %}
+                            <span class="badge rend-normal" title="Promedio {{ anom.promedio }}% ({{ anom.muestra }} órdenes)">✓ Normal</span>
+                        {% endif %}
+                    {% endwith %}
+                </td>
                 <td>
                     {% if orden.estado == 'pendiente' %}
                         <span class="badge pendiente">Pendiente</span>
@@ -184,7 +198,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="13" style="text-align:center;color:#9ca3af;padding:30px;">No hay órdenes registradas.</td>
+                <td colspan="14" style="text-align:center;color:#9ca3af;padding:30px;">No hay órdenes registradas.</td>
             </tr>
             {% endfor %}
         </tbody>

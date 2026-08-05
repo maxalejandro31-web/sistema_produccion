@@ -5,6 +5,7 @@ from django.core.paginator import Paginator
 
 from .models import OrdenProduccion
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet
+from .analitica import anotar_anomalias
 from core.decorators import roles_required
 from inventario.models import Cliente
 from dashboard.models import registrar_historial
@@ -99,7 +100,7 @@ def lista_ordenes(request):
     page_obj  = paginator.get_page(request.GET.get('page', 1))
 
     return render(request, 'produccion/lista_ordenes.html', {
-        'ordenes': page_obj,
+        'ordenes': anotar_anomalias(page_obj),
         'page_obj': page_obj,
         'estado': estado,
         'tipo_proceso': tipo_proceso,
@@ -139,7 +140,6 @@ def editar_orden(request, orden_id):
 
             if form.is_valid() and formset.is_valid():
                 orden_actualizada = form.save(commit=False)
-                orden_actualizada.save()
 
                 detalles = formset.save(commit=False)
                 for d in detalles:
@@ -147,6 +147,19 @@ def editar_orden(request, orden_id):
                     d.save()
                 for obj in formset.deleted_objects:
                     obj.delete()
+
+                if orden_actualizada.tipo_proceso == 'slitter':
+                    suma_pesos = sum(
+                        float(d.peso) for d in orden_actualizada.detalles_slitter.all() if d.peso
+                    )
+                    if orden_actualizada.peso_usado:
+                        diferencia = float(orden_actualizada.peso_usado) - suma_pesos
+                    else:
+                        diferencia = 0
+                    orden_actualizada.peso_producido = suma_pesos
+                    orden_actualizada.scrap_total = diferencia if diferencia > 0 else 0
+
+                orden_actualizada.save()
 
                 registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'EDITAR',
                     f'Orden {orden.folio_orden or orden.id} actualizada.')
@@ -185,6 +198,7 @@ def detalle_orden(request, orden_id):
         OrdenProduccion.objects.select_related('cliente', 'mp', 'linea'),
         id=orden_id
     )
+    orden = anotar_anomalias([orden])[0]
     detalles = orden.detalles_slitter.all()
 
     from dashboard.models import HistorialCambio

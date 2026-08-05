@@ -205,6 +205,39 @@
     </div>
   </div>
 
+  <!-- 2b. Salidas de MP -->
+  <div class="card-reporte">
+    <div class="card-header" style="background:#c0392b;">
+      <span class="icon-excel">🚚</span> Salidas de Materia Prima
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{% url 'reporte_salidas_mp' %}">
+        <div class="filtros-grid cols-3">
+          <div>
+            <label>Fecha inicio</label>
+            <input type="date" name="fecha_inicio">
+          </div>
+          <div>
+            <label>Fecha fin</label>
+            <input type="date" name="fecha_fin">
+          </div>
+          <div>
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-excel" style="background:#c0392b;">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- 3. Órdenes de Producción -->
   <div class="card-reporte">
     <div class="card-header">

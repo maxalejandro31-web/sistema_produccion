@@ -246,31 +246,24 @@
         <span class="usuario">👤 {{ request.user.username }}</span>
         <a href="{% url 'inicio' %}">Dashboard</a>
 
-        {% if es_admin_total or es_administrador or es_supervisor or es_almacen %}
-            <a href="{% url 'captura_mp' %}">Captura MP</a>
-            <a href="{% url 'lista_mp' %}">Lista MP</a>
-        {% endif %}
+        {# Captura MP / Lista MP / Salidas MP: sus vistas solo exigen sesión iniciada #}
+        <a href="{% url 'captura_mp' %}">Captura MP</a>
+        <a href="{% url 'lista_mp' %}">Lista MP</a>
+        <a href="{% url 'lista_salidas_mp' %}">Salidas MP</a>
 
-        {% if es_admin_total or es_administrador or es_supervisor %}
+        {% if es_admin_total or es_administrador or es_supervisor or es_coordinador %}
             <a href="{% url 'lista_clientes' %}">Clientes</a>
         {% endif %}
 
-        {% if es_admin_total or es_administrador or es_supervisor or es_operador %}
+        {% if es_admin_total or es_administrador or es_supervisor or es_operador or es_capturista or es_coordinador %}
             <a href="{% url 'captura_orden' %}">Captura Orden</a>
             <a href="{% url 'lista_ordenes' %}">Órdenes</a>
         {% endif %}
 
-        {% if es_admin_total or es_administrador or es_supervisor or es_almacen %}
-            <a href="{% url 'lista_pt' %}">Producto Terminado</a>
-        {% endif %}
-
-        {% if es_admin_total or es_administrador or es_supervisor or es_coordinador %}
-            <a href="{% url 'lista_salidas' %}">Salidas</a>
-        {% endif %}
-
-        {% if es_admin_total or es_administrador or es_supervisor %}
-            <a href="{% url 'reportes_index' %}">Reportes</a>
-        {% endif %}
+        {# Producto Terminado / Salidas / Reportes: sus vistas solo exigen sesión iniciada #}
+        <a href="{% url 'lista_pt' %}">Producto Terminado</a>
+        <a href="{% url 'lista_salidas' %}">Salidas</a>
+        <a href="{% url 'reportes_index' %}">Reportes</a>
 
         {% if es_admin_total %}
             <a href="{% url 'lista_usuarios' %}">Usuarios</a>

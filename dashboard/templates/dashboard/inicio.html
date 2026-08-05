@@ -76,8 +76,15 @@
     </div>
 
     <!-- Alertas -->
-    {% if mp_cobro_activo or mp_por_vencer or ordenes_urgentes %}
+    {% if mp_cobro_activo or mp_por_vencer or ordenes_urgentes or ordenes_rendimiento_bajo %}
     <div class="alertas">
+        {% if ordenes_rendimiento_bajo %}
+        <div class="alerta alerta-roja">
+            📉 <strong>{{ ordenes_rendimiento_bajo }} orden{{ ordenes_rendimiento_bajo|pluralize:",es" }} con rendimiento anómalo</strong>
+            — en los últimos 30 días, muy por debajo del promedio histórico para ese material y proceso.
+            <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
+        </div>
+        {% endif %}
         {% if mp_cobro_activo %}
         <div class="alerta alerta-roja">
             🔴 <strong>{{ mp_cobro_activo }} materia prima con cobro por estancia activo</strong>

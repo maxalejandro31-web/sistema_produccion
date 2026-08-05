@@ -100,6 +100,11 @@ class OrdenProduccion(models.Model):
             if self.mp.peso_restante is not None and self.mp.peso_restante < self.peso_usado:
                 raise ValueError("No hay suficiente peso disponible en la materia prima")
 
+        if self.peso_usado and self.peso_producido is not None and float(self.peso_usado) > 0:
+            self.rendimiento_porcentaje = round((float(self.peso_producido) / float(self.peso_usado)) * 100, 2)
+        else:
+            self.rendimiento_porcentaje = None
+
         super().save(*args, **kwargs)
 
         if generar_folio:

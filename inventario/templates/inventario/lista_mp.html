@@ -140,6 +140,12 @@
 <div class="contenedor">
     <h1>Lista de Materia Prima</h1>
 
+    <div style="margin-bottom:16px;">
+        <a href="{% url 'lista_salidas_mp' %}" style="display:inline-block;padding:8px 14px;background:#e74c3c;color:white;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">
+            📋 Ver Historial de Salidas
+        </a>
+    </div>
+
     {% if mp_vencidas_count > 0 or mp_por_vencer_count > 0 %}
     <div class="alerta-cobros">
         ⚠️

@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
+from produccion.analitica import anotar_anomalias
 from .models import ConfiguracionEmpresa
 from .forms import ConfiguracionEmpresaForm
 
@@ -124,8 +125,9 @@ def inicio(request):
     ).order_by('-id')[:8]
 
     mp_critica = MateriaPrima.objects.filter(
-        peso_restante__isnull=False
-    ).order_by('peso_restante')[:8]
+        peso_restante__isnull=False,
+        peso_restante__gt=0,
+    ).exclude(estado='Terminado').order_by('peso_restante')[:8]
 
     # ── Alertas ───────────────────────────────────────────────────────────────
     hoy = timezone.localdate()
@@ -147,6 +149,15 @@ def inicio(request):
         estado__in=['pendiente', 'proceso'],
         prioridad='urgente',
     ).count()
+
+    ordenes_recientes_terminadas = OrdenProduccion.objects.select_related('mp').filter(
+        estado='terminado',
+        fecha__gte=hoy - datetime.timedelta(days=30),
+    ).order_by('-fecha')
+    ordenes_rendimiento_bajo = sum(
+        1 for o in anotar_anomalias(ordenes_recientes_terminadas)
+        if o.anomalia_rendimiento and o.anomalia_rendimiento['bucket'] == 'bajo'
+    )
 
     # ── Datos para gráficas ───────────────────────────────────────────────────
     mp_chart = json.dumps({
@@ -207,6 +218,7 @@ def inicio(request):
         'mp_cobro_activo': mp_cobro_activo,
         'mp_por_vencer': mp_por_vencer,
         'ordenes_urgentes': ordenes_urgentes,
+        'ordenes_rendimiento_bajo': ordenes_rendimiento_bajo,
         'mp_chart': mp_chart,
         'ordenes_estado_chart': ordenes_estado_chart,
         'ordenes_proceso_chart': ordenes_proceso_chart,

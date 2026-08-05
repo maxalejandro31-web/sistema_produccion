@@ -8,6 +8,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 from inventario.models import MateriaPrima, MovimientoMP, Cliente
 from produccion.models import OrdenProduccion, DetalleSlitter
+from produccion.analitica import anotar_anomalias
 from materia_terminada.models import ProductoTerminado
 
 
@@ -222,6 +223,58 @@ def reporte_movimientos_mp(request):
     return _make_response(wb, f"movimientos_mp_{fecha}.xlsx")
 
 
+# ── 2b. Salidas de Materia Prima ──────────────────────────────────────────────
+
+@login_required
+def reporte_salidas_mp(request):
+    qs = MovimientoMP.objects.select_related("mp", "mp__cliente", "usuario").filter(
+        tipo_movimiento="SALIDA"
+    )
+
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin    = request.GET.get("fecha_fin")
+    cliente_id   = request.GET.get("cliente")
+
+    if fecha_inicio:
+        qs = qs.filter(fecha__date__gte=fecha_inicio)
+    if fecha_fin:
+        qs = qs.filter(fecha__date__lte=fecha_fin)
+    if cliente_id:
+        qs = qs.filter(mp__cliente_id=cliente_id)
+
+    qs = qs.order_by("-fecha")
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Salidas MP"
+
+    headers = [
+        "Fecha de Salida", "N° MP", "Cliente Propietario", "Material",
+        "Peso de Salida (kg)", "Salió Para (destino)", "Ubicación Origen",
+        "Registrado Por", "Observaciones",
+    ]
+    _apply_header(ws, headers)
+
+    for mov in qs:
+        ws.append([
+            timezone.localtime(mov.fecha).strftime("%d/%m/%Y %H:%M"),
+            _fmt(mov.mp.numero_mp),
+            _fmt(mov.mp.cliente.nombre if mov.mp.cliente else ""),
+            _fmt(mov.mp.material),
+            float(mov.peso),
+            _fmt(mov.ubicacion_destino),
+            _fmt(mov.ubicacion_origen),
+            _fmt(mov.usuario.username if mov.usuario else ""),
+            _fmt(mov.observaciones),
+        ])
+
+    _apply_rows(ws)
+    _autowidth(ws)
+
+    fecha = timezone.localdate().strftime("%Y%m%d")
+    return _make_response(wb, f"salidas_mp_{fecha}.xlsx")
+
+
 # ── 3. Órdenes de Producción ──────────────────────────────────────────────────
 
 @login_required
@@ -259,12 +312,19 @@ def reporte_ordenes_produccion(request):
         "Hora Inicio", "Hora Fin",
         "T. Preparación (min)", "T. Proceso (min)", "T. Muerto (min)",
         "Peso Usado (kg)", "Peso Producido (kg)", "Scrap (kg)",
-        "Merma (kg)", "Rendimiento (%)",
+        "Merma (kg)", "Rendimiento (%)", "Anomalía Rendimiento",
         "Paquetes", "Piezas", "Observaciones",
     ]
     _apply_header(ws, headers)
 
-    for op in qs:
+    ANOMALIA_LABEL = {
+        'bajo': 'Bajo vs. promedio',
+        'normal': 'Normal',
+        'sin_datos': 'Sin datos históricos',
+    }
+
+    for op in anotar_anomalias(qs):
+        anomalia = op.anomalia_rendimiento
         ws.append([
             _fmt(op.folio_orden),
             op.fecha.strftime("%d/%m/%Y") if op.fecha else "",
@@ -286,6 +346,7 @@ def reporte_ordenes_produccion(request):
             float(op.scrap_total) if op.scrap_total else "",
             float(op.merma_kg) if op.merma_kg else "",
             float(op.rendimiento_porcentaje) if op.rendimiento_porcentaje else "",
+            ANOMALIA_LABEL.get(anomalia['bucket'], "—") if anomalia else "—",
             op.cantidad_paquetes or "",
             op.cantidad_piezas or "",
             _fmt(op.observaciones),

@@ -347,6 +347,40 @@ def dar_salida_mp(request, mp_id):
 
 
 @login_required
+def lista_salidas_mp(request):
+    busqueda     = request.GET.get('q', '')
+    cliente_id   = request.GET.get('cliente', '')
+    fecha_inicio = request.GET.get('fecha_inicio', '')
+    fecha_fin    = request.GET.get('fecha_fin', '')
+
+    qs = MovimientoMP.objects.filter(tipo_movimiento='SALIDA').select_related(
+        'mp', 'mp__cliente', 'usuario'
+    ).order_by('-fecha')
+
+    if busqueda:
+        qs = qs.filter(mp__numero_mp__icontains=busqueda)
+    if cliente_id:
+        qs = qs.filter(mp__cliente_id=cliente_id)
+    if fecha_inicio:
+        qs = qs.filter(fecha__date__gte=fecha_inicio)
+    if fecha_fin:
+        qs = qs.filter(fecha__date__lte=fecha_fin)
+
+    paginator = Paginator(qs, 25)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
+
+    return render(request, 'inventario/lista_salidas_mp.html', {
+        'salidas': page_obj,
+        'page_obj': page_obj,
+        'busqueda': busqueda,
+        'cliente_id': cliente_id,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'clientes': Cliente.objects.filter(activo=True).order_by('nombre'),
+    })
+
+
+@login_required
 def api_datos_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
     return JsonResponse({
