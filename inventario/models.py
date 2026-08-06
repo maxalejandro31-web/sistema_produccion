@@ -219,10 +219,12 @@ class MovimientoMP(models.Model):
                 if peso_actual is None:
                     peso_actual = Decimal("0.00")
 
+                peso_mov = self.peso if isinstance(self.peso, Decimal) else Decimal(str(self.peso))
+
                 if self.tipo_movimiento in ['ENTRADA', 'AJUSTE_POSITIVO']:
-                    nuevo_peso = peso_actual + self.peso
+                    nuevo_peso = peso_actual + peso_mov
                 elif self.tipo_movimiento in ['CONSUMO', 'AJUSTE_NEGATIVO', 'MERMA', 'SALIDA']:
-                    nuevo_peso = peso_actual - self.peso
+                    nuevo_peso = peso_actual - peso_mov
                 else:
                     nuevo_peso = peso_actual
 
