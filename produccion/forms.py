@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import OrdenProduccion, DetalleSlitter
+from .models import OrdenProduccion, DetalleSlitter, DetalleFleje
 
 
 class OrdenProduccionForm(forms.ModelForm):
@@ -27,12 +27,25 @@ class OrdenProduccionForm(forms.ModelForm):
             'merma_kg',
             'cantidad_paquetes',
             'cantidad_piezas',
+            'folio_rollo_padre',
+            'espesor_rollo_padre',
+            'peso_rollo_padre',
+            'tipo_fleje',
+            'temp_zona_1',
+            'temp_zona_2',
+            'temp_zona_3',
+            'temp_zona_4',
+            'temp_zona_5',
+            'demora_hora_inicio',
+            'demora_hora_fin',
             'observaciones',
             'estado',
         ]
         widgets = {
             'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'type': 'time'}),
+            'demora_hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
+            'demora_hora_fin': forms.TimeInput(attrs={'type': 'time'}),
             'observaciones': forms.Textarea(attrs={'rows': 4}),
         }
 
@@ -66,5 +79,29 @@ DetalleSlitterFormSet = inlineformset_factory(
     DetalleSlitter,
     form=DetalleSlitterForm,
     extra=5,
+    can_delete=True
+)
+
+
+class DetalleFlejeForm(forms.ModelForm):
+    class Meta:
+        model = DetalleFleje
+        fields = [
+            'no_fleje',
+            'folio_descarga',
+            'porcentaje_rebaba',
+            'numero_descarga',
+            'peso_descarga',
+            'ancho',
+            'numero_flejes',
+            'observaciones',
+        ]
+
+
+DetalleFlejeFormSet = inlineformset_factory(
+    OrdenProduccion,
+    DetalleFleje,
+    form=DetalleFlejeForm,
+    extra=15,
     can_delete=True
 )

@@ -268,6 +268,83 @@
             </table>
         </div>
 
+        <div id="bloque-fleje" class="bloque-slitter oculto">
+            <div class="fila-acciones">
+                <div>
+                    <h2 style="margin:0;">Detalle de Tiras (Fleje)</h2>
+                    <div class="nota">Un renglón por cada tira/fleje descargado del rollo padre, igual que en el formato de papel.</div>
+                </div>
+                <button type="button" class="acciones btn-agregar" id="agregarFilaFleje">+ Agregar tira</button>
+            </div>
+
+            <div id="resumen-fleje" class="resumen-slitter">
+                <strong>Total tiras:</strong> <span id="total-peso-fleje">0.00</span> kg
+            </div>
+
+            {{ formset_fleje.management_form }}
+
+            <table class="tabla-detalles">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Folio descarga</th>
+                        <th>% Rebaba</th>
+                        <th># Descarga</th>
+                        <th>Peso descarga (kg)</th>
+                        <th>Ancho (pulg)</th>
+                        <th># de flejes</th>
+                        <th>Observaciones</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-detalles-fleje-body">
+                    {% for detalle_form in formset_fleje %}
+                    <tr class="detalle-fleje-row">
+                        <td>
+                            {{ detalle_form.id }}
+                            {{ detalle_form.no_fleje }}
+                            {% if detalle_form.no_fleje.errors %}{{ detalle_form.no_fleje.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.folio_descarga }}
+                            {% if detalle_form.folio_descarga.errors %}{{ detalle_form.folio_descarga.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.porcentaje_rebaba }}
+                            {% if detalle_form.porcentaje_rebaba.errors %}{{ detalle_form.porcentaje_rebaba.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.numero_descarga }}
+                            {% if detalle_form.numero_descarga.errors %}{{ detalle_form.numero_descarga.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.peso_descarga }}
+                            {% if detalle_form.peso_descarga.errors %}{{ detalle_form.peso_descarga.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.ancho }}
+                            {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.numero_flejes }}
+                            {% if detalle_form.numero_flejes.errors %}{{ detalle_form.numero_flejes.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {{ detalle_form.observaciones }}
+                            {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
+                        </td>
+                        <td>
+                            {% if detalle_form.DELETE %}
+                                <div style="display:none;">{{ detalle_form.DELETE }}</div>
+                            {% endif %}
+                            <button type="button" class="btn-eliminar-fila">Quitar</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
         <div class="acciones">
             <button type="submit">Guardar orden</button>
             <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
@@ -289,6 +366,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalPesoSpan = document.getElementById('total-peso');
     const diferenciaSpan = document.getElementById('diferencia-peso');
 
+    const bloqueFleje = document.getElementById('bloque-fleje');
+    const totalFormsFleje = document.getElementById('id_detalles_fleje-TOTAL_FORMS');
+    const tablaBodyFleje = document.getElementById('tabla-detalles-fleje-body');
+    const btnAgregarFilaFleje = document.getElementById('agregarFilaFleje');
+    const totalPesoFlejeSpan = document.getElementById('total-peso-fleje');
+
     function esSlitter() {
         let porLinea = false;
         let porProceso = false;
@@ -309,13 +392,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return porLinea || porProceso;
     }
 
-    function toggleBloqueSlitter() {
-        if (esSlitter()) {
-            bloqueSlitter.classList.remove('oculto');
-        } else {
-            bloqueSlitter.classList.add('oculto');
-        }
-        calcularTotales();
+    function esFleje() {
+        return !!(tipoProcesoSelect && (tipoProcesoSelect.value || '').trim().toLowerCase() === 'fleje');
     }
 
     function limpiarValoresFila(row) {
@@ -456,12 +534,153 @@ document.addEventListener('DOMContentLoaded', function () {
         totalForms.value = filas.length;
     }
 
+    // ── Manejo de filas del detalle de Fleje (mismo patrón que slitter) ──────
+    function limpiarValoresFilaFleje(row) {
+        const inputs = row.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            const name = input.name || '';
+            if (name.endsWith('-id')) {
+                input.value = '';
+                return;
+            }
+            if (input.type === 'checkbox') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
+    }
+
+    function actualizarIndicesFilaFleje(row, newIndex) {
+        const elementos = row.querySelectorAll('input, select, textarea, label');
+        elementos.forEach(el => {
+            if (el.name) {
+                el.name = el.name.replace(/detalles_fleje-\d+-/g, `detalles_fleje-${newIndex}-`);
+            }
+            if (el.id) {
+                el.id = el.id.replace(/detalles_fleje-\d+-/g, `detalles_fleje-${newIndex}-`);
+            }
+            if (el.htmlFor) {
+                el.htmlFor = el.htmlFor.replace(/detalles_fleje-\d+-/g, `detalles_fleje-${newIndex}-`);
+            }
+        });
+    }
+
+    function calcularTotalesFleje() {
+        if (!tablaBodyFleje || !totalPesoFlejeSpan) return;
+        let total = 0;
+        const filas = Array.from(tablaBodyFleje.querySelectorAll('.detalle-fleje-row')).filter(f => f.style.display !== 'none');
+        filas.forEach(fila => {
+            const inputPeso = fila.querySelector('input[name*="-peso_descarga"]');
+            if (inputPeso) {
+                const val = parseFloat(inputPeso.value);
+                if (!isNaN(val)) total += val;
+            }
+        });
+        totalPesoFlejeSpan.innerText = total.toFixed(2);
+    }
+
+    function crearNuevaFilaFleje() {
+        const filas = tablaBodyFleje.querySelectorAll('.detalle-fleje-row');
+        if (filas.length === 0) return;
+
+        const ultimaFila = filas[filas.length - 1];
+        const nuevaFila = ultimaFila.cloneNode(true);
+        const nuevoIndice = parseInt(totalFormsFleje.value, 10);
+
+        actualizarIndicesFilaFleje(nuevaFila, nuevoIndice);
+        limpiarValoresFilaFleje(nuevaFila);
+
+        const noFlejeInput = nuevaFila.querySelector(`input[name="detalles_fleje-${nuevoIndice}-no_fleje"]`);
+        if (noFlejeInput) {
+            noFlejeInput.value = nuevoIndice + 1;
+        }
+
+        const deleteInput = nuevaFila.querySelector(`input[name="detalles_fleje-${nuevoIndice}-DELETE"]`);
+        if (deleteInput) {
+            deleteInput.checked = false;
+        }
+
+        tablaBodyFleje.appendChild(nuevaFila);
+        totalFormsFleje.value = nuevoIndice + 1;
+        calcularTotalesFleje();
+    }
+
+    function quitarFilaFleje(button) {
+        const filas = tablaBodyFleje.querySelectorAll('.detalle-fleje-row');
+        const row = button.closest('.detalle-fleje-row');
+        if (!row) return;
+
+        if (filas.length === 1) {
+            limpiarValoresFilaFleje(row);
+            const noFlejeInput = row.querySelector('input[name*="-no_fleje"]');
+            if (noFlejeInput) noFlejeInput.value = '1';
+            calcularTotalesFleje();
+            return;
+        }
+
+        const deleteInput = row.querySelector('input[name*="-DELETE"]');
+        const idInput = row.querySelector('input[name*="-id"]');
+
+        if (deleteInput && idInput && idInput.value) {
+            deleteInput.checked = true;
+            row.style.display = 'none';
+        } else {
+            row.remove();
+            reordenarFilasFleje();
+        }
+
+        calcularTotalesFleje();
+    }
+
+    function reordenarFilasFleje() {
+        const filas = Array.from(tablaBodyFleje.querySelectorAll('.detalle-fleje-row')).filter(f => f.style.display !== 'none');
+        filas.forEach((fila, index) => {
+            actualizarIndicesFilaFleje(fila, index);
+            const noFlejeInput = fila.querySelector(`input[name="detalles_fleje-${index}-no_fleje"]`);
+            if (noFlejeInput && !noFlejeInput.value) {
+                noFlejeInput.value = index + 1;
+            }
+        });
+        totalFormsFleje.value = filas.length;
+    }
+
+    // ── Controlador único de modo de proceso (slitter vs fleje vs otros) ─────
+    function actualizarModoProceso() {
+        const modoFleje = esFleje();
+        const modoSlitter = esSlitter() && !modoFleje;
+
+        if (bloqueSlitter) {
+            bloqueSlitter.classList.toggle('oculto', !modoSlitter);
+        }
+        if (bloqueFleje) {
+            bloqueFleje.classList.toggle('oculto', !modoFleje);
+        }
+        calcularTotales();
+        calcularTotalesFleje();
+
+        if (ptOrigenCampo) {
+            ptOrigenCampo.closest('.campo').style.display = modoFleje ? '' : 'none';
+        }
+        if (mpCampo) {
+            mpCampo.closest('.campo').style.display = modoFleje ? 'none' : '';
+            const banner = document.getElementById('mp-info-banner');
+            if (banner) banner.style.display = modoFleje ? 'none' : '';
+        }
+        if (labelPiezas) {
+            labelPiezas.textContent = modoFleje ? 'Número de tiras' : 'Cantidad de piezas';
+        }
+        if (labelPesoProducido) {
+            labelPesoProducido.textContent = modoFleje ? 'Peso total de tiras (kg, automático)' : 'Peso producido (kg)';
+        }
+    }
+
     if (lineaSelect) {
-        lineaSelect.addEventListener('change', toggleBloqueSlitter);
+        lineaSelect.addEventListener('change', actualizarModoProceso);
     }
 
     if (tipoProcesoSelect) {
-        tipoProcesoSelect.addEventListener('change', toggleBloqueSlitter);
+        tipoProcesoSelect.addEventListener('change', actualizarModoProceso);
     }
 
     if (pesoUsadoInput) {
@@ -484,7 +703,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    toggleBloqueSlitter();
+    if (btnAgregarFilaFleje) {
+        btnAgregarFilaFleje.addEventListener('click', crearNuevaFilaFleje);
+    }
+
+    if (tablaBodyFleje) {
+        tablaBodyFleje.addEventListener('click', function (e) {
+            if (e.target.classList.contains('btn-eliminar-fila')) {
+                quitarFilaFleje(e.target);
+            }
+        });
+
+        tablaBodyFleje.addEventListener('input', function () {
+            calcularTotalesFleje();
+        });
+    }
 
     // ── Buscador en el selector de MP ─────────────────────────────────────────
     const mpSelect = document.getElementById('id_mp');
@@ -607,29 +840,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const labelPiezas   = document.querySelector('label[for="id_cantidad_piezas"]');
     const labelPesoProducido = document.querySelector('label[for="id_peso_producido"]');
 
-    function toggleCamposFleje() {
-        if (!tipoProcesoSelect) return;
-        const esFleje = tipoProcesoSelect.value === 'fleje';
-        if (ptOrigenCampo) {
-            ptOrigenCampo.closest('.campo').style.display = esFleje ? '' : 'none';
-        }
-        if (mpCampo) {
-            mpCampo.closest('.campo').style.display = esFleje ? 'none' : '';
-            const banner = document.getElementById('mp-info-banner');
-            if (banner) banner.style.display = esFleje ? 'none' : '';
-        }
-        if (labelPiezas) {
-            labelPiezas.textContent = esFleje ? 'Número de tiras' : 'Cantidad de piezas';
-        }
-        if (labelPesoProducido) {
-            labelPesoProducido.textContent = esFleje ? 'Peso de tiras (kg)' : 'Peso producido (kg)';
-        }
-    }
-
-    if (tipoProcesoSelect) {
-        tipoProcesoSelect.addEventListener('change', toggleCamposFleje);
-        toggleCamposFleje();
-    }
+    // Estado inicial del formulario (bloques de detalle + campos mp/pt_origen)
+    actualizarModoProceso();
 });
 </script>
 {% endblock %}

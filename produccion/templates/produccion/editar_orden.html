@@ -111,6 +111,59 @@
             </table>
             <button type="button" class="btn-agregar" style="margin-top:10px;" onclick="agregarFila()">+ Agregar corte</button>
         </div>
+        {% elif orden.tipo_proceso == 'fleje' %}
+        <div class="bloque-slitter">
+            <h2>Detalle de Tiras (Fleje)</h2>
+
+            {% if orden.estado == 'terminado' %}
+            <div class="aviso-terminado">
+                ⚠️ Esta orden ya está terminada. Editar las tiras no actualiza automáticamente los PT generados.
+            </div>
+            {% endif %}
+
+            <div class="resumen" id="resumen-fleje">
+                <strong>Total tiras:</strong> <span id="total-peso-fleje">0.00</span> kg
+            </div>
+
+            {{ formset_fleje.management_form }}
+            <table class="tabla-detalles">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Folio descarga</th>
+                        <th>% Rebaba</th>
+                        <th># Descarga</th>
+                        <th>Peso descarga (kg)</th>
+                        <th>Ancho (pulg)</th>
+                        <th># de flejes</th>
+                        <th>Obs.</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-fleje-body">
+                    {% for detalle_form in formset_fleje %}
+                    <tr class="detalle-fleje-row">
+                        <td>
+                            {{ detalle_form.id }}
+                            {{ detalle_form.no_fleje }}
+                        </td>
+                        <td>{{ detalle_form.folio_descarga }}</td>
+                        <td>{{ detalle_form.porcentaje_rebaba }}</td>
+                        <td>{{ detalle_form.numero_descarga }}</td>
+                        <td>{{ detalle_form.peso_descarga }}</td>
+                        <td>{{ detalle_form.ancho }}</td>
+                        <td>{{ detalle_form.numero_flejes }}</td>
+                        <td>{{ detalle_form.observaciones }}</td>
+                        <td>
+                            {{ detalle_form.DELETE }}
+                            <button type="button" class="btn-eliminar" onclick="eliminarFilaFleje(this)">✕</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="btn-agregar" style="margin-top:10px;" onclick="agregarFilaFleje()">+ Agregar tira</button>
+        </div>
         {% endif %}
 
         <div class="acciones">
@@ -147,6 +200,30 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     calcularTotal();
+
+    const totalPesoFlejeSpan = document.getElementById('total-peso-fleje');
+
+    function calcularTotalFleje() {
+        if (!totalPesoFlejeSpan) return;
+        let total = 0;
+        document.querySelectorAll('.detalle-fleje-row').forEach(function (fila) {
+            if (fila.style.display === 'none') return;
+            const deleteChk = fila.querySelector('input[type="checkbox"]');
+            if (deleteChk && deleteChk.checked) return;
+            fila.querySelectorAll('td input').forEach(function (inp) {
+                if ((inp.name || '').includes('-peso_descarga')) {
+                    total += parseFloat(inp.value || 0);
+                }
+            });
+        });
+        totalPesoFlejeSpan.textContent = total.toFixed(2);
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.name && e.target.name.includes('-peso_descarga')) calcularTotalFleje();
+    });
+
+    calcularTotalFleje();
 });
 
 function eliminarFila(btn) {
@@ -166,6 +243,36 @@ function agregarFila() {
     const idx = parseInt(totalForms.value);
 
     const nuevaFila = document.querySelector('.detalle-row').cloneNode(true);
+    nuevaFila.style.display = '';
+
+    nuevaFila.querySelectorAll('input, select, textarea').forEach(function (el) {
+        el.name  = el.name.replace(/-\d+-/, '-' + idx + '-');
+        el.id    = el.id.replace(/-\d+-/, '-' + idx + '-');
+        if (el.type !== 'checkbox') el.value = '';
+        if (el.type === 'checkbox') el.checked = false;
+    });
+
+    tbody.appendChild(nuevaFila);
+    totalForms.value = idx + 1;
+}
+
+function eliminarFilaFleje(btn) {
+    const fila = btn.closest('tr');
+    const deleteChk = fila.querySelector('input[type="checkbox"]');
+    if (deleteChk) {
+        deleteChk.checked = true;
+        fila.style.display = 'none';
+    } else {
+        fila.remove();
+    }
+}
+
+function agregarFilaFleje() {
+    const tbody = document.getElementById('tabla-fleje-body');
+    const totalForms = document.getElementById('id_detalles_fleje-TOTAL_FORMS');
+    const idx = parseInt(totalForms.value);
+
+    const nuevaFila = document.querySelector('.detalle-fleje-row').cloneNode(true);
     nuevaFila.style.display = '';
 
     nuevaFila.querySelectorAll('input, select, textarea').forEach(function (el) {

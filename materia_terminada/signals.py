@@ -46,8 +46,23 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
                 tipo_producto='cinta',
                 peso_kg=detalle.peso,
             )
+    elif instance.tipo_proceso == 'fleje':
+        # Un PT por cada tira/fleje del detalle
+        for detalle in instance.detalles_fleje.all():
+            if not detalle.peso_descarga:
+                continue
+            numero_pt = f"PT-{instance.folio_orden}-F{detalle.no_fleje}"
+            ProductoTerminado.objects.create(
+                orden=instance,
+                detalle_fleje=detalle,
+                cliente=instance.cliente,
+                numero_pt=numero_pt,
+                tipo_proceso=instance.tipo_proceso,
+                tipo_producto='fleje',
+                peso_kg=detalle.peso_descarga,
+            )
     else:
-        # Para fleje y otros: un PT por orden
+        # Para corte_liso, mini_slitter y otros: un PT por orden
         numero_pt = f"PT-{instance.folio_orden}" if instance.folio_orden else f"PT-{instance.pk}"
         tipo_producto = TIPO_PRODUCTO_MAP.get(instance.tipo_proceso, 'otro')
 

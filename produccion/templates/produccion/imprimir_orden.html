@@ -102,7 +102,11 @@
     <div class="seccion-titulo">Información general</div>
     <div class="grid2">
         <div class="campo"><div class="campo-label">Cliente</div><div class="campo-valor">{{ orden.cliente|default:"—" }}</div></div>
+        {% if orden.tipo_proceso == 'fleje' %}
+        <div class="campo"><div class="campo-label">Cinta origen</div><div class="campo-valor">{{ orden.pt_origen|default:"—" }}</div></div>
+        {% else %}
         <div class="campo"><div class="campo-label">Materia Prima</div><div class="campo-valor">{{ orden.mp|default:"—" }}</div></div>
+        {% endif %}
         <div class="campo"><div class="campo-label">Tipo de proceso</div><div class="campo-valor">{{ orden.get_tipo_proceso_display }}</div></div>
         <div class="campo"><div class="campo-label">Línea</div><div class="campo-valor">{{ orden.linea }}</div></div>
         <div class="campo"><div class="campo-label">Operador</div><div class="campo-valor">{{ orden.operador_nombre_nombre|default:"—" }}</div></div>
@@ -141,6 +145,28 @@
     </div>
 </div>
 
+{% if orden.tipo_proceso == 'fleje' %}
+<div class="seccion">
+    <div class="seccion-titulo">Datos de Fleje</div>
+    <div class="grid3">
+        <div class="campo"><div class="campo-label">Folio rollo padre</div><div class="campo-valor">{{ orden.folio_rollo_padre|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Tipo de fleje</div><div class="campo-valor">{{ orden.tipo_fleje|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Espesor rollo padre</div><div class="campo-valor">{{ orden.espesor_rollo_padre|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Peso rollo padre (kg)</div><div class="campo-valor">{{ orden.peso_rollo_padre|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Demora inicia</div><div class="campo-valor">{{ orden.demora_hora_inicio|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Demora final</div><div class="campo-valor">{{ orden.demora_hora_fin|default:"—" }}</div></div>
+    </div>
+    <div class="campo-label" style="margin-top:8px;">Temperatura paila (°C)</div>
+    <div class="grid3">
+        <div class="campo"><div class="campo-label">Zona 1</div><div class="campo-valor">{{ orden.temp_zona_1|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Zona 2</div><div class="campo-valor">{{ orden.temp_zona_2|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Zona 3</div><div class="campo-valor">{{ orden.temp_zona_3|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Zona 4</div><div class="campo-valor">{{ orden.temp_zona_4|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Zona 5</div><div class="campo-valor">{{ orden.temp_zona_5|default:"—" }}</div></div>
+    </div>
+</div>
+{% endif %}
+
 {% if orden.observaciones %}
 <div class="seccion">
     <div class="seccion-titulo">Observaciones</div>
@@ -168,6 +194,34 @@
                 <td>{{ d.peso|default:"—" }}</td>
                 <td>{{ d.camber|default:"—" }}</td>
                 <td>{% if d.material_ok %}✓{% else %}✗{% endif %}</td>
+                <td>{{ d.observaciones|default:"" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if detalles_fleje %}
+<div class="seccion">
+    <div class="seccion-titulo">Detalle de Tiras (Fleje)</div>
+    <table>
+        <thead>
+            <tr>
+                <th>No.</th><th>Folio descarga</th><th>% Rebaba</th><th># Descarga</th>
+                <th>Peso descarga (kg)</th><th>Ancho</th><th># de flejes</th><th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in detalles_fleje %}
+            <tr>
+                <td>{{ d.no_fleje }}</td>
+                <td>{{ d.folio_descarga|default:"—" }}</td>
+                <td>{{ d.porcentaje_rebaba|default:"—" }}</td>
+                <td>{{ d.numero_descarga|default:"—" }}</td>
+                <td>{{ d.peso_descarga|default:"—" }}</td>
+                <td>{{ d.ancho|default:"—" }}</td>
+                <td>{{ d.numero_flejes|default:"—" }}</td>
                 <td>{{ d.observaciones|default:"" }}</td>
             </tr>
             {% endfor %}

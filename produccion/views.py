@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 
 from .models import OrdenProduccion
-from .forms import OrdenProduccionForm, DetalleSlitterFormSet
+from .forms import OrdenProduccionForm, DetalleSlitterFormSet, DetalleFlejeFormSet
 from .analitica import anotar_anomalias
 from core.decorators import roles_required
 from inventario.models import Cliente
@@ -16,11 +16,13 @@ def captura_orden(request):
     if request.method == 'POST':
         form = OrdenProduccionForm(request.POST)
         formset = DetalleSlitterFormSet(request.POST, prefix='detalles')
+        formset_fleje = DetalleFlejeFormSet(request.POST, prefix='detalles_fleje')
 
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid() and formset.is_valid() and formset_fleje.is_valid():
             orden = form.save(commit=False)
             tipo = orden.tipo_proceso
             detalles = formset.save(commit=False)
+            detalles_fleje = formset_fleje.save(commit=False)
 
             if tipo == 'slitter':
                 suma_pesos = 0
@@ -36,8 +38,19 @@ def captura_orden(request):
 
                 orden.peso_producido = suma_pesos
                 orden.scrap_total = diferencia if diferencia > 0 else 0
+                detalles_fleje = []
+            elif tipo == 'fleje':
+                suma_pesos = sum(
+                    float(d.peso_descarga) for d in detalles_fleje if d.peso_descarga
+                )
+                orden.peso_producido = suma_pesos
+                if orden.peso_rollo_padre:
+                    orden.peso_usado = orden.peso_rollo_padre
+                orden.mp = None
+                detalles = []
             else:
                 detalles = []
+                detalles_fleje = []
 
             try:
                 orden.save()
@@ -46,13 +59,19 @@ def captura_orden(request):
                 return render(request, 'produccion/captura_orden.html', {
                     'form': form,
                     'formset': formset,
+                    'formset_fleje': formset_fleje,
                 })
 
             for d in detalles:
                 d.orden = orden
                 d.save()
-
             for obj in formset.deleted_objects:
+                obj.delete()
+
+            for d in detalles_fleje:
+                d.orden = orden
+                d.save()
+            for obj in formset_fleje.deleted_objects:
                 obj.delete()
 
             registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'CREAR',
@@ -60,13 +79,16 @@ def captura_orden(request):
             messages.success(request, 'Orden registrada correctamente.')
             form = OrdenProduccionForm()
             formset = DetalleSlitterFormSet(prefix='detalles')
+            formset_fleje = DetalleFlejeFormSet(prefix='detalles_fleje')
     else:
         form = OrdenProduccionForm()
         formset = DetalleSlitterFormSet(prefix='detalles')
+        formset_fleje = DetalleFlejeFormSet(prefix='detalles_fleje')
 
     return render(request, 'produccion/captura_orden.html', {
         'form': form,
         'formset': formset,
+        'formset_fleje': formset_fleje,
     })
 
 
@@ -137,8 +159,9 @@ def editar_orden(request, orden_id):
         if request.method == 'POST':
             form = OrdenProduccionForm(request.POST, instance=orden)
             formset = DetalleSlitterFormSet(request.POST, instance=orden, prefix='detalles')
+            formset_fleje = DetalleFlejeFormSet(request.POST, instance=orden, prefix='detalles_fleje')
 
-            if form.is_valid() and formset.is_valid():
+            if form.is_valid() and formset.is_valid() and formset_fleje.is_valid():
                 orden_actualizada = form.save(commit=False)
 
                 detalles = formset.save(commit=False)
@@ -146,6 +169,13 @@ def editar_orden(request, orden_id):
                     d.orden = orden_actualizada
                     d.save()
                 for obj in formset.deleted_objects:
+                    obj.delete()
+
+                detalles_fleje = formset_fleje.save(commit=False)
+                for d in detalles_fleje:
+                    d.orden = orden_actualizada
+                    d.save()
+                for obj in formset_fleje.deleted_objects:
                     obj.delete()
 
                 if orden_actualizada.tipo_proceso == 'slitter':
@@ -158,6 +188,14 @@ def editar_orden(request, orden_id):
                         diferencia = 0
                     orden_actualizada.peso_producido = suma_pesos
                     orden_actualizada.scrap_total = diferencia if diferencia > 0 else 0
+                elif orden_actualizada.tipo_proceso == 'fleje':
+                    suma_pesos = sum(
+                        float(d.peso_descarga) for d in orden_actualizada.detalles_fleje.all() if d.peso_descarga
+                    )
+                    orden_actualizada.peso_producido = suma_pesos
+                    if orden_actualizada.peso_rollo_padre:
+                        orden_actualizada.peso_usado = orden_actualizada.peso_rollo_padre
+                    orden_actualizada.mp = None
 
                 orden_actualizada.save()
 
@@ -168,10 +206,12 @@ def editar_orden(request, orden_id):
         else:
             form = OrdenProduccionForm(instance=orden)
             formset = DetalleSlitterFormSet(instance=orden, prefix='detalles')
+            formset_fleje = DetalleFlejeFormSet(instance=orden, prefix='detalles_fleje')
 
         return render(request, 'produccion/editar_orden.html', {
             'form': form,
             'formset': formset,
+            'formset_fleje': formset_fleje,
             'orden': orden,
         })
 
@@ -182,24 +222,27 @@ def editar_orden(request, orden_id):
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def imprimir_orden(request, orden_id):
     orden = get_object_or_404(
-        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea'),
+        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'pt_origen'),
         id=orden_id
     )
     detalles = orden.detalles_slitter.all()
+    detalles_fleje = orden.detalles_fleje.all()
     return render(request, 'produccion/imprimir_orden.html', {
         'orden': orden,
         'detalles': detalles,
+        'detalles_fleje': detalles_fleje,
     })
 
 
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def detalle_orden(request, orden_id):
     orden = get_object_or_404(
-        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea'),
+        OrdenProduccion.objects.select_related('cliente', 'mp', 'linea', 'pt_origen'),
         id=orden_id
     )
     orden = anotar_anomalias([orden])[0]
     detalles = orden.detalles_slitter.all()
+    detalles_fleje = orden.detalles_fleje.all()
 
     from dashboard.models import HistorialCambio
     historial = HistorialCambio.objects.filter(
@@ -209,5 +252,6 @@ def detalle_orden(request, orden_id):
     return render(request, 'produccion/detalle_orden.html', {
         'orden': orden,
         'detalles': detalles,
+        'detalles_fleje': detalles_fleje,
         'historial': historial,
     })

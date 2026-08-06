@@ -27,6 +27,12 @@ class ProductoTerminado(models.Model):
         null=True, blank=True,
         related_name='producto_terminado',
     )
+    detalle_fleje = models.ForeignKey(
+        'produccion.DetalleFleje',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='producto_terminado',
+    )
     cliente = models.ForeignKey(
         Cliente,
         on_delete=models.SET_NULL,

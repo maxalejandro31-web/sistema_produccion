@@ -81,6 +81,19 @@ class OrdenProduccion(models.Model):
     cantidad_paquetes = models.PositiveIntegerField(null=True, blank=True)
     cantidad_piezas = models.PositiveIntegerField(null=True, blank=True)
 
+    # ── Datos específicos de Fleje ──────────────────────────────────────────
+    folio_rollo_padre = models.CharField(max_length=100, null=True, blank=True)
+    espesor_rollo_padre = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    peso_rollo_padre = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    tipo_fleje = models.CharField(max_length=100, null=True, blank=True)
+    temp_zona_1 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name='Temp. Zona 1')
+    temp_zona_2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name='Temp. Zona 2')
+    temp_zona_3 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name='Temp. Zona 3')
+    temp_zona_4 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name='Temp. Zona 4')
+    temp_zona_5 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name='Temp. Zona 5')
+    demora_hora_inicio = models.TimeField(null=True, blank=True)
+    demora_hora_fin = models.TimeField(null=True, blank=True)
+
     observaciones = models.TextField(blank=True, null=True)
 
     estado = models.CharField(
@@ -101,7 +114,11 @@ class OrdenProduccion(models.Model):
                 raise ValueError("No hay suficiente peso disponible en la materia prima")
 
         if self.peso_usado and self.peso_producido is not None and float(self.peso_usado) > 0:
-            self.rendimiento_porcentaje = round((float(self.peso_producido) / float(self.peso_usado)) * 100, 2)
+            valor_rendimiento = round((float(self.peso_producido) / float(self.peso_usado)) * 100, 2)
+            # rendimiento_porcentaje tiene max_digits=6 (hasta 9999.99); si el
+            # dato capturado da una proporción absurda, se deja en None en vez
+            # de reventar el guardado con decimal.InvalidOperation.
+            self.rendimiento_porcentaje = valor_rendimiento if abs(valor_rendimiento) < 10000 else None
         else:
             self.rendimiento_porcentaje = None
 
@@ -147,3 +164,27 @@ class DetalleSlitter(models.Model):
 
     def __str__(self):
         return f"{self.orden.folio_orden} - Corte {self.no_corte}"
+
+
+class DetalleFleje(models.Model):
+    orden = models.ForeignKey(
+        OrdenProduccion,
+        on_delete=models.CASCADE,
+        related_name='detalles_fleje'
+    )
+
+    no_fleje = models.PositiveIntegerField()
+    folio_descarga = models.CharField(max_length=100, blank=True, null=True)
+    porcentaje_rebaba = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    numero_descarga = models.PositiveIntegerField(null=True, blank=True)
+    peso_descarga = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    ancho = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    numero_flejes = models.PositiveIntegerField(null=True, blank=True)
+    observaciones = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        ordering = ['no_fleje']
+        unique_together = ('orden', 'no_fleje')
+
+    def __str__(self):
+        return f"{self.orden.folio_orden} - Fleje {self.no_fleje}"

@@ -87,7 +87,11 @@
         <div class="card"><strong>Folio:</strong> {{ orden.folio_orden|default:"Sin folio" }}</div>
         <div class="card"><strong>Proceso:</strong> {{ orden.get_tipo_proceso_display }}</div>
         <div class="card"><strong>Cliente:</strong> {{ orden.cliente|default:"-" }}</div>
+        {% if orden.tipo_proceso == 'fleje' %}
+        <div class="card"><strong>Cinta origen:</strong> {{ orden.pt_origen|default:"-" }}</div>
+        {% else %}
         <div class="card"><strong>MP:</strong> {{ orden.mp|default:"-" }}</div>
+        {% endif %}
         <div class="card"><strong>Línea:</strong> {{ orden.linea }}</div>
         <div class="card"><strong>Operador:</strong> {{ orden.operador_nombre_nombre|default:"-" }}</div>
         <div class="card"><strong>Turno:</strong> {{ orden.get_turno_display|default:"-" }}</div>
@@ -137,6 +141,27 @@
         <div class="card"><strong>Observaciones:</strong> {{ orden.observaciones|default:"-" }}</div>
     </div>
 
+    {% if orden.tipo_proceso == 'fleje' %}
+    <h2>Datos de Fleje</h2>
+    <div class="grid">
+        <div class="card"><strong>Folio rollo padre:</strong> {{ orden.folio_rollo_padre|default:"-" }}</div>
+        <div class="card"><strong>Tipo de fleje:</strong> {{ orden.tipo_fleje|default:"-" }}</div>
+        <div class="card"><strong>Espesor rollo padre:</strong> {{ orden.espesor_rollo_padre|default:"-" }}</div>
+        <div class="card"><strong>Peso rollo padre:</strong> {{ orden.peso_rollo_padre|default:"-" }} kg</div>
+        <div class="card">
+            <strong>Temperatura paila:</strong>
+            Z1 {{ orden.temp_zona_1|default:"-" }} ·
+            Z2 {{ orden.temp_zona_2|default:"-" }} ·
+            Z3 {{ orden.temp_zona_3|default:"-" }} ·
+            Z4 {{ orden.temp_zona_4|default:"-" }} ·
+            Z5 {{ orden.temp_zona_5|default:"-" }} °C
+        </div>
+        <div class="card">
+            <strong>Demora:</strong>
+            {{ orden.demora_hora_inicio|default:"-" }} a {{ orden.demora_hora_fin|default:"-" }}
+        </div>
+    </div>
+    {% endif %}
 
     <h2 style="margin-top:28px;">Historial de cambios</h2>
     <table>
@@ -162,6 +187,7 @@
         </tbody>
     </table>
 
+    {% if detalles %}
     <h2>Detalle Slitter</h2>
 
     <table>
@@ -189,12 +215,42 @@
                 <td>{% if d.material_ok %}Sí{% else %}No{% endif %}</td>
                 <td>{{ d.observaciones|default:"-" }}</td>
             </tr>
-            {% empty %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if detalles_fleje %}
+    <h2>Detalle de Tiras (Fleje)</h2>
+
+    <table>
+        <thead>
             <tr>
-                <td colspan="8">No hay cortes registrados para esta orden.</td>
+                <th>No.</th>
+                <th>Folio descarga</th>
+                <th>% Rebaba</th>
+                <th># Descarga</th>
+                <th>Peso descarga</th>
+                <th>Ancho</th>
+                <th># de flejes</th>
+                <th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in detalles_fleje %}
+            <tr>
+                <td>{{ d.no_fleje }}</td>
+                <td>{{ d.folio_descarga|default:"-" }}</td>
+                <td>{{ d.porcentaje_rebaba|default:"-" }}</td>
+                <td>{{ d.numero_descarga|default:"-" }}</td>
+                <td>{{ d.peso_descarga|default:"-" }}</td>
+                <td>{{ d.ancho|default:"-" }}</td>
+                <td>{{ d.numero_flejes|default:"-" }}</td>
+                <td>{{ d.observaciones|default:"-" }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
 </div>
 {% endblock %}
