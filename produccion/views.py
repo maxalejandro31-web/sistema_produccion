@@ -12,6 +12,19 @@ from inventario.models import Cliente
 from dashboard.models import registrar_historial
 
 
+def _calcular_scrap_merma(orden):
+    """Scrap total y merma se derivan de peso_usado - peso_producido, para
+    los cuatro tipos de proceso (slitter/fleje ya traen peso_producido
+    calculado desde su detalle; corte_liso/mini_slitter lo capturan a mano)."""
+    if orden.peso_usado is not None and orden.peso_producido is not None:
+        diferencia = float(orden.peso_usado) - float(orden.peso_producido)
+    else:
+        diferencia = 0
+    diferencia = diferencia if diferencia > 0 else 0
+    orden.scrap_total = diferencia
+    orden.merma_kg = diferencia
+
+
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def captura_orden(request):
     if request.method == 'POST':
@@ -32,13 +45,7 @@ def captura_orden(request):
                     if d.peso:
                         suma_pesos += float(d.peso)
 
-                if orden.peso_usado:
-                    diferencia = float(orden.peso_usado) - suma_pesos
-                else:
-                    diferencia = 0
-
                 orden.peso_producido = suma_pesos
-                orden.scrap_total = diferencia if diferencia > 0 else 0
                 detalles_fleje = []
             elif tipo == 'fleje':
                 suma_pesos = sum(
@@ -52,6 +59,8 @@ def captura_orden(request):
             else:
                 detalles = []
                 detalles_fleje = []
+
+            _calcular_scrap_merma(orden)
 
             try:
                 orden.save()
@@ -194,12 +203,7 @@ def editar_orden(request, orden_id):
                     suma_pesos = sum(
                         float(d.peso) for d in orden_actualizada.detalles_slitter.all() if d.peso
                     )
-                    if orden_actualizada.peso_usado:
-                        diferencia = float(orden_actualizada.peso_usado) - suma_pesos
-                    else:
-                        diferencia = 0
                     orden_actualizada.peso_producido = suma_pesos
-                    orden_actualizada.scrap_total = diferencia if diferencia > 0 else 0
                 elif orden_actualizada.tipo_proceso == 'fleje':
                     suma_pesos = sum(
                         float(d.peso_descarga) for d in orden_actualizada.detalles_fleje.all() if d.peso_descarga
@@ -209,6 +213,7 @@ def editar_orden(request, orden_id):
                         orden_actualizada.peso_usado = orden_actualizada.peso_rollo_padre
                     orden_actualizada.mp = None
 
+                _calcular_scrap_merma(orden_actualizada)
                 orden_actualizada.save()
 
                 registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'EDITAR',

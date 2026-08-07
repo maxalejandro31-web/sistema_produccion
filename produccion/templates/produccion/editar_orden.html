@@ -51,7 +51,7 @@
         <div class="grid">
             {% for field in form %}
                 <div class="campo">
-                    <label>{{ field.label }}</label>
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
                     {% if field.errors %}<small style="color:red;">{{ field.errors }}</small>{% endif %}
                 </div>
@@ -177,6 +177,71 @@
 document.addEventListener('DOMContentLoaded', function () {
     const totalPesoSpan = document.getElementById('total-peso');
 
+    const tipoProceso = '{{ orden.tipo_proceso }}';
+    const modoSlitter = tipoProceso === 'slitter';
+    const modoFleje = tipoProceso === 'fleje';
+
+    const pesoUsadoInput = document.getElementById('id_peso_usado');
+    const pesoProducidoInput = document.getElementById('id_peso_producido');
+    const pesoRolloPadreInput = document.getElementById('id_peso_rollo_padre');
+    const scrapInput = document.getElementById('id_scrap_total');
+    const mermaInput = document.getElementById('id_merma_kg');
+
+    function marcarSoloLectura(input) {
+        if (!input) return;
+        input.readOnly = true;
+        input.tabIndex = -1;
+        input.style.background = '#f1f5f9';
+        input.style.color = '#64748b';
+        input.style.cursor = 'not-allowed';
+    }
+
+    function actualizarScrapMerma() {
+        let producido = 0;
+        if (modoSlitter && totalPesoSpan) {
+            producido = parseFloat(totalPesoSpan.textContent) || 0;
+        } else if (modoFleje) {
+            const totalFlejeSpan = document.getElementById('total-peso-fleje');
+            producido = totalFlejeSpan ? (parseFloat(totalFlejeSpan.textContent) || 0) : 0;
+        } else if (pesoProducidoInput) {
+            producido = parseFloat(pesoProducidoInput.value) || 0;
+        }
+
+        if (pesoProducidoInput && (modoSlitter || modoFleje)) {
+            pesoProducidoInput.value = producido.toFixed(2);
+        }
+
+        let usado = 0;
+        if (modoFleje && pesoRolloPadreInput && pesoRolloPadreInput.value) {
+            usado = parseFloat(pesoRolloPadreInput.value) || 0;
+        } else if (pesoUsadoInput) {
+            usado = parseFloat(pesoUsadoInput.value) || 0;
+        }
+
+        let diferencia = usado - producido;
+        if (diferencia < 0) diferencia = 0;
+
+        if (scrapInput) scrapInput.value = diferencia.toFixed(2);
+        if (mermaInput) mermaInput.value = diferencia.toFixed(2);
+    }
+
+    marcarSoloLectura(scrapInput);
+    marcarSoloLectura(mermaInput);
+    const labelScrapTotal = document.querySelector('label[for="id_scrap_total"]');
+    const labelMermaKg = document.querySelector('label[for="id_merma_kg"]');
+    if (labelScrapTotal) labelScrapTotal.textContent = 'Scrap total (kg, automático)';
+    if (labelMermaKg) labelMermaKg.textContent = 'Merma (kg, automático)';
+
+    if (modoSlitter || modoFleje) {
+        marcarSoloLectura(pesoProducidoInput);
+        const labelPesoProducido = document.querySelector('label[for="id_peso_producido"]');
+        if (labelPesoProducido) labelPesoProducido.textContent = 'Peso producido (kg, automático)';
+    }
+
+    if (pesoUsadoInput) pesoUsadoInput.addEventListener('input', actualizarScrapMerma);
+    if (pesoProducidoInput) pesoProducidoInput.addEventListener('input', actualizarScrapMerma);
+    if (pesoRolloPadreInput) pesoRolloPadreInput.addEventListener('input', actualizarScrapMerma);
+
     function calcularTotal() {
         if (!totalPesoSpan) return;
         let total = 0;
@@ -193,6 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
         totalPesoSpan.textContent = total.toFixed(2);
+        actualizarScrapMerma();
     }
 
     document.addEventListener('input', function (e) {
@@ -217,6 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
         totalPesoFlejeSpan.textContent = total.toFixed(2);
+        actualizarScrapMerma();
     }
 
     document.addEventListener('input', function (e) {

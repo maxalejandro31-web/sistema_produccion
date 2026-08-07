@@ -357,6 +357,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const lineaSelect = document.getElementById('id_linea');
     const tipoProcesoSelect = document.getElementById('id_tipo_proceso');
     const pesoUsadoInput = document.getElementById('id_peso_usado');
+    const pesoProducidoInput = document.getElementById('id_peso_producido');
+    const pesoRolloPadreInput = document.getElementById('id_peso_rollo_padre');
+    const scrapInput = document.getElementById('id_scrap_total');
+    const mermaInput = document.getElementById('id_merma_kg');
 
     const bloqueSlitter = document.getElementById('bloque-slitter');
     const totalForms = document.getElementById('id_detalles-TOTAL_FORMS');
@@ -394,6 +398,51 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function esFleje() {
         return !!(tipoProcesoSelect && (tipoProcesoSelect.value || '').trim().toLowerCase() === 'fleje');
+    }
+
+    function marcarSoloLectura(input) {
+        if (!input) return;
+        input.readOnly = true;
+        input.tabIndex = -1;
+        input.style.background = '#f1f5f9';
+        input.style.color = '#64748b';
+        input.style.cursor = 'not-allowed';
+    }
+
+    function quitarSoloLectura(input) {
+        if (!input) return;
+        input.readOnly = false;
+        input.removeAttribute('tabindex');
+        input.style.background = '';
+        input.style.color = '';
+        input.style.cursor = '';
+    }
+
+    function actualizarScrapMerma() {
+        const modoFlejeActivo = esFleje();
+        const modoSlitterActivo = esSlitter() && !modoFlejeActivo;
+
+        let producido = 0;
+        if (modoSlitterActivo && totalPesoSpan) {
+            producido = parseFloat(totalPesoSpan.textContent) || 0;
+        } else if (modoFlejeActivo && totalPesoFlejeSpan) {
+            producido = parseFloat(totalPesoFlejeSpan.textContent) || 0;
+        } else if (pesoProducidoInput) {
+            producido = parseFloat(pesoProducidoInput.value) || 0;
+        }
+
+        let usado = 0;
+        if (modoFlejeActivo && pesoRolloPadreInput && pesoRolloPadreInput.value) {
+            usado = parseFloat(pesoRolloPadreInput.value) || 0;
+        } else if (pesoUsadoInput) {
+            usado = parseFloat(pesoUsadoInput.value) || 0;
+        }
+
+        let diferencia = usado - producido;
+        if (diferencia < 0) diferencia = 0;
+
+        if (scrapInput) scrapInput.value = diferencia.toFixed(2);
+        if (mermaInput) mermaInput.value = diferencia.toFixed(2);
     }
 
     function limpiarValoresFila(row) {
@@ -464,6 +513,11 @@ document.addEventListener('DOMContentLoaded', function () {
             diferenciaSpan.innerText = '0.00';
             diferenciaSpan.style.color = 'black';
         }
+
+        if (pesoProducidoInput && esSlitter() && !esFleje()) {
+            pesoProducidoInput.value = total.toFixed(2);
+        }
+        actualizarScrapMerma();
     }
 
     function crearNuevaFila() {
@@ -578,6 +632,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         totalPesoFlejeSpan.innerText = total.toFixed(2);
+
+        if (pesoProducidoInput && esFleje()) {
+            pesoProducidoInput.value = total.toFixed(2);
+        }
+        actualizarScrapMerma();
     }
 
     function crearNuevaFilaFleje() {
@@ -671,9 +730,29 @@ document.addEventListener('DOMContentLoaded', function () {
             labelPiezas.textContent = modoFleje ? 'Número de tiras' : 'Cantidad de piezas';
         }
         if (labelPesoProducido) {
-            labelPesoProducido.textContent = modoFleje ? 'Peso total de tiras (kg, automático)' : 'Peso producido (kg)';
+            labelPesoProducido.textContent = modoFleje
+                ? 'Peso total de tiras (kg, automático)'
+                : (modoSlitter ? 'Peso producido (kg, automático)' : 'Peso producido (kg)');
         }
+
+        if (pesoProducidoInput) {
+            if (modoSlitter || modoFleje) {
+                marcarSoloLectura(pesoProducidoInput);
+            } else {
+                quitarSoloLectura(pesoProducidoInput);
+            }
+        }
+
+        actualizarScrapMerma();
     }
+
+    marcarSoloLectura(scrapInput);
+    marcarSoloLectura(mermaInput);
+
+    const labelScrapTotal = document.querySelector('label[for="id_scrap_total"]');
+    const labelMermaKg = document.querySelector('label[for="id_merma_kg"]');
+    if (labelScrapTotal) labelScrapTotal.textContent = 'Scrap total (kg, automático)';
+    if (labelMermaKg) labelMermaKg.textContent = 'Merma (kg, automático)';
 
     if (lineaSelect) {
         lineaSelect.addEventListener('change', actualizarModoProceso);
@@ -681,6 +760,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (tipoProcesoSelect) {
         tipoProcesoSelect.addEventListener('change', actualizarModoProceso);
+    }
+
+    if (pesoProducidoInput) {
+        pesoProducidoInput.addEventListener('input', actualizarScrapMerma);
+    }
+
+    if (pesoRolloPadreInput) {
+        pesoRolloPadreInput.addEventListener('input', actualizarScrapMerma);
     }
 
     if (pesoUsadoInput) {
