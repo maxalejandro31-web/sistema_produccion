@@ -27,6 +27,7 @@ class HistorialCambio(models.Model):
         ('EDITAR', 'Editado'),
         ('ESTADO', 'Cambio de estado'),
         ('MOVIMIENTO', 'Movimiento registrado'),
+        ('ELIMINAR', 'Eliminado'),
     ]
 
     tipo_objeto = models.CharField(max_length=50)

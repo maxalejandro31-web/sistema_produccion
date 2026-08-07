@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Sum
 from django.utils import timezone
@@ -12,6 +13,7 @@ from .forms import MateriaPrimaForm, ClienteForm, RegistrarMovimientoForm
 from .models import MateriaPrima, Cliente, MovimientoMP
 from produccion.models import OrdenProduccion
 from dashboard.models import registrar_historial
+from core.decorators import solo_dueno_puede_eliminar
 
 
 @login_required
@@ -86,6 +88,17 @@ def lista_mp(request):
         'mp_por_vencer_count': mp_por_vencer_count,
         'clientes': Cliente.objects.filter(activo=True).order_by('nombre'),
     })
+
+
+@solo_dueno_puede_eliminar
+@require_POST
+def eliminar_mp(request, mp_id):
+    mp = get_object_or_404(MateriaPrima, id=mp_id)
+    numero_mp = mp.numero_mp
+    registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'ELIMINAR', f'MP {numero_mp} eliminada.')
+    mp.delete()
+    messages.success(request, f'Materia prima {numero_mp} eliminada correctamente.')
+    return redirect('lista_mp')
 
 
 @login_required

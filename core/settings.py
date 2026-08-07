@@ -14,6 +14,9 @@ SECRET_KEY = os.getenv(
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
+# Único usuario autorizado para eliminar registros (MP, órdenes, etc.)
+USUARIO_CON_PERMISO_ELIMINAR = os.getenv("USUARIO_CON_PERMISO_ELIMINAR", "admin")
+
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",

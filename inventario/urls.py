@@ -3,6 +3,7 @@ from .views import (
     captura_mp,
     lista_mp,
     editar_mp,
+    eliminar_mp,
     detalle_mp,
     lista_clientes,
     captura_cliente,
@@ -17,6 +18,7 @@ urlpatterns = [
     path('captura-mp/', captura_mp, name='captura_mp'),
     path('lista-mp/', lista_mp, name='lista_mp'),
     path('editar-mp/<int:mp_id>/', editar_mp, name='editar_mp'),
+    path('eliminar-mp/<int:mp_id>/', eliminar_mp, name='eliminar_mp'),
     path('detalle-mp/<int:mp_id>/', detalle_mp, name='detalle_mp'),
     path('salidas-mp/', lista_salidas_mp, name='lista_salidas_mp'),
 

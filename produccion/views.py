@@ -2,11 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
 
 from .models import OrdenProduccion
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet, DetalleFlejeFormSet
 from .analitica import anotar_anomalias
-from core.decorators import roles_required
+from core.decorators import roles_required, solo_dueno_puede_eliminar
 from inventario.models import Cliente
 from dashboard.models import registrar_historial
 
@@ -148,6 +149,17 @@ def cambiar_estado(request, orden_id, nuevo_estado):
     registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'ESTADO',
         f'Estado cambiado a {etiquetas[nuevo_estado]}.')
     messages.success(request, f'Orden {orden.folio_orden or orden.id} cambiada a {etiquetas[nuevo_estado]}.')
+    return redirect('lista_ordenes')
+
+
+@solo_dueno_puede_eliminar
+@require_POST
+def eliminar_orden(request, orden_id):
+    orden = get_object_or_404(OrdenProduccion, id=orden_id)
+    folio = orden.folio_orden or orden.id
+    registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'ELIMINAR', f'Orden {folio} eliminada.')
+    orden.delete()
+    messages.success(request, f'Orden {folio} eliminada correctamente.')
     return redirect('lista_ordenes')
 
 

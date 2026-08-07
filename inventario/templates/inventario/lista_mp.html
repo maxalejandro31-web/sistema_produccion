@@ -285,6 +285,12 @@
                     {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen or es_coordinador %}
                     <a href="{% url 'dar_salida_mp' mp.id %}" style="display:inline-block;padding:6px 10px;background:#e74c3c;color:white;border-radius:6px;text-decoration:none;font-size:12px;margin-bottom:4px;">Salida</a>
                     {% endif %}
+                    {% if puede_eliminar %}
+                    <form method="post" action="{% url 'eliminar_mp' mp.id %}" style="display:inline-block;margin-bottom:4px;" onsubmit="return confirm('¿Eliminar permanentemente la MP {{ mp.numero_mp }}? Esto también borrará sus movimientos y órdenes ligadas. Esta acción no se puede deshacer.');">
+                        {% csrf_token %}
+                        <button type="submit" style="padding:6px 10px;background:#7f1d1d;color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;">Eliminar</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

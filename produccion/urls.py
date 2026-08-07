@@ -4,6 +4,7 @@ from .views import (
     lista_ordenes,
     cambiar_estado,
     editar_orden,
+    eliminar_orden,
     detalle_orden,
     imprimir_orden,
 )
@@ -13,6 +14,7 @@ urlpatterns = [
     path('ordenes/', lista_ordenes, name='lista_ordenes'),
     path('orden/<int:orden_id>/<str:nuevo_estado>/', cambiar_estado, name='cambiar_estado'),
     path('editar-orden/<int:orden_id>/', editar_orden, name='editar_orden'),
+    path('eliminar-orden/<int:orden_id>/', eliminar_orden, name='eliminar_orden'),
     path('detalle-orden/<int:orden_id>/', detalle_orden, name='detalle_orden'),
     path('imprimir-orden/<int:orden_id>/', imprimir_orden, name='imprimir_orden'),
 ]

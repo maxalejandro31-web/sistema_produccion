@@ -194,6 +194,13 @@
                         <a class="btn btn-iniciar" href="{% url 'cambiar_estado' orden.id 'proceso' %}"
                            onclick="return confirm('¿Reabrir la orden {{ orden.folio_orden|default:orden.id }}?')">Reabrir</a>
                     {% endif %}
+
+                    {% if puede_eliminar %}
+                    <form method="post" action="{% url 'eliminar_orden' orden.id %}" style="display:inline-block;" onsubmit="return confirm('¿Eliminar permanentemente la orden {{ orden.folio_orden|default:orden.id }}? Esta acción no se puede deshacer.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background:#7f1d1d;color:white;border:none;cursor:pointer;">Eliminar</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

@@ -1,5 +1,6 @@
 def permisos_usuario(request):
     import datetime
+    from django.conf import settings
     from django.utils import timezone
     from dashboard.models import ConfiguracionEmpresa
 
@@ -12,6 +13,7 @@ def permisos_usuario(request):
             'es_operador': False,
             'es_capturista': False,
             'es_coordinador': False,
+            'puede_eliminar': False,
             'config_empresa': ConfiguracionEmpresa.get(),
             'alertas_count': 0,
             'alertas_items': [],
@@ -77,6 +79,7 @@ def permisos_usuario(request):
         'es_operador': 'Operador' in grupos,
         'es_capturista': 'Capturista' in grupos,
         'es_coordinador': 'Coordinador' in grupos,
+        'puede_eliminar': request.user.username == settings.USUARIO_CON_PERMISO_ELIMINAR,
         'config_empresa': ConfiguracionEmpresa.get(),
         'alertas_count': alertas_count,
         'alertas_items': alertas_items,
