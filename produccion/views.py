@@ -25,6 +25,21 @@ def _calcular_scrap_merma(orden):
     orden.merma_kg = diferencia
 
 
+def _descripcion_pesos(orden):
+    """Texto con los pesos capturados/calculados, para dejar constancia en
+    el historial de exactamente qué se guardó (incluido lo automático)."""
+    partes = []
+    if orden.peso_usado is not None:
+        partes.append(f'usado {orden.peso_usado} kg')
+    if orden.peso_producido is not None:
+        partes.append(f'producido {orden.peso_producido} kg')
+    if orden.scrap_total is not None:
+        partes.append(f'scrap {orden.scrap_total} kg')
+    if orden.merma_kg is not None:
+        partes.append(f'merma {orden.merma_kg} kg')
+    return ' | '.join(partes)
+
+
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def captura_orden(request):
     if request.method == 'POST':
@@ -85,7 +100,7 @@ def captura_orden(request):
                 obj.delete()
 
             registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'CREAR',
-                f'Orden {orden.folio_orden or orden.id} creada.')
+                f'Orden {orden.folio_orden or orden.id} creada. {_descripcion_pesos(orden)}')
             messages.success(request, 'Orden registrada correctamente.')
             form = OrdenProduccionForm()
             formset = DetalleSlitterFormSet(prefix='detalles')
@@ -166,7 +181,8 @@ def cambiar_estado(request, orden_id, nuevo_estado):
 def eliminar_orden(request, orden_id):
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
     folio = orden.folio_orden or orden.id
-    registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'ELIMINAR', f'Orden {folio} eliminada.')
+    registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'ELIMINAR',
+        f'Orden {folio} eliminada. {_descripcion_pesos(orden)}')
     orden.delete()
     messages.success(request, f'Orden {folio} eliminada correctamente.')
     return redirect('lista_ordenes')
@@ -217,7 +233,7 @@ def editar_orden(request, orden_id):
                 orden_actualizada.save()
 
                 registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'EDITAR',
-                    f'Orden {orden.folio_orden or orden.id} actualizada.')
+                    f'Orden {orden.folio_orden or orden.id} actualizada. {_descripcion_pesos(orden_actualizada)}')
                 messages.success(request, f'Orden {orden.folio_orden or orden.id} actualizada correctamente.')
                 return redirect('lista_ordenes')
         else:

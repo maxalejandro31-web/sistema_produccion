@@ -11,13 +11,14 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.core.management import call_command
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.db.models import Sum, Count
 from django.utils import timezone
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
 from produccion.analitica import anotar_anomalias
-from .models import ConfiguracionEmpresa
+from .models import ConfiguracionEmpresa, HistorialCambio
 from .forms import ConfiguracionEmpresaForm
 
 
@@ -359,4 +360,43 @@ def configuracion_empresa(request):
     return render(request, 'dashboard/configuracion_empresa.html', {
         'form': form,
         'config': config,
+    })
+
+
+# ── Historial / auditoría ──────────────────────────────────────────────────────
+
+@login_required
+def historial_general(request):
+    if not request.user.is_superuser:
+        messages.error(request, 'No tienes permiso para ver el historial.')
+        return redirect('inicio')
+
+    tipo_objeto = request.GET.get('tipo_objeto', '')
+    accion      = request.GET.get('accion', '')
+    usuario_id  = request.GET.get('usuario', '')
+    q           = request.GET.get('q', '')
+
+    qs = HistorialCambio.objects.select_related('usuario').order_by('-fecha')
+
+    if tipo_objeto:
+        qs = qs.filter(tipo_objeto=tipo_objeto)
+    if accion:
+        qs = qs.filter(accion=accion)
+    if usuario_id:
+        qs = qs.filter(usuario_id=usuario_id)
+    if q:
+        qs = qs.filter(objeto_str__icontains=q) | qs.filter(descripcion__icontains=q)
+
+    paginator = Paginator(qs, 50)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
+
+    return render(request, 'dashboard/historial.html', {
+        'page_obj': page_obj,
+        'tipos_objeto': HistorialCambio.objects.order_by().values_list('tipo_objeto', flat=True).distinct(),
+        'acciones': HistorialCambio.ACCION_CHOICES,
+        'usuarios': User.objects.filter(historialcambio__isnull=False).distinct().order_by('username'),
+        'tipo_objeto': tipo_objeto,
+        'accion': accion,
+        'usuario_id': usuario_id,
+        'q': q,
     })

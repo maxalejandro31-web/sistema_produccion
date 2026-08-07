@@ -4,6 +4,7 @@ from .views import (
     cambiar_password,
     lista_usuarios, crear_usuario, editar_usuario,
     configuracion_empresa,
+    historial_general,
 )
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
     path('usuarios/crear/', crear_usuario, name='crear_usuario'),
     path('usuarios/<int:user_id>/editar/', editar_usuario, name='editar_usuario'),
     path('configuracion/', configuracion_empresa, name='configuracion_empresa'),
+    path('historial/', historial_general, name='historial_general'),
 ]

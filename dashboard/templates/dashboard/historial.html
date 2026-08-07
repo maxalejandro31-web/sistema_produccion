@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Historial{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Dashboard</a>
+    <span class="sep">›</span>
+    <span class="current">Historial</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor { background:white; border-radius:14px; padding:25px; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+    h1 { margin-top:0; margin-bottom:20px; font-size:22px; color:#1f2d3d; }
+    .filtros { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+    .filtros input, .filtros select, .filtros button, .filtros a {
+        padding:10px; border-radius:8px; border:1px solid #ccc; font-size:13px;
+    }
+    .filtros button { background:#1f2d3d; color:white; border:none; cursor:pointer; font-weight:600; }
+    .filtros a.limpiar { background:#f3f4f6; color:#374151; text-decoration:none; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th, td { padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:left; vertical-align:top; }
+    th { background:#f8f9fb; font-size:12px; text-transform:uppercase; color:#6b7280; letter-spacing:.4px; }
+    tr:hover td { background:#f9fafb; }
+    .badge-accion { padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; white-space:nowrap; }
+    .accion-CREAR { background:#d1fae5; color:#065f46; }
+    .accion-EDITAR { background:#dbeafe; color:#1e40af; }
+    .accion-ESTADO { background:#fef3c7; color:#92400e; }
+    .accion-MOVIMIENTO { background:#f3e8ff; color:#6b21a8; }
+    .accion-ELIMINAR { background:#fee2e2; color:#991b1b; }
+    .objeto-str { color:#6b7280; font-size:12px; }
+    .paginacion { display:flex; gap:8px; align-items:center; justify-content:center; margin-top:20px; }
+    .paginacion a, .paginacion span { padding:6px 12px; border-radius:7px; border:1px solid #ddd; text-decoration:none; color:#1f2d3d; font-size:13px; }
+    .paginacion .actual { background:#1f2d3d; color:white; border-color:#1f2d3d; }
+</style>
+
+<div class="contenedor">
+    <h1>🕒 Historial de cambios</h1>
+
+    <form method="get" class="filtros">
+        <select name="tipo_objeto">
+            <option value="">Todos los objetos</option>
+            {% for t in tipos_objeto %}
+                <option value="{{ t }}" {% if t == tipo_objeto %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="accion">
+            <option value="">Todas las acciones</option>
+            {% for valor, etiqueta in acciones %}
+                <option value="{{ valor }}" {% if valor == accion %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="usuario">
+            <option value="">Todos los usuarios</option>
+            {% for u in usuarios %}
+                <option value="{{ u.id }}" {% if usuario_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>
+            {% endfor %}
+        </select>
+
+        <input type="text" name="q" placeholder="Buscar por objeto o descripción..." value="{{ q }}">
+
+        <button type="submit">Filtrar</button>
+        <a href="{% url 'historial_general' %}" class="limpiar">Limpiar</a>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Acción</th>
+                <th>Objeto</th>
+                <th>Descripción</th>
+                <th>Usuario</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in page_obj %}
+            <tr>
+                <td>{{ h.fecha|date:"d/m/Y H:i" }}</td>
+                <td><span class="badge-accion accion-{{ h.accion }}">{{ h.get_accion_display }}</span></td>
+                <td>
+                    {{ h.tipo_objeto }}
+                    {% if h.objeto_str %}<div class="objeto-str">{{ h.objeto_str }}</div>{% endif %}
+                </td>
+                <td>{{ h.descripcion|default:"-" }}</td>
+                <td>{{ h.usuario.username|default:"Sistema" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:30px;">Sin movimientos registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="paginacion">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&tipo_objeto={{ tipo_objeto }}&accion={{ accion }}&usuario={{ usuario_id }}&q={{ q }}">‹ Anterior</a>
+        {% endif %}
+        <span class="actual">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&tipo_objeto={{ tipo_objeto }}&accion={{ accion }}&usuario={{ usuario_id }}&q={{ q }}">Siguiente ›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
