@@ -16,6 +16,8 @@ class OrdenProduccionForm(forms.ModelForm):
             'operador_nombre',
             'turno',
             'prioridad',
+            'fecha_orden_corte',
+            'fecha_produccion_oc',
             'hora_inicio',
             'hora_fin',
             'tiempo_preparacion_min',
@@ -42,6 +44,8 @@ class OrdenProduccionForm(forms.ModelForm):
             'estado',
         ]
         widgets = {
+            'fecha_orden_corte': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_produccion_oc': forms.DateInput(attrs={'type': 'date'}),
             'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'type': 'time'}),
             'demora_hora_inicio': forms.TimeInput(attrs={'type': 'time'}),

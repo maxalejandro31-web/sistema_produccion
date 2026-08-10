@@ -65,6 +65,8 @@ class OrdenProduccion(models.Model):
     prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='media')
 
     fecha = models.DateField(auto_now_add=True)
+    fecha_orden_corte = models.DateField(null=True, blank=True, verbose_name='Fecha de orden de corte')
+    fecha_produccion_oc = models.DateField(null=True, blank=True, verbose_name='Fecha de producción de OC')
     hora_inicio = models.TimeField(null=True, blank=True)
     hora_fin = models.TimeField(null=True, blank=True)
 

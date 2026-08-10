@@ -138,6 +138,8 @@
         </div>
         <div class="card"><strong>Estado:</strong> {{ orden.get_estado_display }}</div>
         <div class="card"><strong>Fecha:</strong> {{ orden.fecha }}</div>
+        <div class="card"><strong>Fecha de orden de corte:</strong> {{ orden.fecha_orden_corte|date:"d/m/Y"|default:"-" }}</div>
+        <div class="card"><strong>Fecha de producción de OC:</strong> {{ orden.fecha_produccion_oc|date:"d/m/Y"|default:"-" }}</div>
         <div class="card"><strong>Observaciones:</strong> {{ orden.observaciones|default:"-" }}</div>
     </div>
 

@@ -102,6 +102,8 @@
     <div class="seccion-titulo">Información general</div>
     <div class="grid2">
         <div class="campo"><div class="campo-label">Cliente</div><div class="campo-valor">{{ orden.cliente|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Fecha de orden de corte</div><div class="campo-valor">{{ orden.fecha_orden_corte|date:"d/m/Y"|default:"—" }}</div></div>
+        <div class="campo"><div class="campo-label">Fecha de producción de OC</div><div class="campo-valor">{{ orden.fecha_produccion_oc|date:"d/m/Y"|default:"—" }}</div></div>
         {% if orden.tipo_proceso == 'fleje' %}
         <div class="campo"><div class="campo-label">Cinta origen</div><div class="campo-valor">{{ orden.pt_origen|default:"—" }}</div></div>
         {% else %}
