@@ -6,12 +6,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
-from django.db.models import Sum
+from django.db.models import Sum, Max
 from django.utils import timezone
 
 from .forms import MateriaPrimaForm, ClienteForm, RegistrarMovimientoForm
 from .models import MateriaPrima, Cliente, MovimientoMP
-from produccion.models import OrdenProduccion
+from produccion.models import OrdenProduccion, DetalleSlitter
 from dashboard.models import registrar_historial
 from core.decorators import solo_dueno_puede_eliminar
 
@@ -396,6 +396,10 @@ def lista_salidas_mp(request):
 @login_required
 def api_datos_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
+    # Un mismo rollo puede pasar por la slitter varias veces en órdenes
+    # distintas; el número de corte debe seguir la secuencia del rollo
+    # completo, no reiniciar en cada orden nueva.
+    ultimo_corte = DetalleSlitter.objects.filter(orden__mp=mp).aggregate(Max('no_corte'))['no_corte__max']
     return JsonResponse({
         'cliente_id': mp.cliente_id,
         'cliente_nombre': str(mp.cliente) if mp.cliente else '',
@@ -405,4 +409,5 @@ def api_datos_mp(request, mp_id):
         'ancho': str(mp.ancho) if mp.ancho else '',
         'peso_restante': str(mp.peso_restante) if mp.peso_restante else '',
         'ubicacion': mp.ubicacion or '',
+        'proximo_no_corte': (ultimo_corte or 0) + 1,
     })

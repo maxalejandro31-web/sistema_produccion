@@ -808,6 +808,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Numeración de corte continua por rollo ────────────────────────────────
+    // Un mismo rollo se puede cortar en la slitter en varias órdenes distintas;
+    // el No. de corte debe seguir la secuencia del rollo, no reiniciar en 1.
+    let baseNoCorte = 1;
+
+    function marcarAutoNoCorte(input, valor) {
+        input.value = valor;
+        input.dataset.auto = '1';
+    }
+
+    function aplicarBaseNoCorte() {
+        if (!tablaBody) return;
+        let n = baseNoCorte;
+        tablaBody.querySelectorAll('.detalle-row').forEach(function (fila) {
+            if (fila.style.display === 'none') return;
+            const input = fila.querySelector('input[name*="-no_corte"]');
+            if (input && (input.value === '' || input.dataset.auto === '1')) {
+                marcarAutoNoCorte(input, n);
+            }
+            n++;
+        });
+        actualizarFolioPreview();
+    }
+
     function limpiarValoresFila(row) {
         const inputs = row.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
@@ -897,7 +921,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const noCorteInput = nuevaFila.querySelector(`input[name="detalles-${nuevoIndice}-no_corte"]`);
         if (noCorteInput) {
-            noCorteInput.value = nuevoIndice + 1;
+            const filasVisibles = Array.from(tablaBody.querySelectorAll('.detalle-row')).filter(f => f.style.display !== 'none').length;
+            marcarAutoNoCorte(noCorteInput, baseNoCorte + filasVisibles);
         }
 
         const deleteInput = nuevaFila.querySelector(`input[name="detalles-${nuevoIndice}-DELETE"]`);
@@ -1206,7 +1231,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        tablaBody.addEventListener('input', function () {
+        tablaBody.addEventListener('input', function (e) {
+            if (e.target.matches('input[name*="-no_corte"]')) {
+                delete e.target.dataset.auto;
+            }
             calcularTotales();
         });
 
@@ -1307,7 +1335,8 @@ document.addEventListener('DOMContentLoaded', function () {
             pesoDisponible = null;
             avisoPeso.style.display = 'none';
             if (pesoUsadoInput) pesoUsadoInput.style.borderColor = '#d1d5db';
-            actualizarFolioPreview();
+            baseNoCorte = 1;
+            aplicarBaseNoCorte();
             return;
         }
         fetch(`/api/mp/${mpId}/`)
@@ -1322,6 +1351,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.espesor_valor) partes.push(`<strong>Espesor:</strong> ${data.espesor_valor} ${data.unidad_espesor}`);
                 if (data.ancho) partes.push(`<strong>Ancho:</strong> ${data.ancho} mm`);
                 if (data.peso_restante) partes.push(`<strong>Peso disponible:</strong> <span style="font-weight:700;color:#065f46;">${data.peso_restante} kg</span>`);
+                if (data.proximo_no_corte && data.proximo_no_corte > 1) {
+                    partes.push(`<strong>Este rollo ya tiene cortes registrados:</strong> siguiente No. de corte sugerido <span style="font-weight:700;color:#1e40af;">${data.proximo_no_corte}</span>`);
+                }
                 if (partes.length > 0) {
                     infoBanner.innerHTML = partes.join(' &nbsp;|&nbsp; ');
                     infoBanner.style.display = 'block';
@@ -1329,7 +1361,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     infoBanner.style.display = 'none';
                 }
                 validarPesoUsado();
-                actualizarFolioPreview();
+                baseNoCorte = data.proximo_no_corte || 1;
+                aplicarBaseNoCorte();
             })
             .catch(() => {
                 infoBanner.style.display = 'none';
@@ -1360,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (tablaBody) {
         tablaBody.querySelectorAll('.detalle-row').forEach(function (fila, idx) {
             const noCorteInput = fila.querySelector('input[name*="-no_corte"]');
-            if (noCorteInput && !noCorteInput.value) noCorteInput.value = idx + 1;
+            if (noCorteInput && !noCorteInput.value) marcarAutoNoCorte(noCorteInput, baseNoCorte + idx);
             const clasifSelect = fila.querySelector('select[name*="-clasificacion"]');
             if (clasifSelect) actualizarClaseFila(clasifSelect);
         });

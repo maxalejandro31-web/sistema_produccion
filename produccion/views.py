@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 
-from .models import OrdenProduccion
+from .models import OrdenProduccion, DetalleSlitter
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet, DetalleFlejeFormSet
 from .analitica import anotar_anomalias
 from core.decorators import roles_required, solo_dueno_puede_eliminar
@@ -23,6 +23,24 @@ def _calcular_scrap_merma(orden):
     diferencia = diferencia if diferencia > 0 else 0
     orden.scrap_total = diferencia
     orden.merma_kg = diferencia
+
+
+def _cortes_duplicados(mp, detalles, excluir_orden_id=None):
+    """Números de corte que ya existen para este mismo rollo en OTRA orden.
+
+    Un rollo se puede cortar en la slitter las veces que sea necesario, en
+    órdenes distintas (p. ej. un remanente que se vuelve a pasar); lo que no
+    debe pasar es que dos cortes distintos de ese mismo rollo terminen con
+    el mismo No. de corte (y por lo tanto el mismo folio impreso)."""
+    if not mp:
+        return []
+    numeros = [d.no_corte for d in detalles if d.no_corte]
+    if not numeros:
+        return []
+    qs = DetalleSlitter.objects.filter(orden__mp=mp, no_corte__in=numeros)
+    if excluir_orden_id:
+        qs = qs.exclude(orden_id=excluir_orden_id)
+    return sorted(set(qs.values_list('no_corte', flat=True)))
 
 
 def _descripcion_pesos(orden):
@@ -54,6 +72,21 @@ def captura_orden(request):
             detalles_fleje = formset_fleje.save(commit=False)
 
             if tipo == 'slitter':
+                duplicados = _cortes_duplicados(orden.mp, detalles)
+                if duplicados:
+                    lista = ', '.join(str(n) for n in duplicados)
+                    messages.error(
+                        request,
+                        f'El rollo {orden.mp.numero_mp} ya tiene registrado el corte No. {lista} '
+                        'en otra orden. Usa un número de corte distinto (puede cortarse las veces '
+                        'que sea necesario, pero cada corte debe tener su propio número).'
+                    )
+                    return render(request, 'produccion/captura_orden.html', {
+                        'form': form,
+                        'formset': formset,
+                        'formset_fleje': formset_fleje,
+                    })
+
                 suma_pesos = 0
 
                 for d in detalles:
@@ -202,6 +235,23 @@ def editar_orden(request, orden_id):
                 orden_actualizada = form.save(commit=False)
 
                 detalles = formset.save(commit=False)
+
+                if orden_actualizada.tipo_proceso == 'slitter':
+                    duplicados = _cortes_duplicados(orden_actualizada.mp, detalles, excluir_orden_id=orden.id)
+                    if duplicados:
+                        lista = ', '.join(str(n) for n in duplicados)
+                        messages.error(
+                            request,
+                            f'El rollo {orden_actualizada.mp.numero_mp} ya tiene registrado el corte '
+                            f'No. {lista} en otra orden. Usa un número de corte distinto.'
+                        )
+                        return render(request, 'produccion/editar_orden.html', {
+                            'form': form,
+                            'formset': formset,
+                            'formset_fleje': formset_fleje,
+                            'orden': orden,
+                        })
+
                 for d in detalles:
                     d.orden = orden_actualizada
                     d.save()
