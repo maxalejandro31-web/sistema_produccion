@@ -22,13 +22,6 @@
         max-width: 1280px;
     }
 
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
-        margin-bottom: 25px;
-    }
-
     .campo {
         display: flex;
         flex-direction: column;
@@ -37,6 +30,7 @@
     .campo label {
         font-weight: bold;
         margin-bottom: 6px;
+        font-size: 13px;
     }
 
     .campo input,
@@ -47,11 +41,90 @@
         border: 1px solid #ccc;
     }
 
-    .acciones {
-        margin-top: 20px;
+    .mensaje-error { color: #c0392b; font-size: 12px; margin-top: 4px; }
+
+    /* ── Stepper ─────────────────────────────────────────────────────────── */
+    .stepper {
+        display: flex;
+        align-items: flex-start;
+        max-width: 780px;
+        margin: 4px 0 30px;
+    }
+    .step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        flex: 0 0 auto;
+        width: 130px;
+    }
+    .step-num {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        transition: background .15s, color .15s;
+    }
+    .step-label {
+        font-size: 12px;
+        color: #64748b;
+        text-align: center;
+    }
+    .step-item.activo .step-num { background: #2c3e50; color: white; }
+    .step-item.activo .step-label { color: #2c3e50; font-weight: 600; }
+    .step-item.completado .step-num { background: #16a085; color: white; }
+    .step-line {
+        flex: 1 1 auto;
+        height: 2px;
+        background: #e2e8f0;
+        margin: 17px 4px 0;
     }
 
-    .acciones button,
+    /* ── Tarjetas de captura ─────────────────────────────────────────────── */
+    .card-captura {
+        background: #fafcfd;
+        border: 1px solid #e5e9ec;
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+    }
+    .card-captura h3 {
+        margin: 0 0 12px;
+        font-size: 12px;
+        color: #2c3e50;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+    }
+
+    .paso.oculto { display: none; }
+    .acciones-paso {
+        margin-top: 22px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .btn-siguiente, .btn-atras, .acciones button {
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .btn-siguiente, .acciones button { background: #2c3e50; color: white; margin-left: auto; }
+    .btn-atras { background: #95a5a6; color: white; }
+
     .acciones a,
     .btn-secundario {
         display: inline-block;
@@ -62,23 +135,11 @@
         cursor: pointer;
         margin-right: 10px;
         font-size: 14px;
-    }
-
-    .acciones button {
-        background: #2c3e50;
-        color: white;
-    }
-
-    .acciones a,
-    .btn-secundario {
         background: #95a5a6;
         color: white;
     }
 
-    .btn-agregar {
-        background: #16a085;
-        color: white;
-    }
+    .btn-agregar { background: #16a085; color: white; }
 
     .btn-eliminar-fila {
         background: #c0392b;
@@ -125,6 +186,16 @@
         resize: vertical;
     }
 
+    .folio-preview {
+        display: block;
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 3px;
+    }
+
+    .detalle-row.fila-scrap td { background: #eaf2fb !important; }
+    .detalle-row.fila-descarte td { background: #fefce8 !important; }
+
     .errorlist {
         color: red;
         margin: 0;
@@ -137,11 +208,20 @@
     }
 
     .bloque-slitter {
-        margin-top: 28px;
+        margin-top: 4px;
         padding: 18px;
         border: 1px solid #dfe6e9;
         border-radius: 12px;
         background: #fafcfd;
+    }
+
+    .nota-sin-detalle {
+        padding: 16px;
+        background: #eef6ff;
+        border: 1px solid #cfe2f3;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #374151;
     }
 
     .fila-acciones {
@@ -178,176 +258,434 @@
     <form method="post" id="ordenForm">
         {% csrf_token %}
 
-        <div class="grid">
-            {% for field in form %}
+        <div class="stepper" id="stepper">
+            <div class="step-item activo" data-step="1">
+                <div class="step-num">1</div>
+                <div class="step-label">Datos de la orden</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" data-step="2">
+                <div class="step-num">2</div>
+                <div class="step-label">Tiempos y pesos</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" data-step="3">
+                <div class="step-num">3</div>
+                <div class="step-label" id="step3-label">Detalle de captura</div>
+            </div>
+        </div>
+
+        <!-- ── Paso 1: Datos de la orden ─────────────────────────────────── -->
+        <div class="paso" id="paso-1">
+
+            <div class="card-captura">
+                <h3>Identificación y proceso</h3>
+                <div class="card-grid">
+                    <div class="campo">
+                        <label for="{{ form.folio_orden.id_for_label }}">{{ form.folio_orden.label }}</label>
+                        {{ form.folio_orden }}
+                        {% if form.folio_orden.errors %}<small class="mensaje-error">{{ form.folio_orden.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.tipo_proceso.id_for_label }}">{{ form.tipo_proceso.label }}</label>
+                        {{ form.tipo_proceso }}
+                        {% if form.tipo_proceso.errors %}<small class="mensaje-error">{{ form.tipo_proceso.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.linea.id_for_label }}">{{ form.linea.label }}</label>
+                        {{ form.linea }}
+                        {% if form.linea.errors %}<small class="mensaje-error">{{ form.linea.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.prioridad.id_for_label }}">{{ form.prioridad.label }}</label>
+                        {{ form.prioridad }}
+                        {% if form.prioridad.errors %}<small class="mensaje-error">{{ form.prioridad.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}<small class="mensaje-error">{{ form.estado.errors }}</small>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-captura">
+                <h3>Cliente y origen del material</h3>
+                <div class="card-grid">
+                    <div class="campo">
+                        <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }}</label>
+                        {{ form.cliente }}
+                        {% if form.cliente.errors %}<small class="mensaje-error">{{ form.cliente.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.mp.id_for_label }}">{{ form.mp.label }}</label>
+                        {{ form.mp }}
+                        {% if form.mp.errors %}<small class="mensaje-error">{{ form.mp.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.pt_origen.id_for_label }}">{{ form.pt_origen.label }}</label>
+                        {{ form.pt_origen }}
+                        {% if form.pt_origen.errors %}<small class="mensaje-error">{{ form.pt_origen.errors }}</small>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-captura">
+                <h3>Operador y turno</h3>
+                <div class="card-grid">
+                    <div class="campo">
+                        <label for="{{ form.operador_nombre.id_for_label }}">{{ form.operador_nombre.label }}</label>
+                        {{ form.operador_nombre }}
+                        {% if form.operador_nombre.errors %}<small class="mensaje-error">{{ form.operador_nombre.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.turno.id_for_label }}">{{ form.turno.label }}</label>
+                        {{ form.turno }}
+                        {% if form.turno.errors %}<small class="mensaje-error">{{ form.turno.errors }}</small>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-captura">
+                <h3>Fechas</h3>
+                <div class="card-grid">
+                    <div class="campo">
+                        <label for="{{ form.fecha_orden_corte.id_for_label }}">{{ form.fecha_orden_corte.label }}</label>
+                        {{ form.fecha_orden_corte }}
+                        {% if form.fecha_orden_corte.errors %}<small class="mensaje-error">{{ form.fecha_orden_corte.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.fecha_produccion_oc.id_for_label }}">{{ form.fecha_produccion_oc.label }}</label>
+                        {{ form.fecha_produccion_oc }}
+                        {% if form.fecha_produccion_oc.errors %}<small class="mensaje-error">{{ form.fecha_produccion_oc.errors }}</small>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="acciones-paso">
+                <a href="{% url 'lista_ordenes' %}" class="btn-secundario">Cancelar</a>
+                <button type="button" class="btn-siguiente" data-siguiente="2">Siguiente →</button>
+            </div>
+        </div>
+
+        <!-- ── Paso 2: Tiempos y pesos ───────────────────────────────────── -->
+        <div class="paso oculto" id="paso-2">
+
+            <div class="card-captura">
+                <h3>Tiempos de proceso</h3>
+                <div class="card-grid">
+                    <div class="campo">
+                        <label for="{{ form.hora_inicio.id_for_label }}">{{ form.hora_inicio.label }}</label>
+                        {{ form.hora_inicio }}
+                        {% if form.hora_inicio.errors %}<small class="mensaje-error">{{ form.hora_inicio.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.hora_fin.id_for_label }}">{{ form.hora_fin.label }}</label>
+                        {{ form.hora_fin }}
+                        {% if form.hora_fin.errors %}<small class="mensaje-error">{{ form.hora_fin.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.tiempo_preparacion_min.id_for_label }}">{{ form.tiempo_preparacion_min.label }}</label>
+                        {{ form.tiempo_preparacion_min }}
+                        {% if form.tiempo_preparacion_min.errors %}<small class="mensaje-error">{{ form.tiempo_preparacion_min.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.tiempo_proceso_min.id_for_label }}">{{ form.tiempo_proceso_min.label }}</label>
+                        {{ form.tiempo_proceso_min }}
+                        {% if form.tiempo_proceso_min.errors %}<small class="mensaje-error">{{ form.tiempo_proceso_min.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.tiempo_muerto_min.id_for_label }}">{{ form.tiempo_muerto_min.label }}</label>
+                        {{ form.tiempo_muerto_min }}
+                        {% if form.tiempo_muerto_min.errors %}<small class="mensaje-error">{{ form.tiempo_muerto_min.errors }}</small>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-captura">
+                <h3>Pesos y rendimiento</h3>
+                <div class="card-grid">
+                    <div class="campo">
+                        <label for="{{ form.peso_usado.id_for_label }}">{{ form.peso_usado.label }}</label>
+                        {{ form.peso_usado }}
+                        {% if form.peso_usado.errors %}<small class="mensaje-error">{{ form.peso_usado.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.peso_producido.id_for_label }}">{{ form.peso_producido.label }}</label>
+                        {{ form.peso_producido }}
+                        {% if form.peso_producido.errors %}<small class="mensaje-error">{{ form.peso_producido.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.scrap_total.id_for_label }}">{{ form.scrap_total.label }}</label>
+                        {{ form.scrap_total }}
+                        {% if form.scrap_total.errors %}<small class="mensaje-error">{{ form.scrap_total.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.merma_kg.id_for_label }}">{{ form.merma_kg.label }}</label>
+                        {{ form.merma_kg }}
+                        {% if form.merma_kg.errors %}<small class="mensaje-error">{{ form.merma_kg.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.cantidad_paquetes.id_for_label }}">{{ form.cantidad_paquetes.label }}</label>
+                        {{ form.cantidad_paquetes }}
+                        {% if form.cantidad_paquetes.errors %}<small class="mensaje-error">{{ form.cantidad_paquetes.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.cantidad_piezas.id_for_label }}" id="label-cantidad-piezas">{{ form.cantidad_piezas.label }}</label>
+                        {{ form.cantidad_piezas }}
+                        {% if form.cantidad_piezas.errors %}<small class="mensaje-error">{{ form.cantidad_piezas.errors }}</small>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-captura oculto" id="card-fleje-padre">
+                <h3>Datos de fleje (rollo padre)</h3>
+                <div class="card-grid">
+                    <div class="campo">
+                        <label for="{{ form.folio_rollo_padre.id_for_label }}">{{ form.folio_rollo_padre.label }}</label>
+                        {{ form.folio_rollo_padre }}
+                        {% if form.folio_rollo_padre.errors %}<small class="mensaje-error">{{ form.folio_rollo_padre.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.espesor_rollo_padre.id_for_label }}">{{ form.espesor_rollo_padre.label }}</label>
+                        {{ form.espesor_rollo_padre }}
+                        {% if form.espesor_rollo_padre.errors %}<small class="mensaje-error">{{ form.espesor_rollo_padre.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.peso_rollo_padre.id_for_label }}">{{ form.peso_rollo_padre.label }}</label>
+                        {{ form.peso_rollo_padre }}
+                        {% if form.peso_rollo_padre.errors %}<small class="mensaje-error">{{ form.peso_rollo_padre.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.tipo_fleje.id_for_label }}">{{ form.tipo_fleje.label }}</label>
+                        {{ form.tipo_fleje }}
+                        {% if form.tipo_fleje.errors %}<small class="mensaje-error">{{ form.tipo_fleje.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.demora_hora_inicio.id_for_label }}">{{ form.demora_hora_inicio.label }}</label>
+                        {{ form.demora_hora_inicio }}
+                        {% if form.demora_hora_inicio.errors %}<small class="mensaje-error">{{ form.demora_hora_inicio.errors }}</small>{% endif %}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.demora_hora_fin.id_for_label }}">{{ form.demora_hora_fin.label }}</label>
+                        {{ form.demora_hora_fin }}
+                        {% if form.demora_hora_fin.errors %}<small class="mensaje-error">{{ form.demora_hora_fin.errors }}</small>{% endif %}
+                    </div>
+                </div>
+                <div class="card-grid" style="margin-top:14px;">
+                    <div class="campo">
+                        <label for="{{ form.temp_zona_1.id_for_label }}">{{ form.temp_zona_1.label }}</label>
+                        {{ form.temp_zona_1 }}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.temp_zona_2.id_for_label }}">{{ form.temp_zona_2.label }}</label>
+                        {{ form.temp_zona_2 }}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.temp_zona_3.id_for_label }}">{{ form.temp_zona_3.label }}</label>
+                        {{ form.temp_zona_3 }}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.temp_zona_4.id_for_label }}">{{ form.temp_zona_4.label }}</label>
+                        {{ form.temp_zona_4 }}
+                    </div>
+                    <div class="campo">
+                        <label for="{{ form.temp_zona_5.id_for_label }}">{{ form.temp_zona_5.label }}</label>
+                        {{ form.temp_zona_5 }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-captura">
+                <h3>Observaciones</h3>
                 <div class="campo">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <small style="color:red;">{{ field.errors }}</small>
-                    {% endif %}
+                    {{ form.observaciones }}
+                    {% if form.observaciones.errors %}<small class="mensaje-error">{{ form.observaciones.errors }}</small>{% endif %}
                 </div>
-            {% endfor %}
+            </div>
+
+            <div class="acciones-paso">
+                <button type="button" class="btn-atras" data-atras="1">← Atrás</button>
+                <button type="button" class="btn-siguiente" data-siguiente="3">Siguiente →</button>
+            </div>
         </div>
 
-        <div id="bloque-slitter" class="bloque-slitter oculto">
-            <div class="fila-acciones">
-                <div>
-                    <h2 style="margin:0;">Detalle de Cortes Slitter</h2>
-                    <div class="nota">Agrega los cortes necesarios solo cuando la máquina/proceso sea Slitter.</div>
+        <!-- ── Paso 3: Detalle de captura ────────────────────────────────── -->
+        <div class="paso oculto" id="paso-3">
+
+            <div id="bloque-slitter" class="bloque-slitter oculto">
+                <div class="fila-acciones">
+                    <div>
+                        <h2 style="margin:0;">Detalle de Cortes Slitter</h2>
+                        <div class="nota">Un renglón por cada corte del rollo, igual que en el formato de papel. El folio de corte (rollo-corte) se arma solo.</div>
+                    </div>
+                    <button type="button" class="acciones btn-agregar" id="agregarFila">+ Agregar corte</button>
                 </div>
-                <button type="button" class="acciones btn-agregar" id="agregarFila">+ Agregar corte</button>
-            </div>
 
-            <div id="resumen-slitter" class="resumen-slitter">
-                <strong>Total cortes:</strong> <span id="total-peso">0.00</span> kg |
-                <strong>Diferencia:</strong> <span id="diferencia-peso">0.00</span> kg
-            </div>
-
-            {{ formset.management_form }}
-
-            <table class="tabla-detalles">
-                <thead>
-                    <tr>
-                        <th>No. corte</th>
-                        <th>Ancho</th>
-                        <th>Espesor</th>
-                        <th>Rebaba</th>
-                        <th>Peso</th>
-                        <th>Camber</th>
-                        <th>Material OK</th>
-                        <th>Observaciones</th>
-                        <th>Eliminar</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-detalles-body">
-                    {% for detalle_form in formset %}
-                    <tr class="detalle-row">
-                        <td>
-                            {{ detalle_form.id }}
-                            {{ detalle_form.no_corte }}
-                            {% if detalle_form.no_corte.errors %}{{ detalle_form.no_corte.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.ancho }}
-                            {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.espesor }}
-                            {% if detalle_form.espesor.errors %}{{ detalle_form.espesor.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.rebaba }}
-                            {% if detalle_form.rebaba.errors %}{{ detalle_form.rebaba.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.peso }}
-                            {% if detalle_form.peso.errors %}{{ detalle_form.peso.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.camber }}
-                            {% if detalle_form.camber.errors %}{{ detalle_form.camber.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.material_ok }}
-                            {% if detalle_form.material_ok.errors %}{{ detalle_form.material_ok.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.observaciones }}
-                            {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {% if detalle_form.DELETE %}
-                                <div style="display:none;">{{ detalle_form.DELETE }}</div>
-                            {% endif %}
-                            <button type="button" class="btn-eliminar-fila">Quitar</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div id="bloque-fleje" class="bloque-slitter oculto">
-            <div class="fila-acciones">
-                <div>
-                    <h2 style="margin:0;">Detalle de Tiras (Fleje)</h2>
-                    <div class="nota">Un renglón por cada tira/fleje descargado del rollo padre, igual que en el formato de papel.</div>
+                <div id="resumen-slitter" class="resumen-slitter">
+                    <strong>Total cortes:</strong> <span id="total-peso">0.00</span> kg |
+                    <strong>Diferencia:</strong> <span id="diferencia-peso">0.00</span> kg
                 </div>
-                <button type="button" class="acciones btn-agregar" id="agregarFilaFleje">+ Agregar tira</button>
+
+                {{ formset.management_form }}
+                {% if formset.non_form_errors %}<div class="mensaje-error">{{ formset.non_form_errors }}</div>{% endif %}
+
+                <table class="tabla-detalles">
+                    <thead>
+                        <tr>
+                            <th>No. corte</th>
+                            <th>Ancho</th>
+                            <th>Espesor</th>
+                            <th>Rebaba</th>
+                            <th>Peso</th>
+                            <th>Camber</th>
+                            <th>Clasificación</th>
+                            <th>Peso scrap/descarte</th>
+                            <th>Observaciones</th>
+                            <th>Eliminar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-detalles-body">
+                        {% for detalle_form in formset %}
+                        <tr class="detalle-row">
+                            <td>
+                                {{ detalle_form.id }}
+                                {{ detalle_form.no_corte }}
+                                <span class="folio-preview"></span>
+                                {% if detalle_form.no_corte.errors %}{{ detalle_form.no_corte.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.ancho }}
+                                {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.espesor }}
+                                {% if detalle_form.espesor.errors %}{{ detalle_form.espesor.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.rebaba }}
+                                {% if detalle_form.rebaba.errors %}{{ detalle_form.rebaba.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.peso }}
+                                {% if detalle_form.peso.errors %}{{ detalle_form.peso.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.camber }}
+                                {% if detalle_form.camber.errors %}{{ detalle_form.camber.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.clasificacion }}
+                                {% if detalle_form.clasificacion.errors %}{{ detalle_form.clasificacion.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.peso_merma }}
+                                {% if detalle_form.peso_merma.errors %}{{ detalle_form.peso_merma.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.observaciones }}
+                                {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {% if detalle_form.DELETE %}
+                                    <div style="display:none;">{{ detalle_form.DELETE }}</div>
+                                {% endif %}
+                                <button type="button" class="btn-eliminar-fila">Quitar</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
-            <div id="resumen-fleje" class="resumen-slitter">
-                <strong>Total tiras:</strong> <span id="total-peso-fleje">0.00</span> kg
+            <div id="bloque-fleje" class="bloque-slitter oculto">
+                <div class="fila-acciones">
+                    <div>
+                        <h2 style="margin:0;">Detalle de Tiras (Fleje)</h2>
+                        <div class="nota">Un renglón por cada tira/fleje descargado del rollo padre, igual que en el formato de papel.</div>
+                    </div>
+                    <button type="button" class="acciones btn-agregar" id="agregarFilaFleje">+ Agregar tira</button>
+                </div>
+
+                <div id="resumen-fleje" class="resumen-slitter">
+                    <strong>Total tiras:</strong> <span id="total-peso-fleje">0.00</span> kg
+                </div>
+
+                {{ formset_fleje.management_form }}
+                {% if formset_fleje.non_form_errors %}<div class="mensaje-error">{{ formset_fleje.non_form_errors }}</div>{% endif %}
+
+                <table class="tabla-detalles">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Folio descarga</th>
+                            <th>% Rebaba</th>
+                            <th># Descarga</th>
+                            <th>Peso descarga (kg)</th>
+                            <th>Ancho (pulg)</th>
+                            <th># de flejes</th>
+                            <th>Peso x fleje (kg)</th>
+                            <th>Observaciones</th>
+                            <th>Eliminar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-detalles-fleje-body">
+                        {% for detalle_form in formset_fleje %}
+                        <tr class="detalle-fleje-row">
+                            <td>
+                                {{ detalle_form.id }}
+                                {{ detalle_form.no_fleje }}
+                                {% if detalle_form.no_fleje.errors %}{{ detalle_form.no_fleje.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.folio_descarga }}
+                                {% if detalle_form.folio_descarga.errors %}{{ detalle_form.folio_descarga.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.porcentaje_rebaba }}
+                                {% if detalle_form.porcentaje_rebaba.errors %}{{ detalle_form.porcentaje_rebaba.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.numero_descarga }}
+                                {% if detalle_form.numero_descarga.errors %}{{ detalle_form.numero_descarga.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.peso_descarga }}
+                                {% if detalle_form.peso_descarga.errors %}{{ detalle_form.peso_descarga.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.ancho }}
+                                {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {{ detalle_form.numero_flejes }}
+                                {% if detalle_form.numero_flejes.errors %}{{ detalle_form.numero_flejes.errors }}{% endif %}
+                            </td>
+                            <td class="peso-x-fleje">—</td>
+                            <td>
+                                {{ detalle_form.observaciones }}
+                                {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
+                            </td>
+                            <td>
+                                {% if detalle_form.DELETE %}
+                                    <div style="display:none;">{{ detalle_form.DELETE }}</div>
+                                {% endif %}
+                                <button type="button" class="btn-eliminar-fila">Quitar</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
-            {{ formset_fleje.management_form }}
+            <div id="sin-detalle" class="nota-sin-detalle oculto">
+                Este tipo de proceso no requiere captura línea por línea. Registra el peso producido directamente en el paso anterior.
+            </div>
 
-            <table class="tabla-detalles">
-                <thead>
-                    <tr>
-                        <th>No.</th>
-                        <th>Folio descarga</th>
-                        <th>% Rebaba</th>
-                        <th># Descarga</th>
-                        <th>Peso descarga (kg)</th>
-                        <th>Ancho (pulg)</th>
-                        <th># de flejes</th>
-                        <th>Observaciones</th>
-                        <th>Eliminar</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-detalles-fleje-body">
-                    {% for detalle_form in formset_fleje %}
-                    <tr class="detalle-fleje-row">
-                        <td>
-                            {{ detalle_form.id }}
-                            {{ detalle_form.no_fleje }}
-                            {% if detalle_form.no_fleje.errors %}{{ detalle_form.no_fleje.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.folio_descarga }}
-                            {% if detalle_form.folio_descarga.errors %}{{ detalle_form.folio_descarga.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.porcentaje_rebaba }}
-                            {% if detalle_form.porcentaje_rebaba.errors %}{{ detalle_form.porcentaje_rebaba.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.numero_descarga }}
-                            {% if detalle_form.numero_descarga.errors %}{{ detalle_form.numero_descarga.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.peso_descarga }}
-                            {% if detalle_form.peso_descarga.errors %}{{ detalle_form.peso_descarga.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.ancho }}
-                            {% if detalle_form.ancho.errors %}{{ detalle_form.ancho.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.numero_flejes }}
-                            {% if detalle_form.numero_flejes.errors %}{{ detalle_form.numero_flejes.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {{ detalle_form.observaciones }}
-                            {% if detalle_form.observaciones.errors %}{{ detalle_form.observaciones.errors }}{% endif %}
-                        </td>
-                        <td>
-                            {% if detalle_form.DELETE %}
-                                <div style="display:none;">{{ detalle_form.DELETE }}</div>
-                            {% endif %}
-                            <button type="button" class="btn-eliminar-fila">Quitar</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="acciones">
-            <button type="submit">Guardar orden</button>
-            <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
+            <div class="acciones-paso">
+                <button type="button" class="btn-atras" data-atras="2">← Atrás</button>
+                <button type="submit">Guardar orden</button>
+            </div>
         </div>
     </form>
 </div>
@@ -375,6 +713,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const tablaBodyFleje = document.getElementById('tabla-detalles-fleje-body');
     const btnAgregarFilaFleje = document.getElementById('agregarFilaFleje');
     const totalPesoFlejeSpan = document.getElementById('total-peso-fleje');
+    const sinDetalle = document.getElementById('sin-detalle');
+    const cardFlejePadre = document.getElementById('card-fleje-padre');
+    const step3Label = document.getElementById('step3-label');
 
     function esSlitter() {
         let porLinea = false;
@@ -445,6 +786,28 @@ document.addEventListener('DOMContentLoaded', function () {
         if (mermaInput) mermaInput.value = diferencia.toFixed(2);
     }
 
+    // ── Vista previa del folio de corte (rollo-no_corte) mientras se captura ──
+    function nombreMPActual() {
+        if (!mpSelect || mpSelect.selectedIndex < 0) return '';
+        const opcion = mpSelect.options[mpSelect.selectedIndex];
+        return opcion && opcion.value ? opcion.text.trim() : '';
+    }
+
+    function actualizarFolioPreview() {
+        if (!tablaBody) return;
+        const base = nombreMPActual();
+        tablaBody.querySelectorAll('.detalle-row').forEach(function (fila) {
+            const noCorteInput = fila.querySelector('input[name*="-no_corte"]');
+            const preview = fila.querySelector('.folio-preview');
+            if (!preview) return;
+            if (base && noCorteInput && noCorteInput.value) {
+                preview.textContent = base + '-' + noCorteInput.value;
+            } else {
+                preview.textContent = '';
+            }
+        });
+    }
+
     function limpiarValoresFila(row) {
         const inputs = row.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
@@ -457,15 +820,15 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (type === 'checkbox') {
-                if (name.endsWith('-material_ok')) {
-                    input.checked = true;
-                } else {
-                    input.checked = false;
-                }
+                input.checked = false;
+            } else if (name.endsWith('-clasificacion')) {
+                input.value = 'normal';
             } else {
                 input.value = '';
             }
         });
+        const fila = row.closest('.detalle-row');
+        if (fila) fila.classList.remove('fila-scrap', 'fila-descarte');
     }
 
     function actualizarIndicesFila(row, newIndex) {
@@ -518,6 +881,7 @@ document.addEventListener('DOMContentLoaded', function () {
             pesoProducidoInput.value = total.toFixed(2);
         }
         actualizarScrapMerma();
+        actualizarFolioPreview();
     }
 
     function crearNuevaFila() {
@@ -540,6 +904,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (deleteInput) {
             deleteInput.checked = false;
         }
+
+        const clasifSelectNueva = nuevaFila.querySelector('select[name*="-clasificacion"]');
+        if (clasifSelectNueva) actualizarClaseFila(clasifSelectNueva);
 
         tablaBody.appendChild(nuevaFila);
         totalForms.value = nuevoIndice + 1;
@@ -588,6 +955,28 @@ document.addEventListener('DOMContentLoaded', function () {
         totalForms.value = filas.length;
     }
 
+    function actualizarClaseFila(select) {
+        const fila = select.closest('.detalle-row');
+        if (!fila) return;
+        fila.classList.remove('fila-scrap', 'fila-descarte');
+
+        const esScrapODescarte = select.value === 'scrap' || select.value === 'descarte';
+        if (select.value === 'scrap') fila.classList.add('fila-scrap');
+        else if (select.value === 'descarte') fila.classList.add('fila-descarte');
+
+        const mermaInputFila = fila.querySelector('input[name*="-peso_merma"]');
+        if (mermaInputFila) {
+            if (esScrapODescarte) {
+                quitarSoloLectura(mermaInputFila);
+                mermaInputFila.placeholder = 'Peso real pesado aparte';
+            } else {
+                mermaInputFila.value = '';
+                marcarSoloLectura(mermaInputFila);
+                mermaInputFila.placeholder = 'N/A';
+            }
+        }
+    }
+
     // ── Manejo de filas del detalle de Fleje (mismo patrón que slitter) ──────
     function limpiarValoresFilaFleje(row) {
         const inputs = row.querySelectorAll('input, select, textarea');
@@ -620,6 +1009,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function actualizarPesoPorFleje() {
+        if (!tablaBodyFleje) return;
+        tablaBodyFleje.querySelectorAll('.detalle-fleje-row').forEach(function (fila) {
+            const celda = fila.querySelector('.peso-x-fleje');
+            if (!celda) return;
+            const inputPeso = fila.querySelector('input[name*="-peso_descarga"]');
+            const inputFlejes = fila.querySelector('input[name*="-numero_flejes"]');
+            const peso = inputPeso ? parseFloat(inputPeso.value) : NaN;
+            const flejes = inputFlejes ? parseInt(inputFlejes.value, 10) : NaN;
+            if (!isNaN(peso) && !isNaN(flejes) && flejes > 0) {
+                celda.textContent = (peso / flejes).toFixed(3);
+            } else {
+                celda.textContent = '—';
+            }
+        });
+    }
+
     function calcularTotalesFleje() {
         if (!tablaBodyFleje || !totalPesoFlejeSpan) return;
         let total = 0;
@@ -637,6 +1043,7 @@ document.addEventListener('DOMContentLoaded', function () {
             pesoProducidoInput.value = total.toFixed(2);
         }
         actualizarScrapMerma();
+        actualizarPesoPorFleje();
     }
 
     function crearNuevaFilaFleje() {
@@ -653,6 +1060,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const noFlejeInput = nuevaFila.querySelector(`input[name="detalles_fleje-${nuevoIndice}-no_fleje"]`);
         if (noFlejeInput) {
             noFlejeInput.value = nuevoIndice + 1;
+        }
+        const numDescargaInput = nuevaFila.querySelector(`input[name="detalles_fleje-${nuevoIndice}-numero_descarga"]`);
+        if (numDescargaInput) {
+            numDescargaInput.value = nuevoIndice + 1;
         }
 
         const deleteInput = nuevaFila.querySelector(`input[name="detalles_fleje-${nuevoIndice}-DELETE"]`);
@@ -715,6 +1126,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (bloqueFleje) {
             bloqueFleje.classList.toggle('oculto', !modoFleje);
         }
+        if (sinDetalle) {
+            sinDetalle.classList.toggle('oculto', modoSlitter || modoFleje);
+        }
+        if (cardFlejePadre) {
+            cardFlejePadre.classList.toggle('oculto', !modoFleje);
+        }
+        if (step3Label) {
+            step3Label.textContent = modoSlitter ? 'Cortes Slitter' : (modoFleje ? 'Descargas de Fleje' : 'Detalle de captura');
+        }
         calcularTotales();
         calcularTotalesFleje();
 
@@ -744,6 +1164,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         actualizarScrapMerma();
+        actualizarFolioPreview();
     }
 
     marcarSoloLectura(scrapInput);
@@ -787,6 +1208,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tablaBody.addEventListener('input', function () {
             calcularTotales();
+        });
+
+        tablaBody.addEventListener('change', function (e) {
+            if (e.target.matches('select[name*="-clasificacion"]')) {
+                actualizarClaseFila(e.target);
+            }
         });
     }
 
@@ -880,6 +1307,7 @@ document.addEventListener('DOMContentLoaded', function () {
             pesoDisponible = null;
             avisoPeso.style.display = 'none';
             if (pesoUsadoInput) pesoUsadoInput.style.borderColor = '#d1d5db';
+            actualizarFolioPreview();
             return;
         }
         fetch(`/api/mp/${mpId}/`)
@@ -901,6 +1329,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     infoBanner.style.display = 'none';
                 }
                 validarPesoUsado();
+                actualizarFolioPreview();
             })
             .catch(() => {
                 infoBanner.style.display = 'none';
@@ -924,8 +1353,66 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Mostrar/ocultar MP vs Cinta origen según tipo de proceso ─────────────
     const ptOrigenCampo = document.getElementById('id_pt_origen');
     const mpCampo       = document.getElementById('id_mp');
-    const labelPiezas   = document.querySelector('label[for="id_cantidad_piezas"]');
+    const labelPiezas   = document.getElementById('label-cantidad-piezas');
     const labelPesoProducido = document.querySelector('label[for="id_peso_producido"]');
+
+    // ── Prellenado de consecutivos para agilizar la primera captura ─────────
+    if (tablaBody) {
+        tablaBody.querySelectorAll('.detalle-row').forEach(function (fila, idx) {
+            const noCorteInput = fila.querySelector('input[name*="-no_corte"]');
+            if (noCorteInput && !noCorteInput.value) noCorteInput.value = idx + 1;
+            const clasifSelect = fila.querySelector('select[name*="-clasificacion"]');
+            if (clasifSelect) actualizarClaseFila(clasifSelect);
+        });
+    }
+    if (tablaBodyFleje) {
+        tablaBodyFleje.querySelectorAll('.detalle-fleje-row').forEach(function (fila, idx) {
+            const noFlejeInput = fila.querySelector('input[name*="-no_fleje"]');
+            const numDescargaInput = fila.querySelector('input[name*="-numero_descarga"]');
+            if (noFlejeInput && !noFlejeInput.value) noFlejeInput.value = idx + 1;
+            if (numDescargaInput && !numDescargaInput.value) numDescargaInput.value = idx + 1;
+        });
+    }
+
+    // ── Stepper: navegación entre pasos ──────────────────────────────────────
+    const pasos = Array.from(document.querySelectorAll('.paso'));
+    const stepItems = Array.from(document.querySelectorAll('.step-item'));
+    let maxPasoAlcanzado = 1;
+
+    function irAPaso(n) {
+        pasos.forEach(function (p) { p.classList.add('oculto'); });
+        const destino = document.getElementById('paso-' + n);
+        if (destino) destino.classList.remove('oculto');
+        stepItems.forEach(function (si) {
+            const s = parseInt(si.dataset.step, 10);
+            si.classList.toggle('activo', s === n);
+            si.classList.toggle('completado', s < n);
+        });
+        maxPasoAlcanzado = Math.max(maxPasoAlcanzado, n);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.querySelectorAll('.btn-siguiente').forEach(function (btn) {
+        btn.addEventListener('click', function () { irAPaso(parseInt(btn.dataset.siguiente, 10)); });
+    });
+    document.querySelectorAll('.btn-atras').forEach(function (btn) {
+        btn.addEventListener('click', function () { irAPaso(parseInt(btn.dataset.atras, 10)); });
+    });
+    stepItems.forEach(function (si) {
+        si.addEventListener('click', function () {
+            const s = parseInt(si.dataset.step, 10);
+            if (s <= maxPasoAlcanzado) irAPaso(s);
+        });
+    });
+
+    // Si el servidor regresó errores de validación, abrir el paso que los contiene.
+    let pasoConError = null;
+    pasos.forEach(function (paso, idx) {
+        if (!pasoConError && paso.querySelector('.mensaje-error, .errorlist')) {
+            pasoConError = idx + 1;
+        }
+    });
+    irAPaso(pasoConError || 1);
 
     // Estado inicial del formulario (bloques de detalle + campos mp/pt_origen)
     actualizarModoProceso();

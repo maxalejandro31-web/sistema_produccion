@@ -252,6 +252,44 @@ def editar_orden(request, orden_id):
         return HttpResponse(f"Error al editar orden: {e}")
 
 
+def _resumen_aprovechamiento_mp(orden, detalles, ordenes_fleje_hijas):
+    """Resumen de cierre del rollo: cuánto de la MP se aprovechó en fleje
+    terminado y cuánto se fue en scrap/descarte a lo largo de toda la
+    cadena MP → Slitter → Fleje, para el reporte final impreso."""
+    peso_rollo = float(orden.mp.peso) if orden.mp and orden.mp.peso else 0
+
+    peso_normal_slitter = sum(
+        float(d.peso) for d in detalles if d.clasificacion == 'normal' and d.peso
+    )
+    peso_scrap_slitter = sum(
+        float(d.peso_merma) for d in detalles if d.clasificacion == 'scrap' and d.peso_merma
+    )
+    peso_descarte_slitter = sum(
+        float(d.peso_merma) for d in detalles if d.clasificacion == 'descarte' and d.peso_merma
+    )
+
+    peso_fleje_producido = sum(
+        float(oh.peso_producido) for oh in ordenes_fleje_hijas if oh.peso_producido
+    )
+    scrap_fleje = sum(
+        float(oh.scrap_total) for oh in ordenes_fleje_hijas if oh.scrap_total
+    )
+
+    scrap_total = peso_scrap_slitter + peso_descarte_slitter + scrap_fleje
+    aprovechamiento_pct = round((peso_fleje_producido / peso_rollo) * 100, 2) if peso_rollo else None
+
+    return {
+        'peso_rollo': peso_rollo,
+        'peso_normal_slitter': peso_normal_slitter,
+        'peso_scrap_slitter': peso_scrap_slitter,
+        'peso_descarte_slitter': peso_descarte_slitter,
+        'peso_fleje_producido': peso_fleje_producido,
+        'scrap_fleje': scrap_fleje,
+        'scrap_total': scrap_total,
+        'aprovechamiento_pct': aprovechamiento_pct,
+    }
+
+
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def imprimir_orden(request, orden_id):
     orden = get_object_or_404(
@@ -260,10 +298,29 @@ def imprimir_orden(request, orden_id):
     )
     detalles = orden.detalles_slitter.all()
     detalles_fleje = orden.detalles_fleje.all()
+
+    ordenes_fleje_hijas = []
+    resumen_mp = None
+    if orden.tipo_proceso == 'slitter':
+        # Órdenes de fleje que consumieron alguno de los cortes de este rollo,
+        # para reconstruir en el mismo reporte la cadena MP → Slitter → Fleje
+        # tal como se ve en el formato de papel de planta.
+        ordenes_fleje_hijas = OrdenProduccion.objects.filter(
+            tipo_proceso='fleje',
+            pt_origen__detalle_slitter__orden=orden,
+        ).select_related(
+            'pt_origen', 'pt_origen__detalle_slitter'
+        ).prefetch_related('detalles_fleje').order_by('fecha')
+
+        if orden.mp:
+            resumen_mp = _resumen_aprovechamiento_mp(orden, detalles, ordenes_fleje_hijas)
+
     return render(request, 'produccion/imprimir_orden.html', {
         'orden': orden,
         'detalles': detalles,
         'detalles_fleje': detalles_fleje,
+        'ordenes_fleje_hijas': ordenes_fleje_hijas,
+        'resumen_mp': resumen_mp,
     })
 
 

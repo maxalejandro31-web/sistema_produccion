@@ -82,7 +82,8 @@
                         <th>Rebaba</th>
                         <th>Peso (kg)</th>
                         <th>Camber</th>
-                        <th>Mat. OK</th>
+                        <th>Clasificación</th>
+                        <th>Peso scrap/descarte</th>
                         <th>Obs.</th>
                         <th>Eliminar</th>
                     </tr>
@@ -99,7 +100,8 @@
                         <td>{{ detalle_form.rebaba }}</td>
                         <td>{{ detalle_form.peso }}</td>
                         <td>{{ detalle_form.camber }}</td>
-                        <td>{{ detalle_form.material_ok }}</td>
+                        <td>{{ detalle_form.clasificacion }}</td>
+                        <td>{{ detalle_form.peso_merma }}</td>
                         <td>{{ detalle_form.observaciones }}</td>
                         <td>
                             {{ detalle_form.DELETE }}
@@ -136,6 +138,7 @@
                         <th>Peso descarga (kg)</th>
                         <th>Ancho (pulg)</th>
                         <th># de flejes</th>
+                        <th>Peso x fleje (kg)</th>
                         <th>Obs.</th>
                         <th>Eliminar</th>
                     </tr>
@@ -153,6 +156,7 @@
                         <td>{{ detalle_form.peso_descarga }}</td>
                         <td>{{ detalle_form.ancho }}</td>
                         <td>{{ detalle_form.numero_flejes }}</td>
+                        <td class="peso-x-fleje">{{ detalle_form.instance.peso_por_fleje|default:"—" }}</td>
                         <td>{{ detalle_form.observaciones }}</td>
                         <td>
                             {{ detalle_form.DELETE }}
@@ -269,6 +273,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const totalPesoFlejeSpan = document.getElementById('total-peso-fleje');
 
+    function actualizarPesoPorFleje() {
+        document.querySelectorAll('.detalle-fleje-row').forEach(function (fila) {
+            const celda = fila.querySelector('.peso-x-fleje');
+            if (!celda) return;
+            const inputPeso = fila.querySelector('input[name*="-peso_descarga"]');
+            const inputFlejes = fila.querySelector('input[name*="-numero_flejes"]');
+            const peso = inputPeso ? parseFloat(inputPeso.value) : NaN;
+            const flejes = inputFlejes ? parseInt(inputFlejes.value, 10) : NaN;
+            if (!isNaN(peso) && !isNaN(flejes) && flejes > 0) {
+                celda.textContent = (peso / flejes).toFixed(3);
+            } else {
+                celda.textContent = '—';
+            }
+        });
+    }
+
     function calcularTotalFleje() {
         if (!totalPesoFlejeSpan) return;
         let total = 0;
@@ -284,10 +304,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         totalPesoFlejeSpan.textContent = total.toFixed(2);
         actualizarScrapMerma();
+        actualizarPesoPorFleje();
     }
 
     document.addEventListener('input', function (e) {
-        if (e.target.name && e.target.name.includes('-peso_descarga')) calcularTotalFleje();
+        if (e.target.name && (e.target.name.includes('-peso_descarga') || e.target.name.includes('-numero_flejes'))) calcularTotalFleje();
     });
 
     calcularTotalFleje();

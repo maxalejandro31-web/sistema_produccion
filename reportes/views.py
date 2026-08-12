@@ -387,7 +387,7 @@ def reporte_detalles_slitter(request):
     headers = [
         "Folio Orden", "Fecha Orden", "Cliente", "N° MP",
         "N° Corte", "Ancho (mm)", "Espesor (mm)", "Rebaba",
-        "Peso (kg)", "Camber", "Material OK", "Observaciones",
+        "Peso (kg)", "Camber", "Clasificación", "Peso scrap/descarte (kg)", "Observaciones",
     ]
     _apply_header(ws, headers)
 
@@ -403,7 +403,8 @@ def reporte_detalles_slitter(request):
             _fmt(d.rebaba),
             float(d.peso) if d.peso else "",
             _fmt(d.camber),
-            "Sí" if d.material_ok else "No",
+            d.get_clasificacion_display(),
+            float(d.peso_merma) if d.peso_merma else "",
             _fmt(d.observaciones),
         ])
 

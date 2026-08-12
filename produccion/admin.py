@@ -66,10 +66,11 @@ class DetalleSlitterAdmin(admin.ModelAdmin):
         'ancho',
         'espesor',
         'peso',
-        'material_ok',
+        'clasificacion',
+        'peso_merma',
     )
     search_fields = (
         'orden__folio_orden',
         'orden__mp__numero_mp',
     )
-    list_filter = ('material_ok',)
+    list_filter = ('clasificacion',)

@@ -196,12 +196,14 @@
         <thead>
             <tr>
                 <th>No. corte</th>
+                <th>Folio</th>
                 <th>Ancho</th>
                 <th>Espesor</th>
                 <th>Rebaba</th>
                 <th>Peso</th>
                 <th>Camber</th>
-                <th>Material OK</th>
+                <th>Clasificación</th>
+                <th>Peso scrap/descarte</th>
                 <th>Observaciones</th>
             </tr>
         </thead>
@@ -209,12 +211,14 @@
             {% for d in detalles %}
             <tr>
                 <td>{{ d.no_corte }}</td>
+                <td>{{ d.folio_corte|default:"-" }}</td>
                 <td>{{ d.ancho|default:"-" }}</td>
                 <td>{{ d.espesor|default:"-" }}</td>
                 <td>{{ d.rebaba|default:"-" }}</td>
                 <td>{{ d.peso|default:"-" }}</td>
                 <td>{{ d.camber|default:"-" }}</td>
-                <td>{% if d.material_ok %}Sí{% else %}No{% endif %}</td>
+                <td>{{ d.get_clasificacion_display }}</td>
+                <td>{{ d.peso_merma|default:"-" }}</td>
                 <td>{{ d.observaciones|default:"-" }}</td>
             </tr>
             {% endfor %}
@@ -235,6 +239,7 @@
                 <th>Peso descarga</th>
                 <th>Ancho</th>
                 <th># de flejes</th>
+                <th>Peso x fleje</th>
                 <th>Observaciones</th>
             </tr>
         </thead>
@@ -248,6 +253,7 @@
                 <td>{{ d.peso_descarga|default:"-" }}</td>
                 <td>{{ d.ancho|default:"-" }}</td>
                 <td>{{ d.numero_flejes|default:"-" }}</td>
+                <td>{{ d.peso_por_fleje|default:"-" }}</td>
                 <td>{{ d.observaciones|default:"-" }}</td>
             </tr>
             {% endfor %}

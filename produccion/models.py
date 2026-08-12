@@ -145,6 +145,12 @@ class OrdenProduccion(models.Model):
 
 
 class DetalleSlitter(models.Model):
+    CLASIFICACION_CHOICES = [
+        ('normal', 'Normal'),
+        ('scrap', 'Scrap'),
+        ('descarte', 'Descarte'),
+    ]
+
     orden = models.ForeignKey(
         OrdenProduccion,
         on_delete=models.CASCADE,
@@ -157,12 +163,24 @@ class DetalleSlitter(models.Model):
     rebaba = models.CharField(max_length=100, blank=True, null=True)
     peso = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     camber = models.CharField(max_length=100, blank=True, null=True)
-    material_ok = models.BooleanField(default=True)
+    clasificacion = models.CharField(max_length=20, choices=CLASIFICACION_CHOICES, default='normal')
+    peso_merma = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name='Peso scrap/descarte',
+        help_text='Peso real (pesado aparte) del sobrante cuando el corte se clasifica como Scrap o Descarte.',
+    )
     observaciones = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         ordering = ['no_corte']
         unique_together = ('orden', 'no_corte')
+
+    @property
+    def folio_corte(self):
+        """Folio tipo 'M010017075-2-1': número de rollo MP + no_corte, igual al formato de papel de planta."""
+        if self.orden_id and self.orden.mp_id:
+            return f"{self.orden.mp.numero_mp}-{self.no_corte}"
+        return None
 
     def __str__(self):
         return f"{self.orden.folio_orden} - Corte {self.no_corte}"
@@ -187,6 +205,13 @@ class DetalleFleje(models.Model):
     class Meta:
         ordering = ['no_fleje']
         unique_together = ('orden', 'no_fleje')
+
+    @property
+    def peso_por_fleje(self):
+        """Peso individual de cada tira: peso de la descarga / número de flejes de esa descarga."""
+        if self.peso_descarga is None or not self.numero_flejes:
+            return None
+        return round(float(self.peso_descarga) / self.numero_flejes, 3)
 
     def __str__(self):
         return f"{self.orden.folio_orden} - Fleje {self.no_fleje}"

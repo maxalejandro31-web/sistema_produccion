@@ -76,6 +76,23 @@
         .no-print { display: none !important; }
         body { padding: 14px; }
     }
+
+    /* ── Formato de rollo (calca el papel de planta: MP → Slitter → Fleje) ── */
+    .rollo-formato { margin-bottom: 26px; }
+    .tabla-rollo { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    .tabla-rollo th, .tabla-rollo td {
+        border: 1px solid #bcd2e8;
+        padding: 6px 9px;
+        font-size: 12px;
+        text-align: center;
+    }
+    .tabla-rollo th { background: #5b9bd5; color: #fff; font-weight: bold; }
+    .rollo-titulo { background: #3f7cbf !important; font-size: 13px; text-align: left !important; }
+    .rollo-subtitulo { background: #dbe9f7; font-weight: bold; font-size: 13px; }
+    .rollo-lateral { background: #5b9bd5; color: #fff; font-weight: bold; width: 34px; }
+    .tag-scrap { background: #3f7cbf; color: #fff; padding: 2px 9px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .tag-descarte { background: #fde047; color: #713f12; padding: 2px 9px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .rollo-total { background: #eef6ff; font-weight: bold; text-align: left !important; }
 </style>
 </head>
 <body>
@@ -97,6 +114,112 @@
         <div style="font-size:11px;margin-top:3px;opacity:.8;">{{ orden.fecha|date:"d/m/Y" }}</div>
     </div>
 </div>
+
+{% if orden.tipo_proceso == 'slitter' and orden.mp %}
+<div class="rollo-formato">
+    <table class="tabla-rollo">
+        <tr><th colspan="5" class="rollo-titulo">No. DE ROLLO</th></tr>
+        <tr><td colspan="5" class="rollo-subtitulo">{{ orden.mp.numero_mp }}</td></tr>
+        <tr>
+            <th colspan="2">PESO DE ROLLO</th>
+            <th>CALIBRE</th>
+            <th colspan="2">ANCHO</th>
+        </tr>
+        <tr>
+            <td colspan="2">{{ orden.mp.peso|default:"—" }}</td>
+            <td>{{ orden.mp.calibre|default:orden.mp.espesor_valor|default:"—" }}</td>
+            <td colspan="2">{{ orden.mp.ancho|default:"—" }}</td>
+        </tr>
+    </table>
+
+    <table class="tabla-rollo" style="margin-top:10px;">
+        <tr>
+            <th class="rollo-lateral">SLITTER</th>
+            <th>No. de Corte</th><th>Ancho</th><th>Espesor</th><th>Rebaba</th><th>Peso</th><th>Clasificación</th><th>Peso scrap/descarte</th>
+        </tr>
+        {% for d in detalles %}
+        <tr>
+            <td class="rollo-lateral">{% if forloop.first %}SLITTER{% endif %}</td>
+            <td>{{ d.folio_corte|default:d.no_corte }}</td>
+            <td>{{ d.ancho|default:"—" }}</td>
+            <td>{{ d.espesor|default:"—" }}</td>
+            <td>{{ d.rebaba|default:"—" }}</td>
+            <td>{{ d.peso|default:"—" }}</td>
+            <td>
+                {% if d.clasificacion == 'scrap' %}<span class="tag-scrap">SCRAP</span>
+                {% elif d.clasificacion == 'descarte' %}<span class="tag-descarte">DESCARTE</span>
+                {% else %}—{% endif %}
+            </td>
+            <td>{{ d.peso_merma|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8">Sin cortes capturados</td></tr>
+        {% endfor %}
+    </table>
+
+    {% for oh in ordenes_fleje_hijas %}
+    <table class="tabla-rollo" style="margin-top:10px;">
+        <tr>
+            <th colspan="7" class="rollo-titulo">
+                FLEJES — origen {{ oh.pt_origen.detalle_slitter.folio_corte|default:oh.pt_origen }}
+                · {{ oh.fecha|date:"d/m/Y" }} · {{ oh.tipo_fleje|default:"—" }}
+            </th>
+        </tr>
+        <tr>
+            <th>No. Descarga</th><th>Tipo de fleje</th><th>Peso descarga</th><th># Flejes</th><th>Peso x fleje</th><th>Ancho</th><th>Folio descarga</th>
+        </tr>
+        {% for d in oh.detalles_fleje.all %}
+        <tr>
+            <td>{{ d.numero_descarga|default:d.no_fleje }}</td>
+            <td>{{ oh.tipo_fleje|default:"—" }}</td>
+            <td>{{ d.peso_descarga|default:"—" }}</td>
+            <td>{{ d.numero_flejes|default:"—" }}</td>
+            <td>{{ d.peso_por_fleje|default:"—" }}</td>
+            <td>{{ d.ancho|default:"—" }}</td>
+            <td>{{ d.folio_descarga|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Sin descargas capturadas</td></tr>
+        {% endfor %}
+        <tr>
+            <td colspan="2" class="rollo-total">Peso total</td>
+            <td class="rollo-total">{{ oh.peso_producido|default:"—" }}</td>
+            <td colspan="4" class="rollo-total">Scrap: {{ oh.scrap_total|default:"—" }} kg</td>
+        </tr>
+    </table>
+    {% endfor %}
+
+    {% if resumen_mp %}
+    <table class="tabla-rollo" style="margin-top:10px;">
+        <tr><th colspan="4" class="rollo-titulo">RESUMEN DE APROVECHAMIENTO DEL ROLLO</th></tr>
+        <tr>
+            <th>Peso de rollo</th>
+            <th>Scrap Slitter</th>
+            <th>Descarte Slitter</th>
+            <th>Scrap Fleje</th>
+        </tr>
+        <tr>
+            <td>{{ resumen_mp.peso_rollo|floatformat:2 }} kg</td>
+            <td>{{ resumen_mp.peso_scrap_slitter|floatformat:2 }} kg</td>
+            <td>{{ resumen_mp.peso_descarte_slitter|floatformat:2 }} kg</td>
+            <td>{{ resumen_mp.scrap_fleje|floatformat:2 }} kg</td>
+        </tr>
+        <tr>
+            <th>Scrap total (todo el proceso)</th>
+            <th>Peso final en fleje</th>
+            <th colspan="2">Aprovechamiento de la MP</th>
+        </tr>
+        <tr>
+            <td class="rollo-total">{{ resumen_mp.scrap_total|floatformat:2 }} kg</td>
+            <td class="rollo-total">{{ resumen_mp.peso_fleje_producido|floatformat:2 }} kg</td>
+            <td colspan="2" class="rollo-total" style="font-size:14px;">
+                {% if resumen_mp.aprovechamiento_pct is not None %}{{ resumen_mp.aprovechamiento_pct }} %{% else %}—{% endif %}
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+</div>
+{% endif %}
 
 <div class="seccion">
     <div class="seccion-titulo">Información general</div>
@@ -176,26 +299,32 @@
 </div>
 {% endif %}
 
-{% if detalles %}
+{% if detalles and not orden.mp %}
 <div class="seccion">
     <div class="seccion-titulo">Detalle de cortes Slitter</div>
     <table>
         <thead>
             <tr>
-                <th>No. Corte</th><th>Ancho (mm)</th><th>Espesor</th><th>Rebaba</th>
-                <th>Peso (kg)</th><th>Camber</th><th>Mat. OK</th><th>Observaciones</th>
+                <th>No. Corte</th><th>Folio</th><th>Ancho (mm)</th><th>Espesor</th><th>Rebaba</th>
+                <th>Peso (kg)</th><th>Camber</th><th>Clasificación</th><th>Peso scrap/descarte</th><th>Observaciones</th>
             </tr>
         </thead>
         <tbody>
             {% for d in detalles %}
             <tr>
                 <td>{{ d.no_corte }}</td>
+                <td>{{ d.folio_corte|default:"—" }}</td>
                 <td>{{ d.ancho|default:"—" }}</td>
                 <td>{{ d.espesor|default:"—" }}</td>
                 <td>{{ d.rebaba|default:"—" }}</td>
                 <td>{{ d.peso|default:"—" }}</td>
                 <td>{{ d.camber|default:"—" }}</td>
-                <td>{% if d.material_ok %}✓{% else %}✗{% endif %}</td>
+                <td>
+                    {% if d.clasificacion == 'scrap' %}<span class="badge-estado" style="background:#dbeafe;color:#1e40af;">SCRAP</span>
+                    {% elif d.clasificacion == 'descarte' %}<span class="badge-estado" style="background:#fef9c3;color:#854d0e;">DESCARTE</span>
+                    {% else %}Normal{% endif %}
+                </td>
+                <td>{{ d.peso_merma|default:"—" }}</td>
                 <td>{{ d.observaciones|default:"" }}</td>
             </tr>
             {% endfor %}
@@ -211,7 +340,7 @@
         <thead>
             <tr>
                 <th>No.</th><th>Folio descarga</th><th>% Rebaba</th><th># Descarga</th>
-                <th>Peso descarga (kg)</th><th>Ancho</th><th># de flejes</th><th>Observaciones</th>
+                <th>Peso descarga (kg)</th><th>Ancho</th><th># de flejes</th><th>Peso x fleje (kg)</th><th>Observaciones</th>
             </tr>
         </thead>
         <tbody>
@@ -224,6 +353,7 @@
                 <td>{{ d.peso_descarga|default:"—" }}</td>
                 <td>{{ d.ancho|default:"—" }}</td>
                 <td>{{ d.numero_flejes|default:"—" }}</td>
+                <td>{{ d.peso_por_fleje|default:"—" }}</td>
                 <td>{{ d.observaciones|default:"" }}</td>
             </tr>
             {% endfor %}

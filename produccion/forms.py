@@ -73,7 +73,8 @@ class DetalleSlitterForm(forms.ModelForm):
             'rebaba',
             'peso',
             'camber',
-            'material_ok',
+            'clasificacion',
+            'peso_merma',
             'observaciones',
         ]
 
