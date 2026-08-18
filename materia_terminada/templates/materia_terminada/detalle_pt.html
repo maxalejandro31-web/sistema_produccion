@@ -138,7 +138,7 @@
             </div>
             <div class="campo">
                 <div class="etiqueta">Operador</div>
-                <div class="valor">{{ producto.orden.operador_nombre_nombre|default:"—" }}</div>
+                <div class="valor">{{ producto.orden.operador_nombre|default:"—" }}</div>
             </div>
             <div class="campo">
                 <div class="etiqueta">Peso usado (kg)</div>
@@ -157,6 +157,37 @@
                 <div class="valor">{{ producto.orden.fecha }}</div>
             </div>
         </div>
+    </div>
+
+    <div class="seccion">
+        <h3>Calidad</h3>
+        <div class="grid">
+            {% for c in producto.certificados.all %}
+            <div class="campo">
+                <div class="etiqueta">Certificado {{ c.numero_certificado|default:c.pk }}</div>
+                <div class="valor" style="font-size:14px;">
+                    <a href="{% url 'detalle_certificado' c.id %}">Ver</a>
+                    · {% if c.aprobado %}Aprobado{% else %}Sin aprobar{% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="campo"><div class="valor" style="font-size:14px; font-weight:normal;">Sin certificados registrados.</div></div>
+            {% endfor %}
+        </div>
+        <div class="acciones" style="margin-top:14px;">
+            <a class="btn" style="background:#16a085;" href="{% url 'crear_certificado' 'pt' producto.id %}">+ Agregar certificado</a>
+            <a class="btn" style="background:#c0392b;" href="{% url 'crear_no_conformidad' 'pt' producto.id %}">⚠ Reportar no conformidad</a>
+        </div>
+        {% if producto.no_conformidades.all %}
+        <div class="grid" style="margin-top:14px;">
+            {% for nc in producto.no_conformidades.all %}
+            <div class="campo">
+                <div class="etiqueta">{{ nc.get_tipo_display }} · {{ nc.get_severidad_display }}</div>
+                <div class="valor" style="font-size:14px;"><a href="{% url 'detalle_no_conformidad' nc.id %}">{{ nc.get_estado_display }}</a></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="acciones">

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Certificados de calidad{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'calidad_index' %}">Calidad</a>
+    <span class="sep">›</span>
+    <span class="current">Certificados</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    form.filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    form.filtros input, form.filtros select { padding: 9px; border: 1px solid #ccc; border-radius: 8px; }
+    form.filtros button { padding: 9px 14px; border: none; border-radius: 8px; background: #16a085; color: white; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #f5f7fa; }
+    .badge { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: bold; }
+    .badge.si { background: #d1fae5; color: #065f46; }
+    .badge.no { background: #fee2e2; color: #991b1b; }
+</style>
+
+<div class="contenedor">
+    <div class="topbar">
+        <h1>Certificados de calidad</h1>
+    </div>
+
+    <form method="get" class="filtros">
+        <select name="tipo">
+            <option value="">Todos los documentos</option>
+            <option value="mp" {% if tipo == 'mp' %}selected{% endif %}>Materia Prima</option>
+            <option value="pt" {% if tipo == 'pt' %}selected{% endif %}>Producto Terminado</option>
+        </select>
+        <select name="aprobado">
+            <option value="">Aprobado (todos)</option>
+            <option value="1" {% if aprobado == '1' %}selected{% endif %}>Sí</option>
+            <option value="0" {% if aprobado == '0' %}selected{% endif %}>No</option>
+        </select>
+        <input type="text" name="q" placeholder="Buscar No. de certificado..." value="{{ q }}">
+        <button type="submit">Buscar</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No. certificado</th>
+                <th>Documento relacionado</th>
+                <th>Norma</th>
+                <th>Colada</th>
+                <th>Aprobado</th>
+                <th>Fecha emisión</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in certificados %}
+            <tr>
+                <td>{{ c.numero_certificado|default:"-" }}</td>
+                <td>
+                    {% if c.mp %}MP: {{ c.mp }}{% else %}PT: {{ c.producto_terminado }}{% endif %}
+                </td>
+                <td>{{ c.norma|default:"-" }}</td>
+                <td>{{ c.numero_colada|default:"-" }}</td>
+                <td>{% if c.aprobado %}<span class="badge si">Sí</span>{% else %}<span class="badge no">No</span>{% endif %}</td>
+                <td>{{ c.fecha_emision|date:"d/m/Y"|default:"-" }}</td>
+                <td><a href="{% url 'detalle_certificado' c.id %}">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">No hay certificados registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include 'partials/paginacion.html' %}
+</div>
+{% endblock %}

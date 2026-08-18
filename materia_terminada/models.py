@@ -16,9 +16,12 @@ class ProductoTerminado(models.Model):
         ('otro', 'Otro'),
     ]
 
+    # PROTECT (antes CASCADE): borrar la orden de producción no debe poder
+    # arrastrar en cascada el producto terminado ya generado (y de ahí las
+    # remisiones/salidas que ya lo hayan embarcado al cliente).
     orden = models.ForeignKey(
         'produccion.OrdenProduccion',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='productos_terminados',
     )
     detalle_slitter = models.ForeignKey(
@@ -93,7 +96,10 @@ class Salida(models.Model):
 
 class SalidaDetalle(models.Model):
     salida = models.ForeignKey(Salida, on_delete=models.CASCADE, related_name='detalles')
-    producto_terminado = models.ForeignKey(ProductoTerminado, on_delete=models.CASCADE, related_name='salida_detalle')
+    # PROTECT (antes CASCADE): un producto terminado que ya forma parte de una
+    # remisión de salida no debe poder desaparecer en cascada (p. ej. desde el
+    # admin de Django) sin antes quitarlo explícitamente de esa remisión.
+    producto_terminado = models.ForeignKey(ProductoTerminado, on_delete=models.PROTECT, related_name='salida_detalle')
     peso_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cantidad_piezas = models.PositiveIntegerField(null=True, blank=True)
 

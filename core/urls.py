@@ -13,6 +13,7 @@ urlpatterns = [
     path('', include('produccion.urls')),
     path('', include('materia_terminada.urls')),
     path('', include('reportes.urls')),
+    path('', include('calidad.urls')),
 ]
 
 # 👇 ESTO ES LO QUE PERMITE VER PDFs

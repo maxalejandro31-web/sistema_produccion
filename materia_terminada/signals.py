@@ -80,3 +80,24 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
     # Marcar la cinta origen como embarcada cuando se termina el fleje
     if instance.tipo_proceso == 'fleje' and instance.pt_origen_id:
         ProductoTerminado.objects.filter(pk=instance.pt_origen_id).update(estado='embarcado')
+
+
+@receiver(post_save, sender='produccion.DetalleSlitter')
+def sincronizar_pt_desde_detalle_slitter(sender, instance, **kwargs):
+    """Si una orden ya terminada se edita después (p. ej. para corregir un
+    peso mal capturado), el ProductoTerminado que ya se había generado para
+    ese corte se queda con el peso viejo si nadie lo actualiza a mano. Este
+    signal mantiene ambos sincronizados automáticamente."""
+    from materia_terminada.models import ProductoTerminado
+    ProductoTerminado.objects.filter(detalle_slitter=instance).update(
+        peso_kg=instance.peso or 0
+    )
+
+
+@receiver(post_save, sender='produccion.DetalleFleje')
+def sincronizar_pt_desde_detalle_fleje(sender, instance, **kwargs):
+    """Ídem sincronizar_pt_desde_detalle_slitter, pero para flejes."""
+    from materia_terminada.models import ProductoTerminado
+    ProductoTerminado.objects.filter(detalle_fleje=instance).update(
+        peso_kg=instance.peso_descarga or 0
+    )

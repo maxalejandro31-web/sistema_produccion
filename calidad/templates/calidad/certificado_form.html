@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuevo certificado{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'calidad_index' %}">Calidad</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_certificados' %}">Certificados</a>
+    <span class="sep">›</span>
+    <span class="current">Nuevo</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .campo { display: flex; flex-direction: column; margin-bottom: 16px; }
+    .campo label { font-weight: bold; margin-bottom: 6px; }
+    .campo input, .campo select, .campo textarea { padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    .acciones { margin-top: 20px; }
+    .acciones button, .acciones a {
+        display: inline-block; padding: 10px 14px; border-radius: 8px; text-decoration: none;
+        border: none; cursor: pointer; margin-right: 10px;
+    }
+    .acciones button { background: #2c3e50; color: white; }
+    .acciones a { background: #95a5a6; color: white; }
+</style>
+
+<div class="contenedor">
+    <h1>Nuevo certificado de calidad</h1>
+    <p>Para: <strong>{{ objeto }}</strong> ({% if tipo == 'mp' %}Materia Prima{% else %}Producto Terminado{% endif %})</p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small style="color:#6b7280;">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<small style="color:red;">{{ field.errors }}</small>{% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="acciones">
+            <button type="submit">Guardar certificado</button>
+            {% if tipo == 'mp' %}
+                <a href="{% url 'detalle_mp' objeto.id %}">Cancelar</a>
+            {% else %}
+                <a href="{% url 'detalle_pt' objeto.id %}">Cancelar</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

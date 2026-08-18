@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, ProtectedError
 from django.utils import timezone
 
 from .forms import MateriaPrimaForm, ClienteForm, RegistrarMovimientoForm
@@ -95,8 +95,22 @@ def lista_mp(request):
 def eliminar_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
     numero_mp = mp.numero_mp
-    registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'ELIMINAR', f'MP {numero_mp} eliminada.')
-    mp.delete()
+    mp_id_original = mp.id
+    mp_str = str(mp)
+
+    try:
+        mp.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f'No se puede eliminar la MP {numero_mp} porque ya tiene órdenes de '
+            'producción asociadas. Primero hay que eliminar o reasignar esas '
+            'órdenes antes de borrar la materia prima (esto también borraría '
+            'su historial de movimientos).'
+        )
+        return redirect('detalle_mp', mp_id=mp_id)
+
+    registrar_historial(request, 'MateriaPrima', mp_id_original, mp_str, 'ELIMINAR', f'MP {numero_mp} eliminada.')
     messages.success(request, f'Materia prima {numero_mp} eliminada correctamente.')
     return redirect('lista_mp')
 

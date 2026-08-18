@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Tolerancias de proceso{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'calidad_index' %}">Calidad</a>
+    <span class="sep">›</span>
+    <span class="current">Tolerancias</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .topbar a { background: #2c3e50; color: white; padding: 10px 14px; border-radius: 8px; text-decoration: none; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #f5f7fa; }
+    .activa { color: #27ae60; font-weight: bold; }
+    .inactiva { color: #c0392b; font-weight: bold; }
+</style>
+
+<div class="contenedor">
+    <div class="topbar">
+        <h1>Tolerancias de proceso</h1>
+        <a href="{% url 'crear_tolerancia' %}">+ Nueva tolerancia</a>
+    </div>
+    <p style="color:#6b7280; font-size: 13px;">
+        Se usan para marcar automáticamente cuando un corte de slitter se sale de
+        rango respecto al ancho/espesor de la materia prima de origen. Si dejas
+        el material en blanco, la tolerancia aplica a todos los materiales de
+        ese proceso.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Proceso</th>
+                <th>Material</th>
+                <th>Tolerancia ancho (±mm)</th>
+                <th>Tolerancia espesor (±mm)</th>
+                <th>Activa</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tolerancias %}
+            <tr>
+                <td>{{ t.get_tipo_proceso_display }}</td>
+                <td>{{ t.material|default:"Todos" }}</td>
+                <td>{{ t.tolerancia_ancho_mm|default:"-" }}</td>
+                <td>{{ t.tolerancia_espesor_mm|default:"-" }}</td>
+                <td>{% if t.activa %}<span class="activa">Sí</span>{% else %}<span class="inactiva">No</span>{% endif %}</td>
+                <td><a href="{% url 'editar_tolerancia' t.id %}">Editar</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No hay tolerancias configuradas todavía.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

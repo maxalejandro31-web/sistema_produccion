@@ -6,16 +6,30 @@ una orden salió muy por debajo de lo normal.
 """
 import statistics
 
+from django.core.cache import cache
+
 MUESTRA_MINIMA = 5
 LIMITE_POR_GRUPO = 20
 UMBRAL_MINIMO_PP = 5.0
 FACTOR_DESVIACION = 1.5
 
+# El baseline se recalcula sobre TODO el histórico de órdenes terminadas cada
+# vez que se llama; en páginas de alto tráfico (dashboard, lista de órdenes)
+# eso significa recalcularlo en cada request. Se cachea unos minutos: es
+# estadística de tendencia, no necesita ser exacta al segundo.
+CACHE_KEY = 'produccion:baselines_rendimiento'
+CACHE_TIMEOUT_SEGUNDOS = 300
 
-def mapear_baselines_rendimiento(limite_por_grupo=LIMITE_POR_GRUPO):
+
+def mapear_baselines_rendimiento(limite_por_grupo=LIMITE_POR_GRUPO, usar_cache=True):
     """Devuelve {(tipo_proceso, material): {'promedio', 'desviacion', 'muestra'}}
     usando hasta `limite_por_grupo` órdenes terminadas más recientes por grupo.
     Grupos con menos de MUESTRA_MINIMA órdenes se omiten (no hay baseline)."""
+    if usar_cache and limite_por_grupo == LIMITE_POR_GRUPO:
+        mapa_cacheado = cache.get(CACHE_KEY)
+        if mapa_cacheado is not None:
+            return mapa_cacheado
+
     from .models import OrdenProduccion
 
     filas = (
@@ -45,6 +59,10 @@ def mapear_baselines_rendimiento(limite_por_grupo=LIMITE_POR_GRUPO):
                 'desviacion': round(statistics.pstdev(valores), 2),
                 'muestra': len(valores),
             }
+
+    if usar_cache and limite_por_grupo == LIMITE_POR_GRUPO:
+        cache.set(CACHE_KEY, mapa, CACHE_TIMEOUT_SEGUNDOS)
+
     return mapa
 
 

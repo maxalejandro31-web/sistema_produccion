@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}No conformidad NC-{{ nc.pk }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'calidad_index' %}">Calidad</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_no_conformidades' %}">No conformidades</a>
+    <span class="sep">›</span>
+    <span class="current">NC-{{ nc.pk }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .ficha { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+    .ficha .dato label { display: block; font-size: 12px; color: #6b7280; margin-bottom: 3px; }
+    .badge { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: bold; }
+    .badge.abierta { background: #fee2e2; color: #991b1b; }
+    .badge.en_revision { background: #fef3c7; color: #92400e; }
+    .badge.cerrada { background: #d1fae5; color: #065f46; }
+    .campo { display: flex; flex-direction: column; margin-bottom: 16px; }
+    .campo label { font-weight: bold; margin-bottom: 6px; }
+    .campo select, .campo textarea { padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    .acciones button { padding: 10px 14px; border-radius: 8px; border: none; background: #2c3e50; color: white; cursor: pointer; }
+</style>
+
+<div class="contenedor">
+    <h1>No conformidad NC-{{ nc.pk }}</h1>
+    <p>Sobre: <strong>{{ nc.objeto_relacionado|default:"-" }}</strong></p>
+
+    <div class="ficha">
+        <div class="dato"><label>Tipo</label><span>{{ nc.get_tipo_display }}</span></div>
+        <div class="dato"><label>Severidad</label><span>{{ nc.get_severidad_display }}</span></div>
+        <div class="dato"><label>Estado</label><span class="badge {{ nc.estado }}">{{ nc.get_estado_display }}</span></div>
+        <div class="dato"><label>Detectado por</label><span>{{ nc.detectado_por|default:"-" }}</span></div>
+        <div class="dato"><label>Fecha de detección</label><span>{{ nc.fecha_deteccion|date:"d/m/Y H:i" }}</span></div>
+        <div class="dato"><label>Fecha de cierre</label><span>{{ nc.fecha_cierre|date:"d/m/Y H:i"|default:"-" }}</span></div>
+    </div>
+
+    <div class="dato"><label>Descripción</label><p>{{ nc.descripcion|linebreaks }}</p></div>
+    {% if nc.accion_correctiva %}
+    <div class="dato"><label>Acción correctiva</label><p>{{ nc.accion_correctiva|linebreaks }}</p></div>
+    {% endif %}
+    {% if nc.evidencia_foto %}
+        <p><a href="{{ nc.evidencia_foto.url }}" target="_blank">📷 Ver evidencia fotográfica</a></p>
+    {% endif %}
+
+    {% if puede_gestionar %}
+    <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;">
+    <h3>Gestionar no conformidad</h3>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+        {% endfor %}
+        <div class="acciones">
+            <button type="submit">Guardar cambios</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

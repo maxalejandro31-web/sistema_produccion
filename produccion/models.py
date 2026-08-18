@@ -51,7 +51,11 @@ class OrdenProduccion(models.Model):
     tipo_proceso = models.CharField(max_length=30, choices=TIPO_PROCESO_CHOICES, default='slitter')
 
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
-    mp = models.ForeignKey(MateriaPrima, on_delete=models.CASCADE, null=True, blank=True)
+    # PROTECT (antes CASCADE): borrar una MP no debe poder arrastrar en cascada
+    # las órdenes que la consumieron (y de ahí el producto terminado y las
+    # remisiones ya entregadas). Si hace falta borrar la MP, primero hay que
+    # resolver/reasignar las órdenes que la referencian.
+    mp = models.ForeignKey(MateriaPrima, on_delete=models.PROTECT, null=True, blank=True)
     pt_origen = models.ForeignKey(
         'materia_terminada.ProductoTerminado',
         on_delete=models.SET_NULL,

@@ -214,7 +214,15 @@ class MovimientoMP(models.Model):
             super().save(*args, **kwargs)
 
             if es_nuevo:
-                mp = self.mp
+                # select_for_update() bloquea la fila de la MP hasta que termine
+                # esta transacción: si dos movimientos sobre el mismo rollo se
+                # registran casi al mismo tiempo, el segundo espera a que el
+                # primero termine de actualizar peso_restante en vez de leer un
+                # valor desactualizado y pisar el cambio del primero (lost
+                # update). En SQLite esto no bloquea de verdad (la BD no lo
+                # soporta) pero tampoco falla; en Postgres (producción) sí
+                # protege.
+                mp = MateriaPrima.objects.select_for_update().get(pk=self.mp_id)
                 peso_actual = mp.peso_restante if mp.peso_restante is not None else mp.peso
                 if peso_actual is None:
                     peso_actual = Decimal("0.00")
@@ -242,3 +250,12 @@ class MovimientoMP(models.Model):
                     mp.estado = 'En Proceso'
 
                 mp.save()
+
+                # Reflejar los cambios en la instancia que ya tenía el que
+                # llamó a .create()/.save() (por ejemplo las vistas, que arman
+                # el mensaje de confirmación con mp.peso_restante), sin que
+                # tengan que volver a consultar la base de datos.
+                if self.mp_id == mp.pk:
+                    self.mp.peso_restante = mp.peso_restante
+                    self.mp.estado = mp.estado
+                    self.mp.ubicacion = mp.ubicacion

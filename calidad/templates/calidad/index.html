@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Calidad{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <span class="current">Calidad</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .grid-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .stat-card .valor { font-size: 32px; font-weight: bold; color: #1f2d3d; }
+    .stat-card .etiqueta { color: #6b7280; font-size: 13px; margin-top: 4px; }
+    .stat-card.alerta .valor { color: #c0392b; }
+    .contenedor {
+        background: white;
+        padding: 22px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .contenedor h2 { margin-top: 0; font-size: 17px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .topbar a, .acciones-rapidas a {
+        background: #2c3e50; color: white; padding: 9px 14px; border-radius: 8px;
+        text-decoration: none; font-size: 13px; display: inline-block;
+    }
+    .acciones-rapidas { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 9px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background: #f5f7fa; }
+    .badge { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: bold; }
+    .badge.si { background: #d1fae5; color: #065f46; }
+    .badge.no { background: #fee2e2; color: #991b1b; }
+    .badge.abierta { background: #fee2e2; color: #991b1b; }
+    .badge.en_revision { background: #fef3c7; color: #92400e; }
+    .badge.cerrada { background: #d1fae5; color: #065f46; }
+</style>
+
+<h1>Calidad</h1>
+
+<div class="grid-stats">
+    <div class="stat-card {% if certificados_pendientes %}alerta{% endif %}">
+        <div class="valor">{{ certificados_pendientes }}</div>
+        <div class="etiqueta">Certificados sin aprobar</div>
+    </div>
+    <div class="stat-card {% if nc_abiertas %}alerta{% endif %}">
+        <div class="valor">{{ nc_abiertas }}</div>
+        <div class="etiqueta">No conformidades abiertas</div>
+    </div>
+    <div class="stat-card {% if nc_criticas_abiertas %}alerta{% endif %}">
+        <div class="valor">{{ nc_criticas_abiertas }}</div>
+        <div class="etiqueta">No conformidades críticas abiertas</div>
+    </div>
+</div>
+
+<div class="acciones-rapidas">
+    <a href="{% url 'lista_certificados' %}">Ver certificados</a>
+    <a href="{% url 'lista_no_conformidades' %}">Ver no conformidades</a>
+    <a href="{% url 'lista_tolerancias' %}">Tolerancias de proceso</a>
+</div>
+
+<div class="contenedor">
+    <div class="topbar"><h2>Últimos certificados registrados</h2></div>
+    <table>
+        <thead><tr><th>No. certificado</th><th>Documento</th><th>Aprobado</th><th></th></tr></thead>
+        <tbody>
+            {% for c in ultimos_certificados %}
+            <tr>
+                <td>{{ c.numero_certificado|default:"-" }}</td>
+                <td>{{ c.mp|default:c.producto_terminado }}</td>
+                <td>{% if c.aprobado %}<span class="badge si">Sí</span>{% else %}<span class="badge no">No</span>{% endif %}</td>
+                <td><a href="{% url 'detalle_certificado' c.id %}">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Sin certificados registrados todavía.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="contenedor">
+    <div class="topbar"><h2>Últimas no conformidades</h2></div>
+    <table>
+        <thead><tr><th>Relacionado a</th><th>Tipo</th><th>Severidad</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+            {% for nc in ultimas_nc %}
+            <tr>
+                <td>{{ nc.objeto_relacionado|default:"-" }}</td>
+                <td>{{ nc.get_tipo_display }}</td>
+                <td>{{ nc.get_severidad_display }}</td>
+                <td><span class="badge {{ nc.estado }}">{{ nc.get_estado_display }}</span></td>
+                <td><a href="{% url 'detalle_no_conformidad' nc.id %}">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Sin no conformidades registradas todavía.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "produccion",
     "materia_terminada",
     "reportes",
+    "calidad",
 ]
 
 

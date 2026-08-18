@@ -385,14 +385,14 @@
                 <td>{{ orden.folio_orden|default:"-" }}</td>
                 <td>{{ orden.cliente|default:"-" }}</td>
                 <td>{{ orden.linea|default:"-" }}</td>
-                <td>{{ orden.operador|default:"-" }}</td>
+                <td>{{ orden.operador_nombre|default:"-" }}</td>
                 <td>{{ orden.peso_usado|default_if_none:"-" }}</td>
                 <td>{{ orden.peso_producido|default_if_none:"-" }}</td>
                 <td>{{ orden.scrap_total|default_if_none:"-" }}</td>
                 <td>{{ orden.estado|default:"-" }}</td>
                 <td>
                     {% if orden.fecha %}
-                        {{ orden.fecha|date:"d/m/Y H:i" }}
+                        {{ orden.fecha|date:"d/m/Y" }}
                     {% else %}
                         -
                     {% endif %}
@@ -479,6 +479,53 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <h2 style="margin-top:32px;">Calidad</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>No. certificado</th>
+                <th>Norma</th>
+                <th>Colada</th>
+                <th>Aprobado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in mp.certificados.all %}
+            <tr>
+                <td>{{ c.numero_certificado|default:"-" }}</td>
+                <td>{{ c.norma|default:"-" }}</td>
+                <td>{{ c.numero_colada|default:"-" }}</td>
+                <td>{% if c.aprobado %}<span style="color:#065f46;font-weight:bold;">Sí</span>{% else %}<span style="color:#991b1b;font-weight:bold;">No</span>{% endif %}</td>
+                <td><a href="{% url 'detalle_certificado' c.id %}">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Sin certificados de calidad registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="acciones" style="margin-top:12px;">
+        <a href="{% url 'crear_certificado' 'mp' mp.id %}" style="background:#16a085;">+ Agregar certificado</a>
+        <a href="{% url 'crear_no_conformidad' 'mp' mp.id %}" style="background:#c0392b;">⚠ Reportar no conformidad</a>
+    </div>
+
+    {% if mp.no_conformidades.all %}
+    <h2 style="margin-top:32px;">No conformidades</h2>
+    <table>
+        <thead><tr><th>Tipo</th><th>Severidad</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+            {% for nc in mp.no_conformidades.all %}
+            <tr>
+                <td>{{ nc.get_tipo_display }}</td>
+                <td>{{ nc.get_severidad_display }}</td>
+                <td>{{ nc.get_estado_display }}</td>
+                <td><a href="{% url 'detalle_no_conformidad' nc.id %}">Ver</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
 
     <div class="acciones">
         <a href="{% url 'lista_mp' %}" class="secundario">Volver a la lista</a>

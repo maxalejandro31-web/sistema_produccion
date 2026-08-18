@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
+from django.db.models import ProtectedError
 
 from .models import OrdenProduccion, DetalleSlitter
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet, DetalleFlejeFormSet
@@ -214,9 +215,42 @@ def cambiar_estado(request, orden_id, nuevo_estado):
 def eliminar_orden(request, orden_id):
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
     folio = orden.folio_orden or orden.id
-    registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'ELIMINAR',
-        f'Orden {folio} eliminada. {_descripcion_pesos(orden)}')
-    orden.delete()
+    orden_id_original = orden.id
+    orden_str = str(orden)
+    descripcion_pesos = _descripcion_pesos(orden)
+    # Se guardan antes de borrar: al llamar orden.delete() Django limpia el
+    # pk del objeto en memoria, y necesitamos estos datos después para
+    # revertir el consumo de MP y para el historial.
+    mp = orden.mp
+    peso_a_revertir = orden.peso_usado
+
+    try:
+        orden.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f'No se puede eliminar la orden {folio} porque ya generó producto '
+            'terminado. Primero hay que eliminar o reasignar ese producto '
+            'terminado (y cualquier remisión que lo incluya) antes de borrar '
+            'la orden.'
+        )
+        return redirect('lista_ordenes')
+
+    if mp and peso_a_revertir:
+        # La orden había consumido peso de este rollo/placa (ver
+        # OrdenProduccion.save()); al borrarla hay que devolver ese peso al
+        # inventario, si no se queda descontado para siempre sin motivo.
+        from inventario.models import MovimientoMP
+        MovimientoMP.objects.create(
+            mp=mp,
+            tipo_movimiento='AJUSTE_POSITIVO',
+            peso=peso_a_revertir,
+            ubicacion_destino=mp.ubicacion or '',
+            observaciones=f'Reversión automática por eliminación de orden {folio}.',
+        )
+
+    registrar_historial(request, 'OrdenProduccion', orden_id_original, orden_str, 'ELIMINAR',
+        f'Orden {folio} eliminada. {descripcion_pesos}')
     messages.success(request, f'Orden {folio} eliminada correctamente.')
     return redirect('lista_ordenes')
 
@@ -381,8 +415,18 @@ def detalle_orden(request, orden_id):
         id=orden_id
     )
     orden = anotar_anomalias([orden])[0]
-    detalles = orden.detalles_slitter.all()
+    detalles = list(orden.detalles_slitter.all())
     detalles_fleje = orden.detalles_fleje.all()
+
+    from calidad.utils import anotar_tolerancias
+    from calidad.models import NoConformidad
+    for d in detalles:
+        # Evita una consulta extra por cada corte al pedir d.orden.mp: ya
+        # tenemos la orden cargada (con su MP) desde arriba.
+        d.orden = orden
+    detalles = anotar_tolerancias(detalles)
+
+    no_conformidades = NoConformidad.objects.filter(orden=orden).select_related('detectado_por')
 
     from dashboard.models import HistorialCambio
     historial = HistorialCambio.objects.filter(
@@ -394,4 +438,5 @@ def detalle_orden(request, orden_id):
         'detalles': detalles,
         'detalles_fleje': detalles_fleje,
         'historial': historial,
+        'no_conformidades': no_conformidades,
     })
