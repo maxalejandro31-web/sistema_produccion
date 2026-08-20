@@ -21,7 +21,7 @@ class CertificadoCalidadForm(forms.ModelForm):
             'observaciones',
         ]
         widgets = {
-            'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_emision': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'rows': 3}),
         }
 

@@ -14,10 +14,16 @@ class ClienteForm(forms.ModelForm):
 
 
 class MateriaPrimaForm(forms.ModelForm):
+    # OJO: hay que fijar tambien el "format" del widget (no solo
+    # input_formats, que solo controla el parseo del POST). Sin esto,
+    # Django renderiza el valor inicial con el formato local (es-mx:
+    # "18/08/2026"), que un <input type="date"> del navegador no puede
+    # interpretar y muestra el campo vacio. Al guardar sin tocarlo, el
+    # navegador manda "" y se borra la fecha silenciosamente.
     fecha_entrada = forms.DateField(
         required=False,
         input_formats=['%Y-%m-%d'],
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'})
     )
 
     class Meta:
@@ -66,7 +72,7 @@ class MateriaPrimaForm(forms.ModelForm):
             'proveedor': forms.TextInput(attrs={'placeholder': 'Proveedor'}),
             'ubicacion': forms.Select(),
             'estado': forms.Select(),
-            'fecha_entrada': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_entrada': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Observaciones'}),
         }
 

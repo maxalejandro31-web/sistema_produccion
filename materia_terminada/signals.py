@@ -84,13 +84,43 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender='produccion.DetalleSlitter')
 def sincronizar_pt_desde_detalle_slitter(sender, instance, **kwargs):
-    """Si una orden ya terminada se edita después (p. ej. para corregir un
-    peso mal capturado), el ProductoTerminado que ya se había generado para
-    ese corte se queda con el peso viejo si nadie lo actualiza a mano. Este
-    signal mantiene ambos sincronizados automáticamente."""
+    """Mantiene sincronizado el ProductoTerminado de este corte con el
+    detalle de la orden, sin importar en qué orden se guarden las cosas:
+
+    - Si el corte ya tiene su PT generado, actualiza el peso (cubre el caso
+      de corregir un peso mal capturado en una orden ya terminada).
+    - Si el corte todavía NO tiene PT pero la orden ya está 'terminada' y el
+      corte ya tiene peso, lo crea. Esto cubre dos huecos reales: (1) se
+      agregó un corte nuevo al editar una orden que ya estaba terminada, y
+      (2) el corte se capturó originalmente con peso en blanco/0 -y por eso
+      se saltó al generar el PT la primera vez- y luego se corrigió el peso.
+    """
     from materia_terminada.models import ProductoTerminado
-    ProductoTerminado.objects.filter(detalle_slitter=instance).update(
-        peso_kg=instance.peso or 0
+
+    if not instance.peso:
+        return
+
+    pt = ProductoTerminado.objects.filter(detalle_slitter=instance).first()
+    if pt:
+        if pt.peso_kg != instance.peso:
+            ProductoTerminado.objects.filter(pk=pt.pk).update(peso_kg=instance.peso)
+        return
+
+    orden = instance.orden
+    if orden.estado != 'terminado':
+        return
+
+    numero_pt = f"PT-{orden.folio_orden}-C{instance.no_corte}"
+    if ProductoTerminado.objects.filter(numero_pt=numero_pt).exists():
+        return
+    ProductoTerminado.objects.create(
+        orden=orden,
+        detalle_slitter=instance,
+        cliente=orden.cliente,
+        numero_pt=numero_pt,
+        tipo_proceso=orden.tipo_proceso,
+        tipo_producto='cinta',
+        peso_kg=instance.peso,
     )
 
 
@@ -98,6 +128,29 @@ def sincronizar_pt_desde_detalle_slitter(sender, instance, **kwargs):
 def sincronizar_pt_desde_detalle_fleje(sender, instance, **kwargs):
     """Ídem sincronizar_pt_desde_detalle_slitter, pero para flejes."""
     from materia_terminada.models import ProductoTerminado
-    ProductoTerminado.objects.filter(detalle_fleje=instance).update(
-        peso_kg=instance.peso_descarga or 0
+
+    if not instance.peso_descarga:
+        return
+
+    pt = ProductoTerminado.objects.filter(detalle_fleje=instance).first()
+    if pt:
+        if pt.peso_kg != instance.peso_descarga:
+            ProductoTerminado.objects.filter(pk=pt.pk).update(peso_kg=instance.peso_descarga)
+        return
+
+    orden = instance.orden
+    if orden.estado != 'terminado':
+        return
+
+    numero_pt = f"PT-{orden.folio_orden}-F{instance.no_fleje}"
+    if ProductoTerminado.objects.filter(numero_pt=numero_pt).exists():
+        return
+    ProductoTerminado.objects.create(
+        orden=orden,
+        detalle_fleje=instance,
+        cliente=orden.cliente,
+        numero_pt=numero_pt,
+        tipo_proceso=orden.tipo_proceso,
+        tipo_producto='fleje',
+        peso_kg=instance.peso_descarga,
     )
