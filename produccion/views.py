@@ -314,7 +314,16 @@ def editar_orden(request, orden_id):
                     orden_actualizada.mp = None
 
                 _calcular_scrap_merma(orden_actualizada)
-                orden_actualizada.save()
+                try:
+                    orden_actualizada.save()
+                except ValueError as e:
+                    messages.error(request, str(e))
+                    return render(request, 'produccion/editar_orden.html', {
+                        'form': form,
+                        'formset': formset,
+                        'formset_fleje': formset_fleje,
+                        'orden': orden,
+                    })
 
                 registrar_historial(request, 'OrdenProduccion', orden.id, str(orden), 'EDITAR',
                     f'Orden {orden.folio_orden or orden.id} actualizada. {_descripcion_pesos(orden_actualizada)}')

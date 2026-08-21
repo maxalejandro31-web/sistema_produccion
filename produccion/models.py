@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.utils import timezone
 from inventario.models import MateriaPrima, Cliente
@@ -115,9 +116,34 @@ class OrdenProduccion(models.Model):
         es_nueva = self.pk is None
         generar_folio = es_nueva and not self.folio_orden
 
+        # Estado que tenía la orden en la BD antes de este guardado (None si
+        # es nueva). Se necesita para reconciliar el consumo de MP cuando se
+        # EDITA una orden que ya existía: sin esto, corregir un peso_usado
+        # mal capturado o reasignar la orden a otra MP dejaba el inventario
+        # de materia prima desincronizado para siempre (el peso_restante ya
+        # descontado por la captura original nunca se ajustaba).
+        mp_anterior_id = None
+        peso_anterior = None
+        if not es_nueva:
+            anterior = OrdenProduccion.objects.filter(pk=self.pk).values('mp_id', 'peso_usado').first()
+            if anterior:
+                mp_anterior_id = anterior['mp_id']
+                peso_anterior = anterior['peso_usado']
+
         if es_nueva and self.mp and self.peso_usado:
             if self.mp.peso_restante is not None and self.mp.peso_restante < self.peso_usado:
                 raise ValueError("No hay suficiente peso disponible en la materia prima")
+
+        if not es_nueva and self.mp_id and self.peso_usado:
+            # Si se sube el peso_usado (misma MP) o se reasigna la orden a
+            # una MP distinta, hay que validar que esa MP tenga peso
+            # suficiente para cubrir el consumo NUEVO antes de guardar.
+            if self.mp_id == mp_anterior_id:
+                delta_validar = float(self.peso_usado) - float(peso_anterior or 0)
+            else:
+                delta_validar = float(self.peso_usado)
+            if delta_validar > 0 and self.mp.peso_restante is not None and float(self.mp.peso_restante) < delta_validar:
+                raise ValueError("No hay suficiente peso disponible en la materia prima para este cambio")
 
         if self.peso_usado and self.peso_producido is not None and float(self.peso_usado) > 0:
             valor_rendimiento = round((float(self.peso_producido) / float(self.peso_usado)) * 100, 2)
@@ -136,8 +162,9 @@ class OrdenProduccion(models.Model):
             OrdenProduccion.objects.filter(pk=self.pk).update(folio_orden=folio)
             self.folio_orden = folio
 
+        from inventario.models import MovimientoMP
+
         if es_nueva and self.mp and self.peso_usado:
-            from inventario.models import MovimientoMP
             MovimientoMP.objects.create(
                 mp=self.mp,
                 tipo_movimiento='CONSUMO',
@@ -146,6 +173,48 @@ class OrdenProduccion(models.Model):
                 ubicacion_destino='Producción',
                 observaciones=f'Consumo por orden {self.folio_orden or self.pk}',
             )
+        elif not es_nueva:
+            if mp_anterior_id != self.mp_id:
+                # La orden se reasignó a otra MP (o se le quitó/puso la MP):
+                # se devuelve el consumo anterior a la MP vieja y se registra
+                # el consumo nuevo contra la MP actual.
+                if mp_anterior_id and peso_anterior:
+                    MovimientoMP.objects.create(
+                        mp_id=mp_anterior_id,
+                        tipo_movimiento='AJUSTE_POSITIVO',
+                        peso=peso_anterior,
+                        observaciones=f'Reversión por reasignación de MP en orden {self.folio_orden or self.pk}.',
+                    )
+                if self.mp_id and self.peso_usado:
+                    MovimientoMP.objects.create(
+                        mp=self.mp,
+                        tipo_movimiento='CONSUMO',
+                        peso=self.peso_usado,
+                        ubicacion_origen=self.mp.ubicacion or '',
+                        ubicacion_destino='Producción',
+                        observaciones=f'Consumo por reasignación de MP en orden {self.folio_orden or self.pk}.',
+                    )
+            elif self.mp_id and (self.peso_usado or peso_anterior):
+                # Misma MP: si cambió el peso_usado al editar, se ajusta solo
+                # la diferencia (no todo el monto) para no descontar de más.
+                delta = float(self.peso_usado or 0) - float(peso_anterior or 0)
+                if abs(delta) >= 0.01:
+                    if delta > 0:
+                        MovimientoMP.objects.create(
+                            mp=self.mp,
+                            tipo_movimiento='CONSUMO',
+                            peso=Decimal(str(delta)),
+                            ubicacion_origen=self.mp.ubicacion or '',
+                            ubicacion_destino='Producción',
+                            observaciones=f'Consumo adicional por edición de orden {self.folio_orden or self.pk}.',
+                        )
+                    else:
+                        MovimientoMP.objects.create(
+                            mp=self.mp,
+                            tipo_movimiento='AJUSTE_POSITIVO',
+                            peso=Decimal(str(abs(delta))),
+                            observaciones=f'Devolución por edición de orden {self.folio_orden or self.pk}.',
+                        )
 
 
 class DetalleSlitter(models.Model):
