@@ -18,56 +18,46 @@
         max-width: 1100px;
         margin: auto;
         background: white;
-        padding: 25px;
-        border-radius: 14px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        padding: 28px;
+        border-radius: var(--radio-lg, 14px);
+        box-shadow: var(--sombra-md, 0 2px 12px rgba(0,0,0,0.08));
     }
     .grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
+        gap: 16px;
     }
     .campo {
         display: flex;
         flex-direction: column;
     }
     .campo label {
-        font-weight: bold;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--color-texto, #1f2937);
         margin-bottom: 6px;
     }
     .campo input,
     .campo select,
     .campo textarea {
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--color-borde, #ccc);
+        border-radius: var(--radio-sm, 8px);
+        font-size: 14px;
+        font-family: var(--fuente-sistema, inherit);
+        transition: border-color 0.15s;
     }
     .acciones {
-        margin-top: 20px;
-    }
-    .acciones button,
-    .acciones a {
-        display: inline-block;
-        padding: 10px 14px;
-        border-radius: 8px;
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        margin-right: 10px;
-    }
-    .acciones button {
-        background: #2c3e50;
-        color: white;
-    }
-    .acciones a {
-        background: #95a5a6;
-        color: white;
+        margin-top: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
     }
     .pdf-actual {
         margin-top: 20px;
         padding: 12px;
         background: #f8f9fa;
-        border-radius: 8px;
+        border-radius: var(--radio-sm, 8px);
     }
 </style>
 
@@ -105,8 +95,8 @@
         </div>
 
         <div class="acciones">
-            <button type="submit">Guardar cambios</button>
-            <a href="{% url 'lista_mp' %}">Volver</a>
+            <button type="submit" class="btn btn-primario">Guardar cambios</button>
+            <a href="{% url 'lista_mp' %}" class="btn btn-secundario">Volver</a>
         </div>
     </form>
 </div>

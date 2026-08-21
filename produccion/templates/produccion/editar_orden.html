@@ -14,16 +14,13 @@
 
 {% block content %}
 <style>
-    .contenedor { background: white; border-radius: 14px; padding: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); max-width: 1100px; }
+    .contenedor { background: white; border-radius: var(--radio-lg, 14px); padding: 28px; box-shadow: var(--sombra-md, 0 2px 12px rgba(0,0,0,0.08)); max-width: 1100px; }
     h1 { margin-top: 0; }
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
     .campo { display: flex; flex-direction: column; }
-    .campo label { font-weight: bold; margin-bottom: 6px; font-size: 13px; color: #2c3e50; }
-    .campo input, .campo select, .campo textarea { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; }
-    .acciones { margin-top: 20px; }
-    .acciones button, .acciones a { display: inline-block; padding: 10px 14px; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; margin-right: 10px; }
-    .acciones button { background: #2c3e50; color: white; font-size: 14px; }
-    .acciones a { background: #95a5a6; color: white; }
+    .campo label { font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--color-texto, #2c3e50); }
+    .campo input, .campo select, .campo textarea { padding: 10px 12px; border-radius: var(--radio-sm, 8px); border: 1px solid var(--color-borde, #ccc); font-size: 14px; font-family: var(--fuente-sistema, inherit); transition: border-color 0.15s; }
+    .acciones { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 10px; }
 
     .bloque-slitter { margin-top: 28px; }
     .bloque-slitter h2 { font-size: 16px; margin-bottom: 12px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
@@ -171,8 +168,8 @@
         {% endif %}
 
         <div class="acciones">
-            <button type="submit">Guardar cambios</button>
-            <a href="{% url 'lista_ordenes' %}">Cancelar</a>
+            <button type="submit" class="btn btn-primario">Guardar cambios</button>
+            <a href="{% url 'lista_ordenes' %}" class="btn btn-secundario">Cancelar</a>
         </div>
     </form>
 </div>
