@@ -64,7 +64,11 @@
            sobrescriba explícitamente (la gran mayoría no lo hace) ── */
         h1, h2, h3, h4 {
             font-family: var(--fuente-sistema);
-            color: var(--color-navy);
+            /* Sin "color" a propósito: así los títulos heredan el color de
+               quien los rodea (por ejemplo texto blanco dentro de un
+               encabezado con fondo degradado oscuro, como el del
+               Dashboard) en vez de forzar siempre el mismo tono. En un
+               fondo claro normal heredan el gris oscuro de <body>. */
             font-weight: 700;
             line-height: 1.25;
         }
@@ -432,8 +436,7 @@
         <span class="usuario">{% include 'partials/icono.html' with nombre='usuario' tam=13 %} {{ request.user.username }}</span>
         <a href="{% url 'inicio' %}">Dashboard</a>
 
-        {# Materia Prima: Captura/Lista/Salidas solo exigen sesión iniciada;
-           Clientes se agrega adentro si el rol lo permite. #}
+        {# Materia Prima: Captura/Lista/Salidas solo exigen sesión iniciada; Clientes se agrega adentro si el rol lo permite. #}
         <div class="navdrop-wrap" data-navdrop>
             <button type="button" class="navdrop-btn" data-navdrop-btn>Materia Prima <span class="navdrop-caret">▾</span></button>
             <div class="navdrop-panel" data-navdrop-panel>
