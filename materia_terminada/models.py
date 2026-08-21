@@ -64,6 +64,25 @@ class ProductoTerminado(models.Model):
     def __str__(self):
         return self.numero_pt
 
+    @property
+    def peso_consumido_fleje(self):
+        """Cuánto de esta cinta ya se ha metido a proceso de fleje, sumando
+        TODAS las órdenes de fleje que la han tomado como origen (puede ser
+        más de una: en planta es normal procesar el mismo corte en varios
+        lotes/días distintos hasta agotarlo, tal como en el reporte de
+        planta). related_name='ordenes_flejado' en OrdenProduccion.pt_origen."""
+        from django.db.models import Sum
+        total = self.ordenes_flejado.aggregate(t=Sum('peso_usado'))['t']
+        return total or 0
+
+    @property
+    def peso_disponible_fleje(self):
+        """Peso de esta cinta que todavía no se ha metido a fleje. Nunca
+        negativo (si el operador capturó de más, se deja en 0 en vez de
+        mostrar un disponible negativo confuso)."""
+        disponible = float(self.peso_kg or 0) - float(self.peso_consumido_fleje)
+        return disponible if disponible > 0 else 0
+
 
 class Salida(models.Model):
     TIPO_CHOICES = [

@@ -5,6 +5,8 @@ from .views import (
     editar_mp,
     eliminar_mp,
     detalle_mp,
+    reporte_rollo,
+    reporte_rollo_excel,
     lista_clientes,
     captura_cliente,
     editar_cliente,
@@ -20,6 +22,8 @@ urlpatterns = [
     path('editar-mp/<int:mp_id>/', editar_mp, name='editar_mp'),
     path('eliminar-mp/<int:mp_id>/', eliminar_mp, name='eliminar_mp'),
     path('detalle-mp/<int:mp_id>/', detalle_mp, name='detalle_mp'),
+    path('reporte-rollo/<int:mp_id>/', reporte_rollo, name='reporte_rollo'),
+    path('reporte-rollo/<int:mp_id>/excel/', reporte_rollo_excel, name='reporte_rollo_excel'),
     path('salidas-mp/', lista_salidas_mp, name='lista_salidas_mp'),
 
     path('clientes/', lista_clientes, name='lista_clientes'),

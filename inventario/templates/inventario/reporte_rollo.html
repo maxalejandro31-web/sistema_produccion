@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Reporte del Rollo{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_mp' %}">Materia Prima</a>
+    <span class="sep">›</span>
+    <a href="{% url 'detalle_mp' mp.id %}">{{ mp.numero_mp }}</a>
+    <span class="sep">›</span>
+    <span class="current">Reporte del rollo</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor-rollo {
+        max-width: 1200px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .acciones-rollo { margin-bottom: 20px; }
+    .acciones-rollo a {
+        display: inline-block;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        background: #2c3e50;
+        color: white;
+        margin-right: 10px;
+        font-weight: 600;
+    }
+    .acciones-rollo a.secundario { background: #6b7280; }
+    .acciones-rollo a.excel { background: #16a085; }
+
+    .rollo-formato { margin-bottom: 30px; }
+    .tabla-rollo { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .tabla-rollo th, .tabla-rollo td {
+        border: 1px solid #bcd2e8;
+        padding: 7px 10px;
+        font-size: 13px;
+        text-align: center;
+    }
+    .tabla-rollo th { background: #5b9bd5; color: #fff; font-weight: bold; }
+    .rollo-titulo { background: #3f7cbf !important; color: #fff; font-size: 14px; text-align: left !important; }
+    .rollo-subtitulo { background: #dbe9f7; font-weight: bold; font-size: 14px; }
+    .tag-scrap { background: #3f7cbf; color: #fff; padding: 2px 9px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .tag-descarte { background: #fde047; color: #713f12; padding: 2px 9px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .rollo-total { background: #eef6ff; font-weight: bold; text-align: left !important; }
+
+    .resumen-final {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-top: 20px;
+    }
+    .resumen-final .card {
+        background: #eef3f8;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid #d9e2ec;
+    }
+    .resumen-final .card h3 { margin: 0; font-size: 13px; color: #2c3e50; }
+    .resumen-final .card p { margin: 8px 0 0; font-size: 20px; font-weight: bold; color: #111827; }
+    .resumen-final .card.destacado { background: #d1fae5; border-color: #6ee7b7; }
+</style>
+
+<div class="contenedor-rollo">
+    <h1 class="titulo">Reporte del rollo {{ mp.numero_mp }}</h1>
+
+    <div class="acciones-rollo">
+        <a href="{% url 'detalle_mp' mp.id %}" class="secundario">← Volver al detalle de la MP</a>
+        <a href="{% url 'reporte_rollo_excel' mp.id %}" class="excel">⬇ Exportar a Excel</a>
+    </div>
+
+    <div class="rollo-formato">
+        <table class="tabla-rollo">
+            <tr><th colspan="5" class="rollo-titulo">No. DE ROLLO</th></tr>
+            <tr><td colspan="5" class="rollo-subtitulo">{{ mp.numero_mp }}</td></tr>
+            <tr>
+                <th colspan="2">PESO DE ROLLO</th>
+                <th>CALIBRE</th>
+                <th colspan="2">ANCHO</th>
+            </tr>
+            <tr>
+                <td colspan="2">{{ mp.peso|default:"—" }}</td>
+                <td>{{ mp.espesor_valor|default:"—" }}</td>
+                <td colspan="2">{{ mp.ancho|default:"—" }}</td>
+            </tr>
+        </table>
+
+        {% if bloques %}
+            {% for bloque in bloques %}
+            <table class="tabla-rollo" style="margin-top:14px;">
+                <tr>
+                    <th colspan="7" class="rollo-titulo">
+                        SLITTER — Orden {{ bloque.orden.folio_orden|default:bloque.orden.id }}
+                        · {{ bloque.orden.fecha|date:"d/m/Y"|default:"—" }}
+                    </th>
+                </tr>
+                <tr>
+                    <th>No. de Corte</th><th>Ancho</th><th>Espesor</th><th>Rebaba</th><th>Peso</th><th>Clasificación</th><th>Peso scrap/descarte</th>
+                </tr>
+                {% for d in bloque.detalles %}
+                <tr>
+                    <td>{{ d.folio_corte|default:d.no_corte }}</td>
+                    <td>{{ d.ancho|default:"—" }}</td>
+                    <td>{{ d.espesor|default:"—" }}</td>
+                    <td>{{ d.rebaba|default:"—" }}</td>
+                    <td>{{ d.peso|default:"—" }}</td>
+                    <td>
+                        {% if d.clasificacion == 'scrap' %}<span class="tag-scrap">SCRAP</span>
+                        {% elif d.clasificacion == 'descarte' %}<span class="tag-descarte">DESCARTE</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>{{ d.peso_merma|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">Sin cortes capturados</td></tr>
+                {% endfor %}
+            </table>
+
+            {% for oh in bloque.ordenes_fleje_hijas %}
+            <table class="tabla-rollo" style="margin-top:10px;">
+                <tr>
+                    <th colspan="7" class="rollo-titulo">
+                        FLEJES — Orden {{ oh.folio_orden|default:oh.id }}
+                        · origen {{ oh.pt_origen.detalle_slitter.folio_corte|default:oh.pt_origen }}
+                        · {{ oh.fecha|date:"d/m/Y"|default:"—" }} · {{ oh.tipo_fleje|default:"—" }}
+                        · <a href="{% url 'imprimir_orden' oh.id %}" style="color:#fff;text-decoration:underline;">Ver orden</a>
+                    </th>
+                </tr>
+                <tr>
+                    <th>No. Descarga</th><th>Tipo de fleje</th><th>Peso descarga</th><th># Flejes</th><th>Peso x fleje</th><th>Ancho</th><th>Folio descarga</th>
+                </tr>
+                {% for d in oh.detalles_fleje.all %}
+                <tr>
+                    <td>{{ d.numero_descarga|default:d.no_fleje }}</td>
+                    <td>{{ oh.tipo_fleje|default:"—" }}</td>
+                    <td>{{ d.peso_descarga|default:"—" }}</td>
+                    <td>{{ d.numero_flejes|default:"—" }}</td>
+                    <td>{{ d.peso_por_fleje|default:"—" }}</td>
+                    <td>{{ d.ancho|default:"—" }}</td>
+                    <td>{{ d.folio_descarga|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">Sin descargas capturadas</td></tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="2" class="rollo-total">Peso total</td>
+                    <td class="rollo-total">{{ oh.peso_producido|default:"—" }}</td>
+                    <td colspan="4" class="rollo-total">Scrap: {{ oh.scrap_total|default:"—" }} kg</td>
+                </tr>
+            </table>
+            {% empty %}
+            <p style="color:#6b7280;margin-top:10px;">Esta orden de slitter todavía no tiene ninguna orden de fleje que haya tomado sus cortes como origen.</p>
+            {% endfor %}
+            {% endfor %}
+        {% else %}
+        <p style="color:#6b7280;margin-top:14px;">Este rollo todavía no tiene ninguna orden de slitter registrada.</p>
+        {% endif %}
+    </div>
+
+    <h2>Resumen de aprovechamiento del rollo</h2>
+    <div class="resumen-final">
+        <div class="card">
+            <h3>Peso del rollo</h3>
+            <p>{{ peso_rollo|floatformat:2 }} kg</p>
+        </div>
+        <div class="card">
+            <h3>Scrap Slitter</h3>
+            <p>{{ total_scrap_slitter|floatformat:2 }} kg</p>
+        </div>
+        <div class="card">
+            <h3>Descarte Slitter</h3>
+            <p>{{ total_descarte_slitter|floatformat:2 }} kg</p>
+        </div>
+        <div class="card">
+            <h3>Scrap Fleje</h3>
+            <p>{{ total_scrap_fleje|floatformat:2 }} kg</p>
+        </div>
+        <div class="card">
+            <h3>Scrap total (todo el proceso)</h3>
+            <p>{{ total_scrap_general|floatformat:2 }} kg</p>
+        </div>
+        <div class="card">
+            <h3>Peso final en fleje</h3>
+            <p>{{ total_fleje_producido|floatformat:2 }} kg</p>
+        </div>
+        <div class="card destacado">
+            <h3>% Aprovechamiento</h3>
+            <p>{% if aprovechamiento_pct is not None %}{{ aprovechamiento_pct }} %{% else %}—{% endif %}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

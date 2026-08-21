@@ -201,6 +201,192 @@ def detalle_mp(request, mp_id):
     })
 
 
+def _datos_reporte_rollo(mp):
+    """Reconstruye todo el árbol de un rollo: cada orden de slitter que lo
+    cortó -> sus cortes -> la orden de fleje (si ya existe) que consumió
+    cada corte -> sus descargas -- junto con los totales generales del
+    rollo. Es el mismo dato para la vista en pantalla y para el Excel, para
+    que ambos digan siempre lo mismo."""
+    from produccion.models import OrdenProduccion
+    from produccion.views import _resumen_aprovechamiento_mp
+
+    ordenes_slitter = OrdenProduccion.objects.filter(
+        mp=mp, tipo_proceso='slitter'
+    ).select_related('cliente', 'linea').prefetch_related('detalles_slitter').order_by('fecha', 'id')
+
+    bloques = []
+    total_scrap_slitter = 0.0
+    total_descarte_slitter = 0.0
+    total_scrap_fleje = 0.0
+    total_fleje_producido = 0.0
+
+    for orden in ordenes_slitter:
+        detalles = list(orden.detalles_slitter.all())
+        ordenes_fleje_hijas = OrdenProduccion.objects.filter(
+            tipo_proceso='fleje',
+            pt_origen__detalle_slitter__orden=orden,
+        ).select_related(
+            'pt_origen', 'pt_origen__detalle_slitter'
+        ).prefetch_related('detalles_fleje').order_by('fecha', 'id')
+
+        resumen = _resumen_aprovechamiento_mp(orden, detalles, ordenes_fleje_hijas)
+
+        bloques.append({
+            'orden': orden,
+            'detalles': detalles,
+            'ordenes_fleje_hijas': ordenes_fleje_hijas,
+            'resumen': resumen,
+        })
+
+        total_scrap_slitter += resumen['peso_scrap_slitter']
+        total_descarte_slitter += resumen['peso_descarte_slitter']
+        total_scrap_fleje += resumen['scrap_fleje']
+        total_fleje_producido += resumen['peso_fleje_producido']
+
+    peso_rollo = float(mp.peso) if mp.peso else 0.0
+    total_scrap_general = total_scrap_slitter + total_descarte_slitter + total_scrap_fleje
+    aprovechamiento_pct = round((total_fleje_producido / peso_rollo) * 100, 2) if peso_rollo else None
+
+    return {
+        'bloques': bloques,
+        'peso_rollo': peso_rollo,
+        'total_scrap_slitter': total_scrap_slitter,
+        'total_descarte_slitter': total_descarte_slitter,
+        'total_scrap_fleje': total_scrap_fleje,
+        'total_fleje_producido': total_fleje_producido,
+        'total_scrap_general': total_scrap_general,
+        'aprovechamiento_pct': aprovechamiento_pct,
+    }
+
+
+@login_required
+def reporte_rollo(request, mp_id):
+    """Reporte completo de trazabilidad de un rollo: MP -> cortes de
+    slitter -> descargas de fleje de cada corte -> totales. Junta en una
+    sola vista todas las órdenes de slitter que se hayan hecho sobre este
+    rollo (un rollo se puede cortar en más de una orden, p. ej. un
+    remanente que se vuelve a pasar después)."""
+    mp = get_object_or_404(MateriaPrima, id=mp_id)
+    datos = _datos_reporte_rollo(mp)
+    return render(request, 'inventario/reporte_rollo.html', {'mp': mp, **datos})
+
+
+@login_required
+def reporte_rollo_excel(request, mp_id):
+    """Mismo reporte que reporte_rollo, pero exportado a un .xlsx con el
+    mismo formato que se llevaba a mano en planta (No. de rollo / peso /
+    calibre / ancho, tabla de SLITTER, una tabla de FLEJES por cada corte
+    ya procesado, y los totales al final)."""
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from django.http import HttpResponse as _HttpResponse
+
+    mp = get_object_or_404(MateriaPrima, id=mp_id)
+    datos = _datos_reporte_rollo(mp)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = (mp.numero_mp or f'MP-{mp.id}')[:31]
+
+    negrita = Font(bold=True)
+    titulo_fill = PatternFill('solid', fgColor='1F2D3D')
+    titulo_font = Font(bold=True, color='FFFFFF')
+    centrado = Alignment(horizontal='center')
+
+    fila = 1
+
+    def escribir_titulo(texto, ncols=7):
+        nonlocal fila
+        ws.cell(row=fila, column=1, value=texto)
+        ws.cell(row=fila, column=1).font = titulo_font
+        ws.cell(row=fila, column=1).fill = titulo_fill
+        for c in range(2, ncols + 1):
+            ws.cell(row=fila, column=c).fill = titulo_fill
+        fila += 1
+
+    escribir_titulo('No. DE ROLLO')
+    ws.cell(row=fila, column=1, value=mp.numero_mp).font = negrita
+    fila += 1
+
+    ws.cell(row=fila, column=1, value='PESO DE ROLLO').font = negrita
+    ws.cell(row=fila, column=2, value='CALIBRE').font = negrita
+    ws.cell(row=fila, column=3, value='ANCHO').font = negrita
+    fila += 1
+    ws.cell(row=fila, column=1, value=float(mp.peso) if mp.peso else None)
+    ws.cell(row=fila, column=2, value=str(mp.espesor_valor) if mp.espesor_valor else '')
+    ws.cell(row=fila, column=3, value=float(mp.ancho) if mp.ancho else None)
+    fila += 2
+
+    for bloque in datos['bloques']:
+        orden = bloque['orden']
+        escribir_titulo(f"SLITTER — Orden {orden.folio_orden or orden.id} · {orden.fecha or ''}")
+        headers = ['No. de corte', 'Ancho', 'Espesor', 'Rebaba', 'Peso', 'Clasificación', 'Peso scrap/descarte']
+        for i, h in enumerate(headers, start=1):
+            c = ws.cell(row=fila, column=i, value=h)
+            c.font = negrita
+        fila += 1
+        for d in bloque['detalles']:
+            ws.cell(row=fila, column=1, value=d.folio_corte or d.no_corte)
+            ws.cell(row=fila, column=2, value=float(d.ancho) if d.ancho else None)
+            ws.cell(row=fila, column=3, value=float(d.espesor) if d.espesor else None)
+            ws.cell(row=fila, column=4, value=d.rebaba or '')
+            ws.cell(row=fila, column=5, value=float(d.peso) if d.peso else None)
+            ws.cell(row=fila, column=6, value=d.get_clasificacion_display())
+            ws.cell(row=fila, column=7, value=float(d.peso_merma) if d.peso_merma else None)
+            fila += 1
+        fila += 1
+
+        for oh in bloque['ordenes_fleje_hijas']:
+            origen = oh.pt_origen.detalle_slitter.folio_corte if (oh.pt_origen and oh.pt_origen.detalle_slitter) else str(oh.pt_origen)
+            escribir_titulo(f"FLEJES — Orden {oh.folio_orden or oh.id} · origen {origen} · {oh.fecha or ''} · {oh.tipo_fleje or ''}")
+            headers = ['No. descarga', 'Tipo de fleje', 'Peso descarga', '# Flejes', 'Peso x fleje', 'Ancho', 'Folio descarga']
+            for i, h in enumerate(headers, start=1):
+                c = ws.cell(row=fila, column=i, value=h)
+                c.font = negrita
+            fila += 1
+            for d in oh.detalles_fleje.all():
+                ws.cell(row=fila, column=1, value=d.numero_descarga or d.no_fleje)
+                ws.cell(row=fila, column=2, value=oh.tipo_fleje or '')
+                ws.cell(row=fila, column=3, value=float(d.peso_descarga) if d.peso_descarga else None)
+                ws.cell(row=fila, column=4, value=d.numero_flejes)
+                ws.cell(row=fila, column=5, value=d.peso_por_fleje)
+                ws.cell(row=fila, column=6, value=float(d.ancho) if d.ancho else None)
+                ws.cell(row=fila, column=7, value=d.folio_descarga or '')
+                fila += 1
+            ws.cell(row=fila, column=1, value='Peso total').font = negrita
+            ws.cell(row=fila, column=3, value=float(oh.peso_producido) if oh.peso_producido else None).font = negrita
+            ws.cell(row=fila, column=4, value=f"Scrap: {oh.scrap_total or 0} kg").font = negrita
+            fila += 2
+
+    fila += 1
+    ws.cell(row=fila, column=1, value='TOTAL DESCARGAS (fleje)').font = negrita
+    ws.cell(row=fila, column=2, value='TOTAL SCRAP SLITTER').font = negrita
+    ws.cell(row=fila, column=3, value='TOTAL DESCARTE SLITTER').font = negrita
+    ws.cell(row=fila, column=4, value='TOTAL SCRAP FLEJE').font = negrita
+    ws.cell(row=fila, column=5, value='TOTAL SCRAP (todo)').font = negrita
+    ws.cell(row=fila, column=6, value='TOTAL ROLLO').font = negrita
+    ws.cell(row=fila, column=7, value='% APROVECHAMIENTO').font = negrita
+    fila += 1
+    ws.cell(row=fila, column=1, value=round(datos['total_fleje_producido'], 2))
+    ws.cell(row=fila, column=2, value=round(datos['total_scrap_slitter'], 2))
+    ws.cell(row=fila, column=3, value=round(datos['total_descarte_slitter'], 2))
+    ws.cell(row=fila, column=4, value=round(datos['total_scrap_fleje'], 2))
+    ws.cell(row=fila, column=5, value=round(datos['total_scrap_general'], 2))
+    ws.cell(row=fila, column=6, value=round(datos['peso_rollo'], 2))
+    ws.cell(row=fila, column=7, value=datos['aprovechamiento_pct'])
+
+    for col in range(1, 8):
+        ws.column_dimensions[chr(64 + col)].width = 18
+
+    response = _HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    nombre_archivo = f"Reporte_{mp.numero_mp or mp.id}.xlsx".replace('/', '-')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    wb.save(response)
+    return response
+
+
 @login_required
 def lista_clientes(request):
     if not (
