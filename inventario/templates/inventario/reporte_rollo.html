@@ -24,19 +24,7 @@
         border-radius: 14px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
-    .acciones-rollo { margin-bottom: 20px; }
-    .acciones-rollo a {
-        display: inline-block;
-        padding: 10px 14px;
-        border-radius: 8px;
-        text-decoration: none;
-        background: #2c3e50;
-        color: white;
-        margin-right: 10px;
-        font-weight: 600;
-    }
-    .acciones-rollo a.secundario { background: #6b7280; }
-    .acciones-rollo a.excel { background: #16a085; }
+    .acciones-rollo { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
 
     .rollo-formato { margin-bottom: 30px; }
     .tabla-rollo { width: 100%; border-collapse: collapse; margin-top: 8px; }
@@ -75,8 +63,8 @@
     <h1 class="titulo">Reporte del rollo {{ mp.numero_mp }}</h1>
 
     <div class="acciones-rollo">
-        <a href="{% url 'detalle_mp' mp.id %}" class="secundario">← Volver al detalle de la MP</a>
-        <a href="{% url 'reporte_rollo_excel' mp.id %}" class="excel">⬇ Exportar a Excel</a>
+        <a href="{% url 'detalle_mp' mp.id %}" class="btn btn-secundario">← Volver al detalle de la MP</a>
+        <a href="{% url 'reporte_rollo_excel' mp.id %}" class="btn btn-exito">⬇ Exportar a Excel</a>
     </div>
 
     <div class="rollo-formato">

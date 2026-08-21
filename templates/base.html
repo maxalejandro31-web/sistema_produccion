@@ -6,15 +6,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Producción{% endblock %}</title>
     <style>
+        /* ══════════════════════════════════════════════════════════════
+           Sistema de diseño compartido — variables centrales.
+           Cualquier plantilla nueva (o que se vaya actualizando) debe usar
+           estas variables en vez de inventar sus propios colores/radios/
+           sombras, para que TODO el sistema se vea consistente.
+           ══════════════════════════════════════════════════════════════ */
+        :root {
+            --color-navy: #1f2d3d;
+            --color-navy-claro: #2c4a6e;
+            --color-primario: #2980b9;
+            --color-exito: #16a085;
+            --color-exito-oscuro: #059669;
+            --color-peligro: #c0392b;
+            --color-peligro-claro: #e74c3c;
+            --color-advertencia: #d97706;
+            --color-texto: #1f2937;
+            --color-texto-sec: #6b7280;
+            --color-borde: #e2e8f0;
+            --color-fondo: #f4f6f8;
+            --color-superficie: #ffffff;
+
+            --radio-sm: 6px;
+            --radio-md: 10px;
+            --radio-lg: 14px;
+
+            --sombra-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+            --sombra-md: 0 2px 10px rgba(15, 23, 42, 0.08);
+            --sombra-lg: 0 8px 24px rgba(15, 23, 42, 0.14);
+
+            --espacio-1: 4px;
+            --espacio-2: 8px;
+            --espacio-3: 12px;
+            --espacio-4: 16px;
+            --espacio-5: 24px;
+            --espacio-6: 32px;
+
+            --fuente-sistema: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                "Helvetica Neue", Arial, sans-serif;
+        }
+
         *, *::before, *::after { box-sizing: border-box; }
+
+        html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
+            font-family: var(--fuente-sistema);
+            color: var(--color-texto);
+            background: var(--color-fondo);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+        }
+
+        /* ── Tipografía compartida: aplica en toda plantilla que no la
+           sobrescriba explícitamente (la gran mayoría no lo hace) ── */
+        h1, h2, h3, h4 {
+            font-family: var(--fuente-sistema);
+            color: var(--color-navy);
+            font-weight: 700;
+            line-height: 1.25;
+        }
+        h1 { font-size: 24px; letter-spacing: -0.01em; }
+        h2 { font-size: 18px; margin-top: var(--espacio-5); margin-bottom: var(--espacio-3); }
+        h3 { font-size: 15px; }
+        a { color: var(--color-primario); }
+
+        /* ── Estado de foco consistente para todo el sistema (accesible
+           y se ve mucho más cuidado que el foco azul por defecto) ── */
+        input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible {
+            outline: none;
+            border-color: var(--color-primario) !important;
+            box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.18);
+        }
+
+        /* ── Botones compartidos: usar estas clases en vez de inline
+           styles para que todo botón nuevo se vea igual en cualquier
+           pantalla del sistema ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: var(--radio-sm);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: filter 0.15s, transform 0.1s;
+        }
+        .btn:hover { filter: brightness(1.08); }
+        .btn:active { transform: translateY(1px); }
+        .btn-primario   { background: var(--color-navy); color: white; }
+        .btn-secundario { background: #6b7280; color: white; }
+        .btn-exito      { background: var(--color-exito); color: white; }
+        .btn-peligro    { background: var(--color-peligro-claro); color: white; }
+        .btn-outline    { background: white; color: var(--color-navy); border: 1px solid var(--color-borde); }
+
+        /* ── Insignias de estado compartidas ── */
+        .badge-chip {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .02em;
+        }
+        .badge-chip.ok       { background: #d1fae5; color: #065f46; }
+        .badge-chip.pendiente{ background: #fef3c7; color: #92400e; }
+        .badge-chip.alerta   { background: #fee2e2; color: #991b1b; }
+        .badge-chip.info     { background: #dbeafe; color: #1e40af; }
+
+        /* ── Tablas: usando .contenido como ancestro estas reglas ganan
+           por especificidad sobre los "table { ... }" sueltos que cada
+           plantilla trae, así que las tablas de listados se ven iguales
+           en todo el sistema sin tener que tocar cada pantalla. Se
+           excluye .tabla-rollo a propósito: son las tablas con formato
+           de papel de planta (encabezados azules) y deben conservar su
+           propio estilo intencional. ── */
+        .contenido table:not(.tabla-rollo) {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: var(--fuente-sistema);
+        }
+        .contenido table:not(.tabla-rollo) th {
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: .04em;
+            color: var(--color-texto-sec);
+            background: #f8fafc;
+            font-weight: 700;
+        }
+        .contenido table:not(.tabla-rollo) tbody tr {
+            transition: background 0.1s;
+        }
+        .contenido table:not(.tabla-rollo) tbody tr:hover {
+            background: #f8fafc;
         }
 
         /* ── Navbar ── */
