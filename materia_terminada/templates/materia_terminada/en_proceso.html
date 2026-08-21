@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Trabajo en Proceso{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    <span class="sep">›</span>
+    <a href="{% url 'lista_pt' %}">Producto Terminado</a>
+    <span class="sep">›</span>
+    <span class="current">Trabajo en Proceso</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contenedor {
+        background: white;
+        border-radius: var(--radio-lg, 14px);
+        padding: 28px;
+        box-shadow: var(--sombra-md, 0 2px 12px rgba(0,0,0,0.08));
+        margin-bottom: 24px;
+    }
+    .intro {
+        color: var(--color-texto-sec, #6b7280);
+        font-size: 14px;
+        margin: -8px 0 22px;
+        max-width: 760px;
+    }
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 8px;
+    }
+    .kpi {
+        border-radius: var(--radio-md, 10px);
+        padding: 18px 20px;
+        border-left: 5px solid var(--color-navy);
+        background: #f8fafc;
+    }
+    .kpi.disponible { border-color: var(--color-exito, #16a085); }
+    .kpi.proceso { border-color: var(--color-advertencia, #d97706); }
+    .kpi-label { font-size: 12px; color: var(--color-texto-sec, #6b7280); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: var(--color-texto, #1f2937); }
+    .kpi-sub { font-size: 12px; color: var(--color-texto-sec, #9ca3af); margin-top: 4px; }
+
+    .badge-estado-mini {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .badge-estado-mini.pendiente { background: #fef3c7; color: #92400e; }
+    .badge-estado-mini.proceso   { background: #dbeafe; color: #1e40af; }
+
+    .barra-consumo {
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 4px;
+        max-width: 140px;
+    }
+    .barra-consumo-relleno {
+        height: 100%;
+        background: var(--color-advertencia, #d97706);
+    }
+</style>
+
+<div class="contenedor">
+    <h1>Trabajo en Proceso</h1>
+    <p class="intro">
+        Las cintas que salen del proceso de slitter pueden volver a entrar a producción como origen de una
+        orden de fleje. Aquí se separan las que siguen <strong>disponibles</strong> para tomarse en una
+        orden nueva de las que ya están <strong>en proceso</strong> — asignadas a una orden de fleje que
+        todavía no termina — para no volver a usarlas ni darlas de salida por error mientras esa orden sigue activa.
+    </p>
+
+    <div class="kpi-grid">
+        <div class="kpi disponible">
+            <div class="kpi-label">Disponibles para el siguiente proceso</div>
+            <div class="kpi-value">{{ total_disponibles }} cinta{{ total_disponibles|pluralize }}</div>
+            <div class="kpi-sub">{{ peso_total_disponible|floatformat:1 }} kg listos para tomarse en una orden de fleje</div>
+        </div>
+        <div class="kpi proceso">
+            <div class="kpi-label">En proceso (ya asignadas)</div>
+            <div class="kpi-value">{{ total_en_proceso }} cinta{{ total_en_proceso|pluralize }}</div>
+            <div class="kpi-sub">{{ peso_total_en_proceso|floatformat:1 }} kg comprometidos con una orden en curso</div>
+        </div>
+    </div>
+</div>
+
+<div class="contenedor">
+    <h2 style="margin-top:0;">Disponibles para entrar a producción</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>No. PT</th>
+                <th>Corte origen</th>
+                <th>Cliente</th>
+                <th>Peso (kg)</th>
+                <th>Ingresó</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cinta in disponibles %}
+            <tr>
+                <td>{{ cinta.numero_pt }}</td>
+                <td>{{ cinta.detalle_slitter.folio_corte|default:"—" }}</td>
+                <td>{{ cinta.cliente|default:"—" }}</td>
+                <td>{{ cinta.peso_kg|floatformat:1 }}</td>
+                <td>{{ cinta.fecha_ingreso|date:"d/m/Y" }}</td>
+                <td><a href="{% url 'detalle_pt' cinta.id %}" class="btn btn-outline" style="padding:6px 12px;font-size:12px;">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No hay cintas disponibles en este momento — todas están en proceso o ya se consumieron.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="contenedor">
+    <h2 style="margin-top:0;">En proceso (ya asignadas a una orden de fleje)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>No. PT</th>
+                <th>Corte origen</th>
+                <th>Orden de fleje</th>
+                <th>Estado</th>
+                <th>Peso cinta (kg)</th>
+                <th>Consumido / Disponible</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas_en_proceso %}
+            <tr>
+                <td>{{ fila.cinta.numero_pt }}</td>
+                <td>{{ fila.cinta.detalle_slitter.folio_corte|default:"—" }}</td>
+                <td>
+                    {% if fila.orden %}
+                        {{ fila.orden.folio_orden|default:fila.orden.id }}
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if fila.orden %}
+                        <span class="badge-estado-mini {{ fila.orden.estado }}">{{ fila.orden.get_estado_display }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ fila.cinta.peso_kg|floatformat:1 }}</td>
+                <td>
+                    {{ fila.peso_consumido|floatformat:1 }} / {{ fila.peso_disponible|floatformat:1 }} kg
+                    {% if fila.cinta.peso_kg %}
+                    <div class="barra-consumo">
+                        <div class="barra-consumo-relleno" style="width: {% widthratio fila.peso_consumido fila.cinta.peso_kg 100 %}%;"></div>
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if fila.orden %}
+                    <a href="{% url 'detalle_orden' fila.orden.id %}" class="btn btn-outline" style="padding:6px 12px;font-size:12px;">Ver orden</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">No hay cintas en proceso en este momento.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

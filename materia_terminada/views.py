@@ -58,6 +58,49 @@ def detalle_pt(request, pt_id):
     })
 
 
+@login_required
+def en_proceso(request):
+    """'Trabajo en proceso' (WIP): responde directamente a la pregunta de
+    si un producto terminado puede volver a entrar a producción. Las
+    cintas (salida del slitter) sí pueden volver a entrar como origen de
+    una orden de fleje — esta vista separa cuáles siguen libres para
+    tomarse (disponibles) de cuáles ya fueron asignadas a una orden de
+    fleje que todavía no termina (en proceso), para que no se intente
+    volver a usar -o dar de salida- una cinta que ya está comprometida
+    con una orden en curso."""
+    base_qs = ProductoTerminado.objects.filter(
+        tipo_producto='cinta', estado='en_almacen'
+    ).select_related('cliente', 'detalle_slitter', 'detalle_slitter__orden', 'detalle_slitter__orden__mp')
+
+    disponibles = list(base_qs.exclude(ordenes_flejado__isnull=False).order_by('-fecha_ingreso'))
+
+    en_proceso_qs = base_qs.filter(
+        ordenes_flejado__estado__in=['pendiente', 'proceso']
+    ).distinct().order_by('-fecha_ingreso')
+
+    filas_en_proceso = []
+    for cinta in en_proceso_qs:
+        orden_activa = cinta.ordenes_flejado.filter(estado__in=['pendiente', 'proceso']).order_by('-fecha').first()
+        filas_en_proceso.append({
+            'cinta': cinta,
+            'orden': orden_activa,
+            'peso_consumido': cinta.peso_consumido_fleje,
+            'peso_disponible': cinta.peso_disponible_fleje,
+        })
+
+    peso_total_disponible = sum(float(c.peso_kg or 0) for c in disponibles)
+    peso_total_en_proceso = sum(float(c.peso_kg or 0) for c in en_proceso_qs)
+
+    return render(request, 'materia_terminada/en_proceso.html', {
+        'disponibles': disponibles,
+        'filas_en_proceso': filas_en_proceso,
+        'peso_total_disponible': peso_total_disponible,
+        'peso_total_en_proceso': peso_total_en_proceso,
+        'total_disponibles': len(disponibles),
+        'total_en_proceso': len(filas_en_proceso),
+    })
+
+
 @roles_required('Administrador', 'Supervisor', 'Coordinador')
 def cambiar_estado_pt(request, pt_id, nuevo_estado):
     estados_validos = ['en_almacen', 'vendido', 'embarcado']
@@ -88,8 +131,15 @@ def lista_salidas(request):
 
 @roles_required('Administrador', 'Supervisor', 'Coordinador')
 def crear_salida(request):
+    # Una cinta que ya fue tomada como origen de una orden de fleje que
+    # todavía no termina sigue con estado 'en_almacen' (ese campo solo pasa
+    # a 'embarcado' cuando esa orden se termina), así que sin este exclude
+    # se podría dar de salida por error una cinta que una orden de
+    # producción sigue necesitando. Ver también la vista "en_proceso".
     pt_disponibles = ProductoTerminado.objects.filter(
         estado='en_almacen'
+    ).exclude(
+        tipo_producto='cinta', ordenes_flejado__estado__in=['pendiente', 'proceso']
     ).select_related('cliente', 'orden').order_by('-fecha_ingreso')
 
     clientes = Cliente.objects.filter(activo=True).order_by('nombre')
@@ -116,7 +166,7 @@ def crear_salida(request):
             peso_total = 0
             for pt_id in pt_ids:
                 try:
-                    pt = ProductoTerminado.objects.get(pk=pt_id, estado='en_almacen')
+                    pt = pt_disponibles.get(pk=pt_id)
                     SalidaDetalle.objects.create(
                         salida=salida,
                         producto_terminado=pt,
