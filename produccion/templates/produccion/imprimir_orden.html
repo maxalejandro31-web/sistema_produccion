@@ -98,7 +98,7 @@
 <body>
 
 <div class="no-print">
-    <button onclick="window.print()" style="background:#1f2d3d;color:white;border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:14px;margin-right:10px;">🖨️ Imprimir</button>
+    <button onclick="window.print()" style="background:#1f2d3d;color:white;border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:14px;margin-right:10px;display:inline-flex;align-items:center;gap:7px;">{% include 'partials/icono.html' with nombre='impresora' tam=15 %} Imprimir</button>
     <a href="{% url 'detalle_orden' orden.id %}" style="color:#1f2d3d;font-size:13px;">← Volver al detalle</a>
 </div>
 

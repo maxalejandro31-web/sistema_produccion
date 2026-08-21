@@ -80,28 +80,32 @@
     <div class="alertas">
         {% if ordenes_rendimiento_bajo %}
         <div class="alerta alerta-roja">
-            📉 <strong>{{ ordenes_rendimiento_bajo }} orden{{ ordenes_rendimiento_bajo|pluralize:",es" }} con rendimiento anómalo</strong>
+            {% include 'partials/icono.html' with nombre='tendencia-baja' tam=18 %}
+            <strong>{{ ordenes_rendimiento_bajo }} orden{{ ordenes_rendimiento_bajo|pluralize:",es" }} con rendimiento anómalo</strong>
             — en los últimos 30 días, muy por debajo del promedio histórico para ese material y proceso.
             <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
         </div>
         {% endif %}
         {% if mp_cobro_activo %}
         <div class="alerta alerta-roja">
-            🔴 <strong>{{ mp_cobro_activo }} materia prima con cobro por estancia activo</strong>
+            {% include 'partials/icono.html' with nombre='alerta-circulo' tam=18 %}
+            <strong>{{ mp_cobro_activo }} materia prima con cobro por estancia activo</strong>
             — superaron los 30 días de estadía gratuita.
             <a href="{% url 'lista_mp' %}">Ver MP</a>
         </div>
         {% endif %}
         {% if mp_por_vencer %}
         <div class="alerta alerta-naranja">
-            ⚠️ <strong>{{ mp_por_vencer }} materia prima por vencer</strong>
+            {% include 'partials/icono.html' with nombre='alerta-triangulo' tam=18 %}
+            <strong>{{ mp_por_vencer }} materia prima por vencer</strong>
             — quedan 7 días o menos para que inicie el cobro.
             <a href="{% url 'lista_mp' %}">Ver MP</a>
         </div>
         {% endif %}
         {% if ordenes_urgentes %}
         <div class="alerta alerta-azul">
-            🚨 <strong>{{ ordenes_urgentes }} orden{{ ordenes_urgentes|pluralize:",es" }} urgente{{ ordenes_urgentes|pluralize:"s" }} pendiente{{ ordenes_urgentes|pluralize:"s" }}</strong>
+            {% include 'partials/icono.html' with nombre='alerta-octagono' tam=18 %}
+            <strong>{{ ordenes_urgentes }} orden{{ ordenes_urgentes|pluralize:",es" }} urgente{{ ordenes_urgentes|pluralize:"s" }} pendiente{{ ordenes_urgentes|pluralize:"s" }}</strong>
             — requieren atención inmediata.
             <a href="{% url 'lista_ordenes' %}">Ver órdenes</a>
         </div>

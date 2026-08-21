@@ -196,7 +196,13 @@
             border-radius: 7px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.12);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
+
+        /* ── Iconos SVG compartidos (ver partials/icono.html) ── */
+        .icono-svg { flex-shrink: 0; vertical-align: -3px; }
 
         /* ── Menús desplegables del navbar (agrupan pantallas por área:
            Materia Prima, Producción, Producto Terminado, Administración)
@@ -263,6 +269,8 @@
             cursor: pointer;
             position: relative;
             line-height: 1;
+            display: inline-flex;
+            align-items: center;
         }
         .bell-btn:hover { background: rgba(255,255,255,0.2); }
         .bell-badge {
@@ -421,7 +429,7 @@
         {{ config_empresa.nombre_empresa }}
     </div>
     <div class="links">
-        <span class="usuario">👤 {{ request.user.username }}</span>
+        <span class="usuario">{% include 'partials/icono.html' with nombre='usuario' tam=13 %} {{ request.user.username }}</span>
         <a href="{% url 'inicio' %}">Dashboard</a>
 
         {# Materia Prima: Captura/Lista/Salidas solo exigen sesión iniciada;
@@ -473,7 +481,7 @@
 
         <div class="bell-wrap" id="bellWrap">
             <button class="bell-btn" onclick="toggleNotifs(event)" title="Notificaciones">
-                🔔
+                {% include 'partials/icono.html' with nombre='campana' tam=17 %}
                 {% if alertas_count > 0 %}
                 <span class="bell-badge">{{ alertas_count }}</span>
                 {% endif %}
@@ -502,7 +510,10 @@
 <div class="messages-wrap">
     {% for message in messages %}
     <div class="msg {{ message.tags }}">
-        {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+        {% if message.tags == 'success' %}{% include 'partials/icono.html' with nombre='check' tam=18 %}
+        {% elif message.tags == 'error' %}{% include 'partials/icono.html' with nombre='x' tam=18 %}
+        {% elif message.tags == 'warning' %}{% include 'partials/icono.html' with nombre='alerta-triangulo' tam=18 %}
+        {% else %}{% include 'partials/icono.html' with nombre='info' tam=18 %}{% endif %}
         {{ message }}
     </div>
     {% endfor %}

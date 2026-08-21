@@ -1,0 +1,58 @@
+{% comment %}
+Set de iconos SVG compartido, para dejar de usar emojis sueltos (🔔✅❌⚠️
+etc.) en el sistema. Uso:
+
+    {% include 'partials/icono.html' with nombre='campana' tam=18 %}
+
+El color del icono lo hereda de la propiedad CSS "color" del elemento que
+lo contiene (usan stroke="currentColor"), así que para cambiar el color
+solo hay que envolverlo en algo con "color: ..." o una clase que lo fije.
+{% endcomment %}
+<svg class="icono-svg {{ clase }}" width="{{ tam|default:16 }}" height="{{ tam|default:16 }}"
+     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{% if nombre == 'campana' %}
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+{% elif nombre == 'check' %}
+    <circle cx="12" cy="12" r="9"/>
+    <path d="m8.5 12.5 2.5 2.5 5-5"/>
+{% elif nombre == 'x' %}
+    <circle cx="12" cy="12" r="9"/>
+    <path d="m9 9 6 6M15 9l-6 6"/>
+{% elif nombre == 'alerta-triangulo' %}
+    <path d="M12 3 2 20h20L12 3Z"/>
+    <path d="M12 10v4"/>
+    <path d="M12 17.5h.01"/>
+{% elif nombre == 'info' %}
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 11v5"/>
+    <path d="M12 7.5h.01"/>
+{% elif nombre == 'usuario' %}
+    <circle cx="12" cy="8" r="4"/>
+    <path d="M4 20c1.6-3.6 4.8-5.5 8-5.5s6.4 1.9 8 5.5"/>
+{% elif nombre == 'tendencia-baja' %}
+    <path d="m3 7 7 7 4-4 7 7"/>
+    <path d="M15 17h6v-6"/>
+{% elif nombre == 'alerta-circulo' %}
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 8v5"/>
+    <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+{% elif nombre == 'alerta-octagono' %}
+    <path d="M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86L7.86 2Z"/>
+    <path d="M12 8v5"/>
+    <path d="M12 16h.01"/>
+{% elif nombre == 'impresora' %}
+    <path d="M6 9V3h12v6"/>
+    <rect x="4" y="9" width="16" height="8" rx="1.5"/>
+    <path d="M6 14h12v7H6z"/>
+{% elif nombre == 'descarga' %}
+    <path d="M12 3v12"/>
+    <path d="m6.5 10.5 5.5 5.5 5.5-5.5"/>
+    <path d="M5 21h14"/>
+{% elif nombre == 'reporte' %}
+    <path d="M7 3h7l5 5v13H7Z"/>
+    <path d="M14 3v5h5"/>
+    <path d="M9.5 12.5h5M9.5 15.5h5M9.5 9.5h2"/>
+{% endif %}
+</svg>

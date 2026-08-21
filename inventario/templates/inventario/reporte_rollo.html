@@ -64,7 +64,7 @@
 
     <div class="acciones-rollo">
         <a href="{% url 'detalle_mp' mp.id %}" class="btn btn-secundario">← Volver al detalle de la MP</a>
-        <a href="{% url 'reporte_rollo_excel' mp.id %}" class="btn btn-exito">⬇ Exportar a Excel</a>
+        <a href="{% url 'reporte_rollo_excel' mp.id %}" class="btn btn-exito">{% include 'partials/icono.html' with nombre='descarga' tam=15 %} Exportar a Excel</a>
     </div>
 
     <div class="rollo-formato">

@@ -521,8 +521,8 @@
     <div class="acciones">
         <a href="{% url 'lista_mp' %}" class="btn btn-secundario">Volver a la lista</a>
         <a href="{% url 'editar_mp' mp.id %}" class="btn btn-primario">Editar MP</a>
-        <a href="{% url 'reporte_rollo' mp.id %}" class="btn btn-outline">📋 Reporte del rollo</a>
-        <a href="{% url 'reporte_rollo_excel' mp.id %}" class="btn btn-exito">⬇ Exportar a Excel</a>
+        <a href="{% url 'reporte_rollo' mp.id %}" class="btn btn-outline">{% include 'partials/icono.html' with nombre='reporte' tam=15 %} Reporte del rollo</a>
+        <a href="{% url 'reporte_rollo_excel' mp.id %}" class="btn btn-exito">{% include 'partials/icono.html' with nombre='descarga' tam=15 %} Exportar a Excel</a>
         {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen or es_coordinador %}
         <a href="{% url 'dar_salida_mp' mp.id %}" class="btn btn-peligro">Dar Salida</a>
         <a href="{% url 'registrar_movimiento' mp.id %}" class="btn btn-exito">Registrar Movimiento</a>
