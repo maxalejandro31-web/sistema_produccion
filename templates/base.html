@@ -198,6 +198,55 @@
             border: 1px solid rgba(255,255,255,0.12);
         }
 
+        /* ── Menús desplegables del navbar (agrupan pantallas por área:
+           Materia Prima, Producción, Producto Terminado, Administración)
+           para que la barra de navegación no se vea como una fila plana
+           de 13 enlaces sueltos ── */
+        .navdrop-wrap { position: relative; display: inline-flex; }
+        .navdrop-btn {
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: white;
+            padding: 6px 11px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.15s;
+        }
+        .navdrop-btn:hover { background: rgba(255,255,255,0.2); }
+        .navdrop-btn.open { background: rgba(255,255,255,0.22); }
+        .navdrop-caret { font-size: 9px; opacity: 0.75; transition: transform 0.15s; }
+        .navdrop-btn.open .navdrop-caret { transform: rotate(180deg); }
+        .navdrop-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            min-width: 190px;
+            z-index: 200;
+            overflow: hidden;
+            padding: 6px;
+        }
+        .navdrop-panel.open { display: block; }
+        .navdrop-panel a {
+            display: block;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #1f2d3d;
+            text-decoration: none;
+            background: none;
+            white-space: nowrap;
+        }
+        .navdrop-panel a:hover { background: #f1f5f9; }
+
         /* ── Campana notificaciones ── */
         .bell-wrap {
             position: relative;
@@ -375,30 +424,51 @@
         <span class="usuario">👤 {{ request.user.username }}</span>
         <a href="{% url 'inicio' %}">Dashboard</a>
 
-        {# Captura MP / Lista MP / Salidas MP: sus vistas solo exigen sesión iniciada #}
-        <a href="{% url 'captura_mp' %}">Captura MP</a>
-        <a href="{% url 'lista_mp' %}">Lista MP</a>
-        <a href="{% url 'lista_salidas_mp' %}">Salidas MP</a>
-
-        {% if es_admin_total or es_administrador or es_supervisor or es_coordinador %}
-            <a href="{% url 'lista_clientes' %}">Clientes</a>
-        {% endif %}
+        {# Materia Prima: Captura/Lista/Salidas solo exigen sesión iniciada;
+           Clientes se agrega adentro si el rol lo permite. #}
+        <div class="navdrop-wrap" data-navdrop>
+            <button type="button" class="navdrop-btn" data-navdrop-btn>Materia Prima <span class="navdrop-caret">▾</span></button>
+            <div class="navdrop-panel" data-navdrop-panel>
+                <a href="{% url 'captura_mp' %}">Captura MP</a>
+                <a href="{% url 'lista_mp' %}">Lista MP</a>
+                <a href="{% url 'lista_salidas_mp' %}">Salidas MP</a>
+                {% if es_admin_total or es_administrador or es_supervisor or es_coordinador %}
+                <a href="{% url 'lista_clientes' %}">Clientes</a>
+                {% endif %}
+            </div>
+        </div>
 
         {% if es_admin_total or es_administrador or es_supervisor or es_operador or es_capturista or es_coordinador %}
-            <a href="{% url 'captura_orden' %}">Captura Orden</a>
-            <a href="{% url 'lista_ordenes' %}">Órdenes</a>
+        <div class="navdrop-wrap" data-navdrop>
+            <button type="button" class="navdrop-btn" data-navdrop-btn>Producción <span class="navdrop-caret">▾</span></button>
+            <div class="navdrop-panel" data-navdrop-panel>
+                <a href="{% url 'captura_orden' %}">Captura Orden</a>
+                <a href="{% url 'lista_ordenes' %}">Órdenes</a>
+            </div>
+        </div>
         {% endif %}
 
-        {# Producto Terminado / Salidas / Reportes: sus vistas solo exigen sesión iniciada #}
-        <a href="{% url 'lista_pt' %}">Producto Terminado</a>
-        <a href="{% url 'lista_salidas' %}">Salidas</a>
+        {# Producto Terminado / Salidas: sus vistas solo exigen sesión iniciada #}
+        <div class="navdrop-wrap" data-navdrop>
+            <button type="button" class="navdrop-btn" data-navdrop-btn>Producto Terminado <span class="navdrop-caret">▾</span></button>
+            <div class="navdrop-panel" data-navdrop-panel>
+                <a href="{% url 'lista_pt' %}">Producto Terminado</a>
+                <a href="{% url 'lista_salidas' %}">Salidas</a>
+            </div>
+        </div>
+
         <a href="{% url 'reportes_index' %}">Reportes</a>
         <a href="{% url 'calidad_index' %}">Calidad</a>
 
         {% if es_admin_total %}
-            <a href="{% url 'lista_usuarios' %}">Usuarios</a>
-            <a href="{% url 'historial_general' %}">Historial</a>
-            <a href="{% url 'configuracion_empresa' %}">Configuración</a>
+        <div class="navdrop-wrap" data-navdrop>
+            <button type="button" class="navdrop-btn" data-navdrop-btn>Administración <span class="navdrop-caret">▾</span></button>
+            <div class="navdrop-panel" data-navdrop-panel>
+                <a href="{% url 'lista_usuarios' %}">Usuarios</a>
+                <a href="{% url 'historial_general' %}">Historial</a>
+                <a href="{% url 'configuracion_empresa' %}">Configuración</a>
+            </div>
+        </div>
         {% endif %}
 
         <div class="bell-wrap" id="bellWrap">
@@ -455,14 +525,42 @@
 
 {% block extra_js %}{% endblock %}
 <script>
+function cerrarMenusNav(exceptoPanel) {
+    document.querySelectorAll('.navdrop-panel.open').forEach(function (p) {
+        if (p !== exceptoPanel) p.classList.remove('open');
+    });
+    document.querySelectorAll('.navdrop-btn.open').forEach(function (b) {
+        if (!exceptoPanel || b.nextElementSibling !== exceptoPanel) b.classList.remove('open');
+    });
+    const notifs = document.getElementById('notifsPanel');
+    if (notifs && notifs !== exceptoPanel) notifs.classList.remove('open');
+}
+
 function toggleNotifs(e) {
     e.stopPropagation();
-    document.getElementById('notifsPanel').classList.toggle('open');
+    const panel = document.getElementById('notifsPanel');
+    const abrir = !panel.classList.contains('open');
+    cerrarMenusNav(null);
+    if (abrir) panel.classList.add('open');
 }
-document.addEventListener('click', function(e) {
-    const wrap = document.getElementById('bellWrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('notifsPanel').classList.remove('open');
+
+document.querySelectorAll('[data-navdrop]').forEach(function (wrap) {
+    const btn = wrap.querySelector('[data-navdrop-btn]');
+    const panel = wrap.querySelector('[data-navdrop-panel]');
+    btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const abrir = !panel.classList.contains('open');
+        cerrarMenusNav(abrir ? panel : null);
+        panel.classList.toggle('open', abrir);
+        btn.classList.toggle('open', abrir);
+    });
+});
+
+document.addEventListener('click', function (e) {
+    const dentroDropdown = e.target.closest('[data-navdrop]');
+    const dentroCampana = document.getElementById('bellWrap') && document.getElementById('bellWrap').contains(e.target);
+    if (!dentroDropdown && !dentroCampana) {
+        cerrarMenusNav(null);
     }
 });
 </script>
