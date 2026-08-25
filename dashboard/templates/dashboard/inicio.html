@@ -157,9 +157,9 @@
             </div>
         </div>
         <div class="panel">
-            <h2>Órdenes por Proceso</h2>
+            <h2>Resumen de {{ nombre_mes_actual }}</h2>
             <div class="chart-wrap">
-                <canvas id="chartProceso"></canvas>
+                <canvas id="chartMes"></canvas>
             </div>
         </div>
     </div>
@@ -243,7 +243,7 @@
 <script>
 const mpData       = {{ mp_chart|safe }};
 const ordenesData  = {{ ordenes_estado_chart|safe }};
-const procesoData  = {{ ordenes_proceso_chart|safe }};
+const resumenMesData = {{ resumen_mes_chart|safe }};
 const semanaData   = {{ ordenes_semana_chart|safe }};
 
 const donutOpts = (data) => ({
@@ -261,17 +261,20 @@ const donutOpts = (data) => ({
 new Chart(document.getElementById('chartMP'),      donutOpts(mpData));
 new Chart(document.getElementById('chartOrdenes'), donutOpts(ordenesData));
 
-new Chart(document.getElementById('chartProceso'), {
+new Chart(document.getElementById('chartMes'), {
     type: 'bar',
     data: {
-        labels: procesoData.labels,
-        datasets: [{ label: 'Órdenes', data: procesoData.data,
-                     backgroundColor: ['#2980b9','#27ae60','#f39c12','#8e44ad'], borderRadius: 6 }]
+        labels: resumenMesData.labels,
+        datasets: [{ label: 'kg', data: resumenMesData.data,
+                     backgroundColor: resumenMesData.colors, borderRadius: 6 }]
     },
     options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.formattedValue} kg` } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: (v) => `${v} kg` } } }
     }
 });
 

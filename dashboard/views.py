@@ -12,12 +12,13 @@ from django.http import HttpResponse
 from django.core.management import call_command
 from django.conf import settings
 from django.core.paginator import Paginator
-from django.db.models import Sum, Count
+from django.db.models import Sum
 from django.utils import timezone
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
 from produccion.analitica import anotar_anomalias
+from materia_terminada.models import Salida
 from .models import ConfiguracionEmpresa, HistorialCambio
 from .forms import ConfiguracionEmpresaForm
 
@@ -173,20 +174,35 @@ def inicio(request):
         'colors': ['#f39c12', '#2980b9', '#27ae60'],
     })
 
-    LABELS_PROCESO = {
-        'slitter': 'Slitter',
-        'corte_liso': 'Corte Liso',
-        'mini_slitter': 'Mini Slitter',
-        'fleje': 'Fleje',
+    # Resumen del mes en curso: MP que entró, kg procesados (producidos) y
+    # kg que salieron a cliente/centro de servicio, todo en el mismo mes —
+    # da una lectura rápida del flujo real de la planta mes a mes, en vez
+    # de solo el conteo acumulado histórico de órdenes por tipo de proceso.
+    MESES_ES = {
+        1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril', 5: 'mayo', 6: 'junio',
+        7: 'julio', 8: 'agosto', 9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre',
     }
-    por_proceso = list(
-        OrdenProduccion.objects.values('tipo_proceso')
-        .annotate(total=Count('id'))
-        .order_by('-total')
-    )
-    ordenes_proceso_chart = json.dumps({
-        'labels': [LABELS_PROCESO.get(x['tipo_proceso'], x['tipo_proceso']) for x in por_proceso],
-        'data':   [x['total'] for x in por_proceso],
+    nombre_mes_actual = f'{MESES_ES[hoy.month]} {hoy.year}'
+
+    agg_mp_mes = MateriaPrima.objects.filter(
+        fecha_entrada__year=hoy.year, fecha_entrada__month=hoy.month,
+    ).aggregate(total=Sum('peso'))
+    mp_ingresada_mes = round(float(agg_mp_mes['total'] or 0), 1)
+
+    agg_procesado_mes = OrdenProduccion.objects.filter(
+        fecha__year=hoy.year, fecha__month=hoy.month,
+    ).aggregate(total=Sum('peso_producido'))
+    kg_procesados_mes = round(float(agg_procesado_mes['total'] or 0), 1)
+
+    agg_salidas_mes = Salida.objects.filter(
+        fecha_salida__year=hoy.year, fecha_salida__month=hoy.month,
+    ).aggregate(total=Sum('peso_total'))
+    kg_salidas_mes = round(float(agg_salidas_mes['total'] or 0), 1)
+
+    resumen_mes_chart = json.dumps({
+        'labels': ['MP Ingresada', 'Procesado', 'Salidas'],
+        'data':   [mp_ingresada_mes, kg_procesados_mes, kg_salidas_mes],
+        'colors': ['#2980b9', '#8e44ad', '#27ae60'],
     })
 
     dias_labels, dias_data = [], []
@@ -222,7 +238,8 @@ def inicio(request):
         'ordenes_rendimiento_bajo': ordenes_rendimiento_bajo,
         'mp_chart': mp_chart,
         'ordenes_estado_chart': ordenes_estado_chart,
-        'ordenes_proceso_chart': ordenes_proceso_chart,
+        'resumen_mes_chart': resumen_mes_chart,
+        'nombre_mes_actual': nombre_mes_actual,
         'ordenes_semana_chart': ordenes_semana_chart,
     })
 
