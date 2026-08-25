@@ -143,17 +143,18 @@
     </div>
 
     <!-- Gráficas -->
-    <div class="grid3">
+    <div class="grid2">
         <div class="panel">
-            <h2>Estado Materia Prima</h2>
+            <h2>
+                Rendimiento mensual de la planta
+                {% if rendimiento_mes_actual is not None %}
+                <span style="float:right;font-size:13px;font-weight:normal;color:#6b7280;">
+                    Este mes: <strong style="color:#1f2d3d;">{{ rendimiento_mes_actual }}%</strong>
+                </span>
+                {% endif %}
+            </h2>
             <div class="chart-wrap">
-                <canvas id="chartMP"></canvas>
-            </div>
-        </div>
-        <div class="panel">
-            <h2>Estado Órdenes</h2>
-            <div class="chart-wrap">
-                <canvas id="chartOrdenes"></canvas>
+                <canvas id="chartRendimiento"></canvas>
             </div>
         </div>
         <div class="panel">
@@ -241,25 +242,30 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const mpData       = {{ mp_chart|safe }};
-const ordenesData  = {{ ordenes_estado_chart|safe }};
 const resumenMesData = {{ resumen_mes_chart|safe }};
+const rendimientoData = {{ rendimiento_mensual_chart|safe }};
 const semanaData   = {{ ordenes_semana_chart|safe }};
 
-const donutOpts = (data) => ({
-    type: 'doughnut',
+new Chart(document.getElementById('chartRendimiento'), {
+    type: 'line',
     data: {
-        labels: data.labels,
-        datasets: [{ data: data.data, backgroundColor: data.colors, borderWidth: 2 }]
+        labels: rendimientoData.labels,
+        datasets: [{
+            label: 'Rendimiento %', data: rendimientoData.data,
+            borderColor: '#8e44ad', backgroundColor: 'rgba(142,68,173,0.1)',
+            tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#8e44ad',
+            spanGaps: true,
+        }]
     },
     options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } } }
+        plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => ctx.parsed.y === null ? 'Sin órdenes ese mes' : `${ctx.parsed.y}% de rendimiento` } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: (v) => `${v}%` } } }
     }
 });
-
-new Chart(document.getElementById('chartMP'),      donutOpts(mpData));
-new Chart(document.getElementById('chartOrdenes'), donutOpts(ordenesData));
 
 new Chart(document.getElementById('chartMes'), {
     type: 'bar',

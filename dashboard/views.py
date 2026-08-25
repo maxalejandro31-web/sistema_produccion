@@ -89,10 +89,6 @@ def cambiar_password(request):
 
 @login_required
 def inicio(request):
-    mp_disponible = MateriaPrima.objects.filter(estado='Disponible').count()
-    mp_proceso    = MateriaPrima.objects.filter(estado='En Proceso').count()
-    mp_terminada  = MateriaPrima.objects.filter(estado='Terminado').count()
-
     agg_mp_propia = MateriaPrima.objects.filter(
         cliente__nombre='MAQUILAS Y SERVICIOS JC'
     ).aggregate(total_kg=Sum('peso_restante'))
@@ -111,7 +107,6 @@ def inicio(request):
     total_ordenes      = OrdenProduccion.objects.count()
     ordenes_pendientes = OrdenProduccion.objects.filter(estado='pendiente').count()
     ordenes_proceso    = OrdenProduccion.objects.filter(estado='proceso').count()
-    ordenes_terminadas = OrdenProduccion.objects.filter(estado='terminado').count()
 
     agg = OrdenProduccion.objects.aggregate(
         consumido=Sum('peso_usado'),
@@ -162,17 +157,6 @@ def inicio(request):
     )
 
     # ── Datos para gráficas ───────────────────────────────────────────────────
-    mp_chart = json.dumps({
-        'labels': ['Disponible', 'En Proceso', 'Terminado'],
-        'data':   [mp_disponible, mp_proceso, mp_terminada],
-        'colors': ['#27ae60', '#2980b9', '#7f8c8d'],
-    })
-
-    ordenes_estado_chart = json.dumps({
-        'labels': ['Pendientes', 'En Proceso', 'Terminadas'],
-        'data':   [ordenes_pendientes, ordenes_proceso, ordenes_terminadas],
-        'colors': ['#f39c12', '#2980b9', '#27ae60'],
-    })
 
     # Resumen del mes en curso: MP que entró, kg procesados (producidos) y
     # kg que salieron a cliente/centro de servicio, todo en el mismo mes —
@@ -205,6 +189,38 @@ def inicio(request):
         'colors': ['#2980b9', '#8e44ad', '#27ae60'],
     })
 
+    # Rendimiento de la planta por mes (kg producido / kg usado × 100),
+    # últimos 6 meses incluyendo el actual — para ver si el aprovechamiento
+    # de la materia prima está mejorando o empeorando mes a mes, no solo
+    # el dato aislado de hoy.
+    MESES_ABR = {
+        1: 'ene', 2: 'feb', 3: 'mar', 4: 'abr', 5: 'may', 6: 'jun',
+        7: 'jul', 8: 'ago', 9: 'sep', 10: 'oct', 11: 'nov', 12: 'dic',
+    }
+
+    def _mes_atras(fecha, n):
+        mes = fecha.month - n
+        anio = fecha.year
+        while mes <= 0:
+            mes += 12
+            anio -= 1
+        return anio, mes
+
+    rendimiento_labels, rendimiento_data = [], []
+    for i in range(5, -1, -1):
+        anio_i, mes_i = _mes_atras(hoy, i)
+        agg_mes = OrdenProduccion.objects.filter(
+            fecha__year=anio_i, fecha__month=mes_i,
+        ).aggregate(usado=Sum('peso_usado'), producido=Sum('peso_producido'))
+        usado_mes = float(agg_mes['usado'] or 0)
+        producido_mes = float(agg_mes['producido'] or 0)
+        pct_mes = round((producido_mes / usado_mes) * 100, 1) if usado_mes > 0 else None
+        rendimiento_labels.append(f'{MESES_ABR[mes_i]} {anio_i}')
+        rendimiento_data.append(pct_mes)
+
+    rendimiento_mensual_chart = json.dumps({'labels': rendimiento_labels, 'data': rendimiento_data})
+    rendimiento_mes_actual = rendimiento_data[-1]
+
     dias_labels, dias_data = [], []
     for i in range(6, -1, -1):
         dia = hoy - datetime.timedelta(days=i)
@@ -220,13 +236,9 @@ def inicio(request):
         'mp_proceso_propia': mp_proceso_propia,
         'mp_disponible_cliente': mp_disponible_cliente,
         'mp_proceso_cliente': mp_proceso_cliente,
-        'mp_disponible': mp_disponible,
-        'mp_proceso': mp_proceso,
-        'mp_terminada': mp_terminada,
         'total_ordenes': total_ordenes,
         'ordenes_pendientes': ordenes_pendientes,
         'ordenes_proceso': ordenes_proceso,
-        'ordenes_terminadas': ordenes_terminadas,
         'peso_consumido': peso_consumido,
         'peso_producido': peso_producido,
         'scrap_total': scrap_total,
@@ -236,10 +248,10 @@ def inicio(request):
         'mp_por_vencer': mp_por_vencer,
         'ordenes_urgentes': ordenes_urgentes,
         'ordenes_rendimiento_bajo': ordenes_rendimiento_bajo,
-        'mp_chart': mp_chart,
-        'ordenes_estado_chart': ordenes_estado_chart,
         'resumen_mes_chart': resumen_mes_chart,
         'nombre_mes_actual': nombre_mes_actual,
+        'rendimiento_mensual_chart': rendimiento_mensual_chart,
+        'rendimiento_mes_actual': rendimiento_mes_actual,
         'ordenes_semana_chart': ordenes_semana_chart,
     })
 
