@@ -309,11 +309,11 @@ def reporte_rollo_excel(request, mp_id):
     fila += 1
 
     ws.cell(row=fila, column=1, value='PESO DE ROLLO').font = negrita
-    ws.cell(row=fila, column=2, value='CALIBRE').font = negrita
+    ws.cell(row=fila, column=2, value='ESPESOR (MILS)').font = negrita
     ws.cell(row=fila, column=3, value='ANCHO').font = negrita
     fila += 1
     ws.cell(row=fila, column=1, value=float(mp.peso) if mp.peso else None)
-    ws.cell(row=fila, column=2, value=str(mp.espesor_valor) if mp.espesor_valor else '')
+    ws.cell(row=fila, column=2, value=float(mp.espesor_mils) if mp.espesor_mils else None)
     ws.cell(row=fila, column=3, value=float(mp.ancho) if mp.ancho else None)
     fila += 2
 
@@ -606,6 +606,7 @@ def api_datos_mp(request, mp_id):
         'material': mp.material or '',
         'espesor_valor': str(mp.espesor_valor) if mp.espesor_valor else '',
         'unidad_espesor': mp.unidad_espesor or '',
+        'espesor_mils': str(mp.espesor_mils) if mp.espesor_mils else '',
         'ancho': str(mp.ancho) if mp.ancho else '',
         'peso_restante': str(mp.peso_restante) if mp.peso_restante else '',
         'ubicacion': mp.ubicacion or '',

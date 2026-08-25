@@ -73,12 +73,12 @@
             <tr><td colspan="5" class="rollo-subtitulo">{{ mp.numero_mp }}</td></tr>
             <tr>
                 <th colspan="2">PESO DE ROLLO</th>
-                <th>CALIBRE</th>
+                <th>ESPESOR (MILS)</th>
                 <th colspan="2">ANCHO</th>
             </tr>
             <tr>
                 <td colspan="2">{{ mp.peso|default:"—" }}</td>
-                <td>{{ mp.espesor_valor|default:"—" }}</td>
+                <td>{{ mp.espesor_mils|default:"—" }}</td>
                 <td colspan="2">{{ mp.ancho|default:"—" }}</td>
             </tr>
         </table>

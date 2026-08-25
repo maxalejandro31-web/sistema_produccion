@@ -258,7 +258,12 @@
         <div class="campo">
             <label>Espesor</label>
             <div class="valor">
-                {{ mp.espesor_valor|default_if_none:"-" }} {{ mp.unidad_espesor|default:"" }}
+                {% if mp.espesor_mils %}
+                    {{ mp.espesor_mils }} mils
+                    <span style="color:#9ca3af;font-size:12px;">({{ mp.espesor_mm }} mm)</span>
+                {% else %}
+                    -
+                {% endif %}
             </div>
         </div>
 

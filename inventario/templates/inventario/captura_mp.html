@@ -239,7 +239,11 @@
             <h3 class="seccion-form-titulo">Dimensiones</h3>
             <div class="grid">
                 <div class="convertidor">
-                    <h3>Convertidor de espesor (calibre ↔ mm)</h3>
+                    <h3>Convertidor de espesor (calibre / mm → milésimas de pulgada)</h3>
+                    <p style="font-size:12px;color:#6b7280;margin:-6px 0 12px;">
+                        Si la especificación del proveedor viene en calibre o en milímetros, conviértela
+                        aquí — el resultado en milésimas de pulgada (mils) se coloca solo en el formulario real.
+                    </p>
 
                     <div class="convertidor-grid">
                         <div class="campo">
@@ -254,8 +258,8 @@
                     </div>
 
                     <div class="convertidor-botones">
-                        <button type="button" id="btn_calibre_a_mm">Convertir calibre → mm</button>
-                        <button type="button" id="btn_mm_a_calibre">Convertir mm → calibre</button>
+                        <button type="button" id="btn_calibre_a_mm">Convertir calibre → mils</button>
+                        <button type="button" id="btn_mm_a_calibre">Convertir mm → mils</button>
                         <button type="button" id="btn_limpiar_convertidor">Limpiar convertidor</button>
                     </div>
 
@@ -265,6 +269,9 @@
                 <div class="campo">
                     <label for="{{ form.espesor_valor.id_for_label }}">{{ form.espesor_valor.label }}</label>
                     {{ form.espesor_valor }}
+                    <p style="font-size:12px;color:#9ca3af;margin:4px 0 0;">
+                        En milésimas de pulgada (mils). Ejemplo: .018″ = 18 mils ≈ 0.457 mm.
+                    </p>
                     {% if form.espesor_valor.errors %}<small class="error-texto">{{ form.espesor_valor.errors }}</small>{% endif %}
                 </div>
 
@@ -411,6 +418,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return mejorCalibre;
     }
 
+    function mmAMils(mm) {
+        return mm / 25.4 * 1000;
+    }
+
     btnCalibreMm.addEventListener('click', function () {
         const calibre = parseInt(calibreInput.value);
 
@@ -420,17 +431,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const mm = gaugeToMm[calibre];
+        const mils = mmAMils(mm);
         mmInput.value = mm.toFixed(3);
 
         if (espesorValor) {
-            espesorValor.value = mm.toFixed(3);
+            espesorValor.value = mils.toFixed(1);
         }
 
         if (unidadEspesor) {
-            unidadEspesor.value = 'mm';
+            unidadEspesor.value = 'mils';
         }
 
-        mostrarResultado(`Calibre ${calibre} = ${mm.toFixed(3)} mm. Ya se colocó en el formulario real.`);
+        mostrarResultado(`Calibre ${calibre} = ${mm.toFixed(3)} mm = ${mils.toFixed(1)} mils. Ya se colocó en el formulario real.`);
     });
 
     btnMmCalibre.addEventListener('click', function () {
@@ -441,24 +453,22 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const calibre = buscarCalibreMasCercano(mm);
-
-        if (!calibre) {
-            mostrarResultado('No se pudo encontrar un calibre cercano.');
-            return;
+        const mils = mmAMils(mm);
+        const calibreCercano = buscarCalibreMasCercano(mm);
+        if (calibreCercano) {
+            calibreInput.value = calibreCercano;
         }
 
-        calibreInput.value = calibre;
-
         if (espesorValor) {
-            espesorValor.value = calibre;
+            espesorValor.value = mils.toFixed(1);
         }
 
         if (unidadEspesor) {
-            unidadEspesor.value = 'calibre';
+            unidadEspesor.value = 'mils';
         }
 
-        mostrarResultado(`${mm.toFixed(3)} mm ≈ calibre ${calibre}. Ya se colocó en el formulario real.`);
+        const refCalibre = calibreCercano ? ` (≈ calibre ${calibreCercano})` : '';
+        mostrarResultado(`${mm.toFixed(3)} mm = ${mils.toFixed(1)} mils${refCalibre}. Ya se colocó en el formulario real.`);
     });
 
     btnLimpiar.addEventListener('click', function () {

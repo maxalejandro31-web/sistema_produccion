@@ -1348,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 pesoDisponible = data.peso_restante ? parseFloat(data.peso_restante) : null;
                 const partes = [];
                 if (data.material) partes.push(`<strong>Material:</strong> ${data.material}`);
-                if (data.espesor_valor) partes.push(`<strong>Espesor:</strong> ${data.espesor_valor} ${data.unidad_espesor}`);
+                if (data.espesor_mils) partes.push(`<strong>Espesor:</strong> ${data.espesor_mils} mils`);
                 if (data.ancho) partes.push(`<strong>Ancho:</strong> ${data.ancho} mm`);
                 if (data.peso_restante) partes.push(`<strong>Peso disponible:</strong> <span style="font-weight:700;color:#065f46;">${data.peso_restante} kg</span>`);
                 if (data.proximo_no_corte && data.proximo_no_corte > 1) {

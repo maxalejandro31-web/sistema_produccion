@@ -43,6 +43,7 @@ class MateriaPrima(models.Model):
     ]
 
     UNIDAD_ESPESOR_CHOICES = [
+        ('mils', 'Milésimas de pulgada (mils)'),
         ('mm', 'mm'),
         ('pulg', 'pulg'),
         ('calibre', 'calibre'),
@@ -62,7 +63,7 @@ class MateriaPrima(models.Model):
     acabado = models.CharField(max_length=100, blank=True, null=True)
 
     espesor_valor = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
-    unidad_espesor = models.CharField(max_length=20, choices=UNIDAD_ESPESOR_CHOICES, default='mm', blank=True, null=True)
+    unidad_espesor = models.CharField(max_length=20, choices=UNIDAD_ESPESOR_CHOICES, default='mils', blank=True, null=True)
 
     ancho = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     largo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -94,6 +95,9 @@ class MateriaPrima(models.Model):
             return round(float(self.espesor_valor), 4)
         elif self.unidad_espesor == 'pulg':
             return round(float(self.espesor_valor) * 25.4, 4)
+        elif self.unidad_espesor == 'mils':
+            # 1 mil = 0.001 pulg = 0.0254 mm
+            return round(float(self.espesor_valor) * 0.0254, 4)
         elif self.unidad_espesor == 'calibre':
             try:
                 return round(0.1495 * (92 ** ((36 - float(self.espesor_valor)) / 39)), 4)
@@ -107,6 +111,17 @@ class MateriaPrima(models.Model):
         if mm is None:
             return None
         return round(mm / 25.4, 4)
+
+    @property
+    def espesor_mils(self):
+        """Espesor en milésimas de pulgada (mils), calculado siempre a partir
+        de espesor_mm — así funciona igual sin importar en qué unidad se
+        haya capturado originalmente el registro (mm, pulgadas, calibre o
+        mils), sin necesidad de tocar los datos ya guardados."""
+        mm = self.espesor_mm
+        if mm is None:
+            return None
+        return round(mm / 25.4 * 1000, 1)
 
     @property
     def calibre(self):

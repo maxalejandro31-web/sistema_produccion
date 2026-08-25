@@ -118,7 +118,7 @@ def reporte_inventario_mp(request):
 
     headers = [
         "N° MP", "Tipo", "Cliente", "Origen", "Lote", "Código", "Descripción",
-        "Material", "Grado", "Acabado", "Espesor", "Unidad Espesor",
+        "Material", "Grado", "Acabado", "Espesor (mils)", "Espesor Original", "Unidad Original",
         "Ancho (mm)", "Largo (mm)", "Peso Inicial (kg)", "Peso Restante (kg)",
         "Diam. Interior", "Diam. Exterior",
         "Proveedor", "Ubicación", "Estado", "Fecha Entrada",
@@ -146,6 +146,7 @@ def reporte_inventario_mp(request):
             _fmt(mp.material),
             _fmt(mp.grado),
             _fmt(mp.acabado),
+            float(mp.espesor_mils) if mp.espesor_mils else "",
             float(mp.espesor_valor) if mp.espesor_valor else "",
             _fmt(mp.unidad_espesor),
             float(mp.ancho) if mp.ancho else "",

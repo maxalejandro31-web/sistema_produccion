@@ -122,12 +122,12 @@
         <tr><td colspan="5" class="rollo-subtitulo">{{ orden.mp.numero_mp }}</td></tr>
         <tr>
             <th colspan="2">PESO DE ROLLO</th>
-            <th>CALIBRE</th>
+            <th>ESPESOR (MILS)</th>
             <th colspan="2">ANCHO</th>
         </tr>
         <tr>
             <td colspan="2">{{ orden.mp.peso|default:"—" }}</td>
-            <td>{{ orden.mp.calibre|default:orden.mp.espesor_valor|default:"—" }}</td>
+            <td>{{ orden.mp.espesor_mils|default:"—" }}</td>
             <td colspan="2">{{ orden.mp.ancho|default:"—" }}</td>
         </tr>
     </table>

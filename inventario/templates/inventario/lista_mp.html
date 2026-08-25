@@ -204,7 +204,7 @@
                 <th>Tipo</th>
                 <th>Material</th>
                 <th>Descripción</th>
-                <th>Espesor</th>
+                <th>Espesor (mils)</th>
                 <th>Peso restante</th>
                 <th>Ubicación</th>
                 <th>Estado</th>
@@ -232,7 +232,7 @@
 
                 <td>{{ mp.material|default:"-" }}</td>
                 <td>{{ mp.descripcion|default:"-" }}</td>
-                <td>{{ mp.espesor_valor|default:"-" }} {{ mp.unidad_espesor|default:"" }}</td>
+                <td>{{ mp.espesor_mils|default:"-" }}</td>
                 <td>{{ mp.peso_restante|default:"-" }}</td>
                 <td>{{ mp.ubicacion|default:"-" }}</td>
 
