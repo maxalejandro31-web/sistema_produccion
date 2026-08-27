@@ -76,8 +76,16 @@
     </div>
 
     <!-- Alertas -->
-    {% if mp_cobro_activo or mp_por_vencer or ordenes_urgentes or ordenes_rendimiento_bajo %}
+    {% if mp_cobro_activo or mp_por_vencer or ordenes_urgentes or ordenes_rendimiento_bajo or rollos_rendimiento_bajo %}
     <div class="alertas">
+        {% if rollos_rendimiento_bajo %}
+        <div class="alerta alerta-roja">
+            {% include 'partials/icono.html' with nombre='tendencia-baja' tam=18 %}
+            <strong>{{ rollos_rendimiento_bajo }} rollo{{ rollos_rendimiento_bajo|pluralize:",s" }} con rendimiento total menor a 96.5%</strong>
+            — sumando todo lo producido contra todo lo consumido de ese rollo, ya terminado.
+            <a href="{% url 'lista_mp' %}?rendimiento_bajo=1">Ver rollos</a>
+        </div>
+        {% endif %}
         {% if ordenes_rendimiento_bajo %}
         <div class="alerta alerta-roja">
             {% include 'partials/icono.html' with nombre='tendencia-baja' tam=18 %}

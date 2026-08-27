@@ -159,7 +159,17 @@
     </div>
     {% endif %}
 
+    {% if rendimiento_bajo == '1' %}
+    <div class="alerta-cobros" style="background:#fdecea;border-color:#e74c3c;">
+        📉
+        <strong>Rollos terminados con rendimiento total menor a {{ umbral_rendimiento_rollo }}%.</strong>
+        Rendimiento total = suma de kg producidos ÷ suma de kg usados, de todas las órdenes que consumieron cada rollo.
+        <a href="{% url 'lista_mp' %}">Quitar filtro</a>
+    </div>
+    {% endif %}
+
     <form method="get" class="filtros">
+        {% if rendimiento_bajo == '1' %}<input type="hidden" name="rendimiento_bajo" value="1">{% endif %}
         <input type="text" name="q" placeholder="Buscar número MP" value="{{ busqueda|default:'' }}">
 
         <select name="tipo">
@@ -208,6 +218,7 @@
                 <th>Peso restante</th>
                 <th>Ubicación</th>
                 <th>Estado</th>
+                {% if rendimiento_bajo == '1' %}<th>Rendimiento total</th>{% endif %}
                 <th>Estancia / Cobro</th>
                 <th>PDF</th>
                 <th>Acciones</th>
@@ -247,6 +258,12 @@
                         {{ mp.estado|default:"-" }}
                     {% endif %}
                 </td>
+
+                {% if rendimiento_bajo == '1' %}
+                <td>
+                    <strong style="color:#e74c3c;">{{ mp.rendimiento_total|default:"-" }}%</strong>
+                </td>
+                {% endif %}
 
                 <td>
                     {% if mp.estatus_cobro == 'propia' %}

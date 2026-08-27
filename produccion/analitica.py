@@ -7,6 +7,7 @@ una orden salió muy por debajo de lo normal.
 import statistics
 
 from django.core.cache import cache
+from django.db.models import Sum
 
 MUESTRA_MINIMA = 5
 LIMITE_POR_GRUPO = 20
@@ -102,3 +103,51 @@ def anotar_anomalias(ordenes):
     for orden in ordenes:
         orden.anomalia_rendimiento = evaluar_anomalia(orden, mapa)
     return ordenes
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# Alarma de rendimiento TOTAL por rollo (MateriaPrima).
+#
+# Esto es distinto de `anotar_anomalias`: aquella compara una orden contra
+# el promedio histórico de su mismo tipo_proceso/material (umbral relativo,
+# estadístico). Esta alarma es un umbral FIJO sobre el aprovechamiento total
+# de un rollo completo, sumando TODAS las órdenes (de cualquier tipo_proceso)
+# que lo consumieron: rendimiento_total = suma(peso_producido) / suma(peso_usado).
+# Solo se evalúan rollos con estado='Terminado' (ya se agotaron por completo,
+# así que su rendimiento total ya es definitivo y no va a cambiar).
+# ─────────────────────────────────────────────────────────────────────────
+
+UMBRAL_RENDIMIENTO_ROLLO = 96.5
+
+
+def mapa_rendimiento_rollos_terminados():
+    """Devuelve {mp_id: rendimiento_total_pct} para cada MateriaPrima con
+    estado='Terminado' que tenga al menos una orden con peso_usado y
+    peso_producido capturados. rendimiento_total_pct redondeado a 2
+    decimales."""
+    from .models import OrdenProduccion
+
+    agregados = (
+        OrdenProduccion.objects
+        .filter(mp__estado='Terminado')
+        .exclude(peso_usado__isnull=True)
+        .exclude(peso_producido__isnull=True)
+        .values('mp_id')
+        .annotate(usado=Sum('peso_usado'), producido=Sum('peso_producido'))
+    )
+
+    mapa = {}
+    for fila in agregados:
+        usado = float(fila['usado'] or 0)
+        producido = float(fila['producido'] or 0)
+        if usado <= 0:
+            continue
+        mapa[fila['mp_id']] = round((producido / usado) * 100, 2)
+    return mapa
+
+
+def ids_rollos_rendimiento_bajo(umbral=UMBRAL_RENDIMIENTO_ROLLO):
+    """IDs de MateriaPrima 'Terminadas' cuyo rendimiento total está por
+    debajo de `umbral` (96.5% por defecto)."""
+    mapa = mapa_rendimiento_rollos_terminados()
+    return [mp_id for mp_id, pct in mapa.items() if pct < umbral]

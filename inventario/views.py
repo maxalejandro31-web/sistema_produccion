@@ -12,6 +12,7 @@ from django.utils import timezone
 from .forms import MateriaPrimaForm, ClienteForm, RegistrarMovimientoForm
 from .models import MateriaPrima, Cliente, MovimientoMP
 from produccion.models import OrdenProduccion, DetalleSlitter
+from produccion.analitica import mapa_rendimiento_rollos_terminados, UMBRAL_RENDIMIENTO_ROLLO
 from dashboard.models import registrar_historial
 from core.decorators import solo_dueno_puede_eliminar
 
@@ -40,6 +41,7 @@ def lista_mp(request):
     fecha_fin     = request.GET.get('fecha_fin', '')
     cliente_id    = request.GET.get('cliente', '')
     cobro         = request.GET.get('cobro', '')
+    rendimiento_bajo = request.GET.get('rendimiento_bajo', '')
 
     hoy = timezone.localdate()
 
@@ -66,6 +68,15 @@ def lista_mp(request):
     elif cobro == 'libre':
         qs = qs.filter(fecha_entrada__gte=hoy - datetime.timedelta(days=22))
 
+    # Filtro que llega desde la alerta del dashboard: rollos ya terminados
+    # cuyo rendimiento TOTAL (suma de kg producidos / suma de kg usados en
+    # todas las órdenes que lo consumieron) quedó por debajo del umbral.
+    mapa_rendimiento = None
+    if rendimiento_bajo == '1':
+        mapa_rendimiento = mapa_rendimiento_rollos_terminados()
+        ids_bajo = [mp_id for mp_id, pct in mapa_rendimiento.items() if pct < UMBRAL_RENDIMIENTO_ROLLO]
+        qs = qs.filter(id__in=ids_bajo)
+
     mp_vencidas_count   = MateriaPrima.objects.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
     mp_por_vencer_count = MateriaPrima.objects.filter(
         fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
@@ -73,6 +84,10 @@ def lista_mp(request):
 
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get('page', 1))
+
+    if mapa_rendimiento is not None:
+        for mp in page_obj:
+            mp.rendimiento_total = mapa_rendimiento.get(mp.id)
 
     return render(request, 'inventario/lista_mp.html', {
         'materias_primas': page_obj,
@@ -84,6 +99,8 @@ def lista_mp(request):
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
         'cobro': cobro,
+        'rendimiento_bajo': rendimiento_bajo,
+        'umbral_rendimiento_rollo': UMBRAL_RENDIMIENTO_ROLLO,
         'mp_vencidas_count': mp_vencidas_count,
         'mp_por_vencer_count': mp_por_vencer_count,
         'clientes': Cliente.objects.filter(activo=True).order_by('nombre'),

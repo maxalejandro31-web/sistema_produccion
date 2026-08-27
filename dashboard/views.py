@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
-from produccion.analitica import anotar_anomalias
+from produccion.analitica import anotar_anomalias, ids_rollos_rendimiento_bajo
 from materia_terminada.models import Salida
 from .models import ConfiguracionEmpresa, HistorialCambio
 from .forms import ConfiguracionEmpresaForm
@@ -156,6 +156,12 @@ def inicio(request):
         if o.anomalia_rendimiento and o.anomalia_rendimiento['bucket'] == 'bajo'
     )
 
+    # Rollos ya terminados cuyo rendimiento TOTAL (suma de kg producidos /
+    # suma de kg usados en todas las órdenes que lo consumieron) quedó por
+    # debajo del 96.5% — umbral fijo de buen uso de MP, distinto de la
+    # comparación estadística de arriba.
+    rollos_rendimiento_bajo = len(ids_rollos_rendimiento_bajo())
+
     # ── Datos para gráficas ───────────────────────────────────────────────────
 
     # Resumen del mes en curso: MP que entró, kg procesados (producidos) y
@@ -248,6 +254,7 @@ def inicio(request):
         'mp_por_vencer': mp_por_vencer,
         'ordenes_urgentes': ordenes_urgentes,
         'ordenes_rendimiento_bajo': ordenes_rendimiento_bajo,
+        'rollos_rendimiento_bajo': rollos_rendimiento_bajo,
         'resumen_mes_chart': resumen_mes_chart,
         'nombre_mes_actual': nombre_mes_actual,
         'rendimiento_mensual_chart': rendimiento_mensual_chart,
