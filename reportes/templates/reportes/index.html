@@ -159,6 +159,68 @@
     </div>
   </div>
 
+  <!-- 1b. Levantamiento en el sistema -->
+  <div class="card-reporte">
+    <div class="card-header">
+      <span class="icon-excel">📋</span> Levantamiento en el Sistema
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:#6b7280;margin:-4px 0 12px;">
+        Mismas columnas que la plantilla de levantamiento físico impreso — descárgalo y compáralo
+        renglón por renglón contra lo que se encontró en patio y almacén.
+      </p>
+      <form method="GET" action="{% url 'reporte_levantamiento_mp' %}">
+        <div class="filtros-grid">
+          <div>
+            <label>Ubicación</label>
+            <select name="ubicacion">
+              <option value="">— Todas —</option>
+              <option value="Patio A">Patio A</option>
+              <option value="Patio B">Patio B</option>
+              <option value="Almacén 1">Almacén 1</option>
+              <option value="Almacén 2">Almacén 2</option>
+              <option value="Producción">Producción</option>
+            </select>
+          </div>
+          <div>
+            <label>Cliente</label>
+            <select name="cliente">
+              <option value="">— Todos —</option>
+              {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Estado</label>
+            <select name="estado">
+              <option value="">— Todos (menos Terminado) —</option>
+              <option value="Disponible">Disponible</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Terminado">Terminado</option>
+            </select>
+          </div>
+          <div>
+            <label>Tipo MP</label>
+            <select name="tipo_mp">
+              <option value="">— Todos —</option>
+              <option value="Rollo">Rollo</option>
+              <option value="Placa">Placa</option>
+              <option value="Cinta">Cinta</option>
+            </select>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-bottom:14px;">
+          <input type="checkbox" name="incluir_terminado" value="1" style="width:auto;">
+          Incluir material ya Terminado (consumido por completo)
+        </label>
+        <button type="submit" class="btn-excel">
+          <span class="icon-excel">📥</span> Descargar Excel
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- 2. Movimientos MP -->
   <div class="card-reporte">
     <div class="card-header">

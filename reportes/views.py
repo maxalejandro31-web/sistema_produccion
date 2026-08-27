@@ -172,6 +172,84 @@ def reporte_inventario_mp(request):
     return _make_response(wb, f"inventario_mp_{fecha}.xlsx")
 
 
+# ── 1b. Levantamiento en el sistema (mismas columnas que la plantilla de
+#        levantamiento físico impresa, para comparar hoja por hoja lo que hay
+#        en el sistema contra lo que se encontró físicamente en planta) ──────
+
+@login_required
+def reporte_levantamiento_mp(request):
+    qs = MateriaPrima.objects.select_related("cliente").all()
+
+    cliente_id = request.GET.get("cliente")
+    estado     = request.GET.get("estado")
+    tipo_mp    = request.GET.get("tipo_mp")
+    ubicacion  = request.GET.get("ubicacion")
+    incluir_terminado = request.GET.get("incluir_terminado") == "1"
+
+    if cliente_id:
+        qs = qs.filter(cliente_id=cliente_id)
+    if estado:
+        qs = qs.filter(estado=estado)
+    elif not incluir_terminado:
+        # Por default se excluye lo ya "Terminado" (peso_restante en 0): ese
+        # material ya se consumió por completo y no debería seguir existiendo
+        # físicamente en patio/almacén, así que compararlo contra un
+        # levantamiento físico solo generaría confusión.
+        qs = qs.exclude(estado="Terminado")
+    if tipo_mp:
+        qs = qs.filter(tipo_mp=tipo_mp)
+    if ubicacion:
+        qs = qs.filter(ubicacion=ubicacion)
+
+    # Mismo orden en el que se recorre físicamente la planta: por ubicación
+    # y luego por número de MP, para que se pueda cotejar renglón por renglón
+    # contra las hojas de captura del levantamiento físico.
+    qs = qs.order_by("ubicacion", "numero_mp")
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Levantamiento en sistema"
+
+    headers = [
+        "No.", "N° de MP", "Tipo", "Cliente / Propia", "Material",
+        "Espesor (valor)", "Unidad", "Ancho (mm)", "Diám. Int/Ext (mm)",
+        "Peso (kg)", "Fecha de ingreso", "Ubicación", "Observaciones",
+    ]
+    _apply_header(ws, headers)
+
+    for i, mp in enumerate(qs, start=1):
+        if mp.diametro_interior or mp.diametro_exterior:
+            di = f"{float(mp.diametro_interior):g}" if mp.diametro_interior else "?"
+            de = f"{float(mp.diametro_exterior):g}" if mp.diametro_exterior else "?"
+            diam = f"{di} / {de}"
+        else:
+            diam = ""
+
+        cliente_o_propia = "Propia" if mp.es_propia else (mp.cliente.nombre if mp.cliente else "")
+
+        ws.append([
+            i,
+            _fmt(mp.numero_mp),
+            _fmt(mp.tipo_mp),
+            cliente_o_propia,
+            _fmt(mp.material),
+            float(mp.espesor_mils) if mp.espesor_mils else "",
+            "mils" if mp.espesor_mils else "",
+            float(mp.ancho) if mp.ancho else "",
+            diam,
+            float(mp.peso_restante) if mp.peso_restante else "",
+            mp.fecha_entrada.strftime("%d/%m/%Y") if mp.fecha_entrada else "",
+            _fmt(mp.ubicacion),
+            _fmt(mp.observaciones),
+        ])
+
+    _apply_rows(ws)
+    _autowidth(ws)
+
+    fecha = timezone.localdate().strftime("%Y%m%d")
+    return _make_response(wb, f"levantamiento_mp_sistema_{fecha}.xlsx")
+
+
 # ── 2. Movimientos de Materia Prima ───────────────────────────────────────────
 
 @login_required
