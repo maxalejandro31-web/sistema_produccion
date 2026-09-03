@@ -45,6 +45,20 @@
 
     <form method="post">
         {% csrf_token %}
+        {# Los management forms de AMBOS formsets deben mandarse siempre,
+           sin importar cuál bloque (Slitter o Fleje) se esté mostrando
+           abajo: si falta el de uno de los dos, Django no puede validarlo
+           ("ManagementForm data is missing") y la orden completa se deja
+           de poder guardar en silencio (sin ningún error visible en
+           pantalla), pase lo que pase con el resto del formulario. #}
+        {{ formset.management_form }}
+        {{ formset_fleje.management_form }}
+        {% if formset.non_form_errors %}
+        <div style="background:#fee2e2;border:1px solid #fca5a5;padding:10px 14px;border-radius:8px;margin-bottom:14px;color:#991b1b;">{{ formset.non_form_errors }}</div>
+        {% endif %}
+        {% if formset_fleje.non_form_errors %}
+        <div style="background:#fee2e2;border:1px solid #fca5a5;padding:10px 14px;border-radius:8px;margin-bottom:14px;color:#991b1b;">{{ formset_fleje.non_form_errors }}</div>
+        {% endif %}
         <div class="grid">
             {% for field in form %}
                 <div class="campo">
@@ -69,7 +83,6 @@
                 <strong>Total cortes:</strong> <span id="total-peso">0.00</span> kg
             </div>
 
-            {{ formset.management_form }}
             <table class="tabla-detalles">
                 <thead>
                     <tr>
@@ -124,7 +137,6 @@
                 <strong>Total tiras:</strong> <span id="total-peso-fleje">0.00</span> kg
             </div>
 
-            {{ formset_fleje.management_form }}
             <table class="tabla-detalles">
                 <thead>
                     <tr>

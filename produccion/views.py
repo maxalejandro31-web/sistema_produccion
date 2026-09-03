@@ -265,12 +265,28 @@ def editar_orden(request, orden_id):
             formset = DetalleSlitterFormSet(request.POST, instance=orden, prefix='detalles')
             formset_fleje = DetalleFlejeFormSet(request.POST, instance=orden, prefix='detalles_fleje')
 
-            if form.is_valid() and formset.is_valid() and formset_fleje.is_valid():
+            # La plantilla solo muestra (y por lo tanto solo manda datos
+            # reales de) el bloque de detalle que corresponde al
+            # tipo_proceso ORIGINAL de la orden -- el otro formset nunca
+            # se renderiza para esta orden, así que exigirle is_valid()
+            # de todos modos es imposible de cumplir (Django no encuentra
+            # datos que validar) y la orden se quedaba sin poder
+            # guardarse NUNCA, sin ningún error visible en pantalla. Por
+            # eso aquí solo se exige (y más abajo solo se guarda) el
+            # formset que de verdad se le mostró al usuario.
+            if orden.tipo_proceso == 'slitter':
+                formsets_validos = formset.is_valid()
+            elif orden.tipo_proceso == 'fleje':
+                formsets_validos = formset_fleje.is_valid()
+            else:
+                formsets_validos = True
+
+            if form.is_valid() and formsets_validos:
                 orden_actualizada = form.save(commit=False)
 
-                detalles = formset.save(commit=False)
+                if orden.tipo_proceso == 'slitter':
+                    detalles = formset.save(commit=False)
 
-                if orden_actualizada.tipo_proceso == 'slitter':
                     duplicados = _cortes_duplicados(orden_actualizada.mp, detalles, excluir_orden_id=orden.id)
                     if duplicados:
                         lista = ', '.join(str(n) for n in duplicados)
@@ -286,18 +302,19 @@ def editar_orden(request, orden_id):
                             'orden': orden,
                         })
 
-                for d in detalles:
-                    d.orden = orden_actualizada
-                    d.save()
-                for obj in formset.deleted_objects:
-                    obj.delete()
+                    for d in detalles:
+                        d.orden = orden_actualizada
+                        d.save()
+                    for obj in formset.deleted_objects:
+                        obj.delete()
 
-                detalles_fleje = formset_fleje.save(commit=False)
-                for d in detalles_fleje:
-                    d.orden = orden_actualizada
-                    d.save()
-                for obj in formset_fleje.deleted_objects:
-                    obj.delete()
+                if orden.tipo_proceso == 'fleje':
+                    detalles_fleje = formset_fleje.save(commit=False)
+                    for d in detalles_fleje:
+                        d.orden = orden_actualizada
+                        d.save()
+                    for obj in formset_fleje.deleted_objects:
+                        obj.delete()
 
                 if orden_actualizada.tipo_proceso == 'slitter':
                     suma_pesos = sum(
