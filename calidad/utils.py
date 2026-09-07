@@ -37,7 +37,13 @@ def evaluar_tolerancia_detalle(detalle):
         and detalle.espesor is not None
         and mp.espesor_mm is not None
     ):
-        diferencia_espesor = abs(float(detalle.espesor) - float(mp.espesor_mm))
+        # DetalleSlitter.espesor se captura en PULGADAS, mientras que
+        # mp.espesor_mm ya está normalizado a milímetros (ver
+        # MateriaPrima.espesor_mm). Sin esta conversión se comparaban
+        # unidades distintas directamente (p.ej. 0.035 vs 0.889), lo que
+        # disparaba "fuera de tolerancia" en prácticamente todos los cortes.
+        espesor_detalle_mm = float(detalle.espesor) * 25.4
+        diferencia_espesor = abs(espesor_detalle_mm - float(mp.espesor_mm))
         resultado['espesor_ok'] = diferencia_espesor <= float(tolerancia.tolerancia_espesor_mm)
         resultado['diferencia_espesor'] = round(diferencia_espesor, 4)
 

@@ -77,9 +77,18 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
             cantidad_piezas=instance.cantidad_piezas,
         )
 
-    # Marcar la cinta origen como embarcada cuando se termina el fleje
+    # Marcar la cinta origen como embarcada cuando se termina el fleje —
+    # PERO solo si ya no le queda peso utilizable. En planta es normal
+    # cortar la misma cinta en varios lotes de fleje distintos (a veces en
+    # días distintos) hasta agotarla; si aquí se marcara 'embarcado' en
+    # cuanto termina el PRIMER lote, el peso restante de la cinta se
+    # volvería invisible/inutilizable para el resto del sistema (ya no
+    # aparecería como origen disponible en una orden nueva, ni en "Trabajo
+    # en Proceso", aunque sigan sobrando kilos reales en el almacén).
     if instance.tipo_proceso == 'fleje' and instance.pt_origen_id:
-        ProductoTerminado.objects.filter(pk=instance.pt_origen_id).update(estado='embarcado')
+        pt_origen = ProductoTerminado.objects.filter(pk=instance.pt_origen_id).first()
+        if pt_origen and pt_origen.peso_disponible_fleje <= 0.01:
+            ProductoTerminado.objects.filter(pk=instance.pt_origen_id).update(estado='embarcado')
 
 
 @receiver(post_save, sender='produccion.DetalleSlitter')

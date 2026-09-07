@@ -255,6 +255,47 @@ document.addEventListener('DOMContentLoaded', function () {
     if (pesoProducidoInput) pesoProducidoInput.addEventListener('input', actualizarScrapMerma);
     if (pesoRolloPadreInput) pesoRolloPadreInput.addEventListener('input', actualizarScrapMerma);
 
+    // ── Autocompletar folio/espesor/peso del rollo padre desde la Cinta
+    //    origen elegida, en vez de tener que volver a escribirlos a mano
+    //    (el sistema ya conoce el corte de Slitter que produjo esa cinta). ──
+    if (modoFleje) {
+        const ptOrigenCampo = document.getElementById('id_pt_origen');
+        const folioRolloPadreInput = document.getElementById('id_folio_rollo_padre');
+        const espesorRolloPadreInput = document.getElementById('id_espesor_rollo_padre');
+
+        function cargarDatosPtOrigen(ptId, forzar) {
+            if (!ptId) return;
+            fetch(`/api/pt-origen/${ptId}/`)
+                .then(r => r.json())
+                .then(function (data) {
+                    if (folioRolloPadreInput && data.folio_rollo_padre && (forzar || !folioRolloPadreInput.value)) {
+                        folioRolloPadreInput.value = data.folio_rollo_padre;
+                    }
+                    if (espesorRolloPadreInput && data.espesor_rollo_padre && (forzar || !espesorRolloPadreInput.value)) {
+                        espesorRolloPadreInput.value = data.espesor_rollo_padre;
+                    }
+                    if (pesoRolloPadreInput && data.peso_rollo_padre && (forzar || !pesoRolloPadreInput.value)) {
+                        pesoRolloPadreInput.value = data.peso_rollo_padre;
+                        pesoRolloPadreInput.dispatchEvent(new Event('input', {bubbles: true}));
+                    }
+                })
+                .catch(function () {});
+        }
+
+        if (ptOrigenCampo) {
+            ptOrigenCampo.addEventListener('change', function () {
+                cargarDatosPtOrigen(this.value, true);
+            });
+            // Si la orden ya trae una Cinta origen pero le faltan estos
+            // datos (como pasaba antes de poder guardar cambios en esta
+            // pantalla), se rellenan solos al abrir -- sin pisar nada que
+            // ya se haya capturado distinto a mano.
+            if (ptOrigenCampo.value) {
+                cargarDatosPtOrigen(ptOrigenCampo.value, false);
+            }
+        }
+    }
+
     function calcularTotal() {
         if (!totalPesoSpan) return;
         let total = 0;

@@ -299,16 +299,18 @@ def crear_usuario(request):
             error = 'Las contraseñas no coinciden.'
         elif User.objects.filter(username=username).exists():
             error = f'El usuario "{username}" ya existe.'
+        elif grupo_id and not es_admin and not Group.objects.filter(id=grupo_id).exists():
+            # El rol elegido ya no existe (por ejemplo alguien lo borró en otra
+            # pestaña). Antes esto se ignoraba en silencio y el usuario se
+            # creaba sin ningún rol, mostrando igual "creado correctamente".
+            error = 'El rol seleccionado ya no existe. Actualiza la página e inténtalo de nuevo.'
         else:
             user = User.objects.create_user(username=username, password=password)
             if es_admin:
                 user.is_superuser = True
                 user.is_staff = True
             elif grupo_id:
-                try:
-                    user.groups.add(Group.objects.get(id=grupo_id))
-                except Group.DoesNotExist:
-                    pass
+                user.groups.add(Group.objects.get(id=grupo_id))
             user.save()
             messages.success(request, f'Usuario "{username}" creado correctamente.')
             return redirect('lista_usuarios')
@@ -331,16 +333,23 @@ def editar_usuario(request, user_id):
         accion = request.POST.get('accion')
 
         if accion == 'cambiar_rol':
+            if usuario == request.user:
+                # Un Admin Total podía quitarse a sí mismo el rol desde esta
+                # misma pantalla y quedar bloqueado del sistema sin forma de
+                # revertirlo desde la interfaz (mismo criterio que ya se
+                # aplica abajo para "desactivar cuenta").
+                messages.error(request, 'No puedes cambiar tu propio rol desde aquí. Pide a otro Admin Total que lo haga.')
+                return redirect('lista_usuarios')
             grupo_id = request.POST.get('grupo')
             es_admin = request.POST.get('es_admin') == '1'
+            if grupo_id and not es_admin and not Group.objects.filter(id=grupo_id).exists():
+                messages.error(request, 'El rol seleccionado ya no existe. Actualiza la página e inténtalo de nuevo.')
+                return redirect('lista_usuarios')
             usuario.is_superuser = es_admin
             usuario.is_staff = es_admin
             usuario.groups.clear()
             if grupo_id and not es_admin:
-                try:
-                    usuario.groups.add(Group.objects.get(id=grupo_id))
-                except Group.DoesNotExist:
-                    pass
+                usuario.groups.add(Group.objects.get(id=grupo_id))
             usuario.save()
             messages.success(request, f'Rol de "{usuario.username}" actualizado.')
             return redirect('lista_usuarios')

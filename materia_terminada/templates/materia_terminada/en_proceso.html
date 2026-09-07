@@ -100,20 +100,25 @@
                 <th>No. PT</th>
                 <th>Corte origen</th>
                 <th>Cliente</th>
-                <th>Peso (kg)</th>
+                <th>Peso disponible (kg)</th>
                 <th>Ingresó</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
-            {% for cinta in disponibles %}
+            {% for fila in filas_disponibles %}
             <tr>
-                <td>{{ cinta.numero_pt }}</td>
-                <td>{{ cinta.detalle_slitter.folio_corte|default:"—" }}</td>
-                <td>{{ cinta.cliente|default:"—" }}</td>
-                <td>{{ cinta.peso_kg|floatformat:1 }}</td>
-                <td>{{ cinta.fecha_ingreso|date:"d/m/Y" }}</td>
-                <td><a href="{% url 'detalle_pt' cinta.id %}" class="btn btn-outline" style="padding:6px 12px;font-size:12px;">Ver</a></td>
+                <td>{{ fila.cinta.numero_pt }}</td>
+                <td>{{ fila.cinta.detalle_slitter.folio_corte|default:"—" }}</td>
+                <td>{{ fila.cinta.cliente|default:"—" }}</td>
+                <td>
+                    {{ fila.peso_disponible|floatformat:1 }}
+                    {% if fila.peso_disponible|floatformat:1 != fila.cinta.peso_kg|floatformat:1 %}
+                        <span style="color:var(--color-texto-sec, #9ca3af);font-size:12px;">de {{ fila.cinta.peso_kg|floatformat:1 }} kg totales (ya se usó parte en otro lote)</span>
+                    {% endif %}
+                </td>
+                <td>{{ fila.cinta.fecha_ingreso|date:"d/m/Y" }}</td>
+                <td><a href="{% url 'detalle_pt' fila.cinta.id %}" class="btn btn-outline" style="padding:6px 12px;font-size:12px;">Ver</a></td>
             </tr>
             {% empty %}
             <tr><td colspan="6">No hay cintas disponibles en este momento — todas están en proceso o ya se consumieron.</td></tr>

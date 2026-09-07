@@ -7,11 +7,13 @@ from .views import (
     eliminar_orden,
     detalle_orden,
     imprimir_orden,
+    api_datos_pt_origen,
 )
 
 urlpatterns = [
     path('captura/', captura_orden, name='captura_orden'),
     path('ordenes/', lista_ordenes, name='lista_ordenes'),
+    path('api/pt-origen/<int:pt_id>/', api_datos_pt_origen, name='api_datos_pt_origen'),
     path('orden/<int:orden_id>/<str:nuevo_estado>/', cambiar_estado, name='cambiar_estado'),
     path('editar-orden/<int:orden_id>/', editar_orden, name='editar_orden'),
     path('eliminar-orden/<int:orden_id>/', eliminar_orden, name='eliminar_orden'),

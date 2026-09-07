@@ -228,7 +228,14 @@ def detalle_no_conformidad(request, nc_id):
         or request.user.groups.filter(name__in=ROLES_CONFIG).exists()
     )
 
-    if request.method == 'POST' and puede_gestionar:
+    if request.method == 'POST':
+        if not puede_gestionar:
+            # Antes esto caía al else de abajo: la página se recargaba en 200
+            # con un formulario "limpio" y no daba ningún indicio de que el
+            # cambio de estado que el usuario acababa de enviar nunca se
+            # guardó (por ejemplo, su rol cambió o expiró en otra pestaña).
+            messages.error(request, 'No tienes permiso para gestionar esta no conformidad.')
+            return redirect('detalle_no_conformidad', nc_id=nc.id)
         form = CambiarEstadoNoConformidadForm(request.POST, instance=nc)
         if form.is_valid():
             form.save()

@@ -63,14 +63,22 @@ class OrdenProduccionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         from materia_terminada.models import ProductoTerminado
         # No solo "en_almacen": si otra orden de fleje YA tomó esta cinta
-        # como origen (aunque esa orden todavía esté pendiente/en proceso,
-        # sin terminar), hay que quitarla de la lista para que no se pueda
+        # como origen y esa orden todavía está pendiente/en proceso (sin
+        # terminar), hay que quitarla de la lista para que no se pueda
         # asignar por duplicado a dos órdenes de fleje al mismo tiempo. La
         # cinta se libera si esa orden se borra o se le quita el pt_origen
         # (related_name='ordenes_flejado' en OrdenProduccion.pt_origen).
+        #
+        # OJO: el exclude debe mirar el ESTADO de esas órdenes, no solo si
+        # existe alguna relación. En planta es normal cortar una cinta en
+        # varios lotes de fleje distintos (a veces en días distintos) hasta
+        # agotarla — si aquí se excluyera cualquier cinta que ALGUNA VEZ
+        # tuvo una orden de fleje (aunque ya esté terminada y a la cinta le
+        # quede peso sin usar), esa cinta jamás podría volver a elegirse
+        # para el siguiente lote.
         qs = ProductoTerminado.objects.filter(
             tipo_producto='cinta', estado='en_almacen'
-        ).exclude(ordenes_flejado__isnull=False)
+        ).exclude(ordenes_flejado__estado__in=['pendiente', 'proceso'])
         if self.instance and self.instance.pk and self.instance.pt_origen_id:
             # Al editar una orden que ya trae una cinta asignada, hay que
             # seguir mostrándola en el combo (si no, el campo se vería vacío

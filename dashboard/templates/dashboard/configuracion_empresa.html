@@ -80,6 +80,10 @@
     <form method="post">
         {% csrf_token %}
 
+        {% if form.non_field_errors %}
+            <div class="campo"><small style="color:red;">{{ form.non_field_errors }}</small></div>
+        {% endif %}
+
         <div class="campo">
             <label>{{ form.nombre_empresa.label }}</label>
             {{ form.nombre_empresa }}
@@ -91,6 +95,9 @@
         <div class="campo">
             <label>{{ form.slogan.label }}</label>
             {{ form.slogan }}
+            {% if form.slogan.errors %}
+                <small style="color:red;">{{ form.slogan.errors }}</small>
+            {% endif %}
             <small>Aparece debajo del nombre en la vista previa (opcional)</small>
         </div>
 
@@ -103,6 +110,9 @@
                 </div>
             {% endif %}
             {{ form.logo_url }}
+            {% if form.logo_url.errors %}
+                <small style="color:red;">{{ form.logo_url.errors }}</small>
+            {% endif %}
             <small>Pega el enlace directo a tu imagen (PNG o JPG). Puedes usar Google Drive, Imgur u otro hosting de imágenes.</small>
         </div>
 

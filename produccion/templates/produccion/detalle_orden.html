@@ -265,7 +265,7 @@
             <tr>
                 <th>No.</th>
                 <th>Folio descarga</th>
-                <th>% Rebaba</th>
+                <th>Espesor</th>
                 <th># Descarga</th>
                 <th>Peso descarga</th>
                 <th>Ancho</th>
@@ -279,7 +279,7 @@
             <tr>
                 <td>{{ d.no_fleje }}</td>
                 <td>{{ d.folio_descarga|default:"-" }}</td>
-                <td>{{ d.porcentaje_rebaba|default:"-" }}</td>
+                <td>{{ orden.espesor_rollo_padre|default:"-" }}</td>
                 <td>{{ d.numero_descarga|default:"-" }}</td>
                 <td>{{ d.peso_descarga|default:"-" }}</td>
                 <td>{{ d.ancho|default:"-" }}</td>

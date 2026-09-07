@@ -100,6 +100,14 @@
                 <div class="etiqueta">Peso (kg)</div>
                 <div class="valor">{{ producto.peso_kg }}</div>
             </div>
+            {% if producto.tipo_producto == 'cinta' and producto.peso_consumido_fleje > 0 %}
+            <div class="campo">
+                <div class="etiqueta">Disponible para fleje</div>
+                <div class="valor">{{ producto.peso_disponible_fleje|floatformat:1 }} kg
+                    <span style="font-weight:normal;color:#9ca3af;font-size:12px;">({{ producto.peso_consumido_fleje|floatformat:1 }} kg ya usados en otro(s) lote(s))</span>
+                </div>
+            </div>
+            {% endif %}
             <div class="campo">
                 <div class="etiqueta">Paquetes</div>
                 <div class="valor">{{ producto.cantidad_paquetes|default:"—" }}</div>

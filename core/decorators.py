@@ -15,7 +15,7 @@ def roles_required(*roles):
             if request.user.groups.filter(name__in=roles).exists():
                 return view_func(request, *args, **kwargs)
 
-            return HttpResponse("No tienes permisos para acceder a esta sección.")
+            return HttpResponse("No tienes permisos para acceder a esta sección.", status=403)
         return _wrapped_view
     return decorator
 

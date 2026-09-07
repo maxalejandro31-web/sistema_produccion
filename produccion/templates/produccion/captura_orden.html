@@ -918,6 +918,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         actualizarIndicesFila(nuevaFila, nuevoIndice);
         limpiarValoresFila(nuevaFila);
+        aplicarEspesorSugerido(nuevaFila);
 
         const noCorteInput = nuevaFila.querySelector(`input[name="detalles-${nuevoIndice}-no_corte"]`);
         if (noCorteInput) {
@@ -1309,6 +1310,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let pesoDisponible = null;
 
+    // ── Espesor sugerido para los renglones de corte: casi siempre es el
+    //    mismo espesor del rollo de MP que se está cortando, así que no
+    //    debería haber que volver a escribirlo en cada renglón. Se aplica
+    //    solo a renglones cuyo espesor esté vacío -- nunca pisa lo que ya
+    //    se haya capturado distinto a mano (por ejemplo, si el corte de
+    //    verdad salió con otro espesor). ──
+    let espesorSugeridoCorte = null;
+
+    function aplicarEspesorSugerido(fila) {
+        if (espesorSugeridoCorte === null) return;
+        const espesorInput = fila.querySelector('input[name*="-espesor"]');
+        if (espesorInput && !espesorInput.value) {
+            espesorInput.value = espesorSugeridoCorte;
+        }
+    }
+
+    function aplicarEspesorSugeridoATodas() {
+        if (!tablaBody) return;
+        tablaBody.querySelectorAll('.detalle-row').forEach(aplicarEspesorSugerido);
+    }
+
     function validarPesoUsado() {
         if (!pesoUsadoInput || pesoDisponible === null) return;
         const val = parseFloat(pesoUsadoInput.value);
@@ -1333,6 +1355,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!mpId) {
             infoBanner.style.display = 'none';
             pesoDisponible = null;
+            espesorSugeridoCorte = null;
             avisoPeso.style.display = 'none';
             if (pesoUsadoInput) pesoUsadoInput.style.borderColor = '#d1d5db';
             baseNoCorte = 1;
@@ -1346,6 +1369,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     clienteSelect.value = data.cliente_id;
                 }
                 pesoDisponible = data.peso_restante ? parseFloat(data.peso_restante) : null;
+                // El corte (DetalleSlitter.espesor) se captura en pulgadas,
+                // mientras que la MP se registra en mils -- se convierte
+                // (1 mil = 0.001 pulgada) para que el valor sugerido caiga
+                // en las mismas unidades que espera esa columna.
+                espesorSugeridoCorte = data.espesor_mils ? (parseFloat(data.espesor_mils) / 1000) : null;
+                aplicarEspesorSugeridoATodas();
                 const partes = [];
                 if (data.material) partes.push(`<strong>Material:</strong> ${data.material}`);
                 if (data.espesor_mils) partes.push(`<strong>Espesor:</strong> ${data.espesor_mils} mils`);
@@ -1388,6 +1417,34 @@ document.addEventListener('DOMContentLoaded', function () {
     const mpCampo       = document.getElementById('id_mp');
     const labelPiezas   = document.getElementById('label-cantidad-piezas');
     const labelPesoProducido = document.querySelector('label[for="id_peso_producido"]');
+
+    // ── Autocompletar folio/espesor/peso del rollo padre desde la Cinta
+    //    origen elegida, en vez de tener que volver a escribirlos a mano
+    //    (el sistema ya conoce el corte de Slitter que produjo esa cinta).
+    //    Si la cinta no viene de un solo corte trazable (por ejemplo, un
+    //    empalme de varios cortes), el endpoint regresa vacío y el campo
+    //    se sigue llenando a mano como hasta ahora. ──
+    if (ptOrigenCampo) {
+        const folioRolloPadreInput = document.getElementById('id_folio_rollo_padre');
+        const espesorRolloPadreInput = document.getElementById('id_espesor_rollo_padre');
+        const pesoRolloPadreInputAuto = document.getElementById('id_peso_rollo_padre');
+
+        ptOrigenCampo.addEventListener('change', function () {
+            const ptId = this.value;
+            if (!ptId) return;
+            fetch(`/api/pt-origen/${ptId}/`)
+                .then(r => r.json())
+                .then(function (data) {
+                    if (folioRolloPadreInput && data.folio_rollo_padre) folioRolloPadreInput.value = data.folio_rollo_padre;
+                    if (espesorRolloPadreInput && data.espesor_rollo_padre) espesorRolloPadreInput.value = data.espesor_rollo_padre;
+                    if (pesoRolloPadreInputAuto && data.peso_rollo_padre) {
+                        pesoRolloPadreInputAuto.value = data.peso_rollo_padre;
+                        pesoRolloPadreInputAuto.dispatchEvent(new Event('input', {bubbles: true}));
+                    }
+                })
+                .catch(function () {});
+        });
+    }
 
     // ── Prellenado de consecutivos para agilizar la primera captura ─────────
     if (tablaBody) {

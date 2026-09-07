@@ -554,8 +554,14 @@ def dar_salida_mp(request, mp_id):
                 fecha_dt = datetime.datetime.fromisoformat(fecha_salida)
                 if timezone.is_naive(fecha_dt):
                     fecha_dt = timezone.make_aware(fecha_dt)
-            except Exception:
-                pass
+            except (ValueError, TypeError):
+                # Antes esto se ignoraba en silencio y la salida se guardaba
+                # con la fecha/hora actual sin avisar que la fecha capturada
+                # no se pudo usar.
+                messages.warning(
+                    request,
+                    f'No se pudo interpretar la fecha "{fecha_salida}"; se usó la fecha/hora actual en su lugar.'
+                )
 
         MovimientoMP.objects.create(
             mp=mp,

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
@@ -152,6 +152,40 @@ def captura_orden(request):
 
 
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
+def api_datos_pt_origen(request, pt_id):
+    """Datos del rollo padre (folio/espesor/peso) que le dieron origen a una
+    Cinta (ProductoTerminado) para autocompletar los campos 'Folio rollo
+    padre' / 'Espesor rollo padre' / 'Peso rollo padre' al crear o editar
+    una orden de Fleje -- así ya no hay que volver a escribir a mano datos
+    que el sistema ya tiene del corte de Slitter que produjo esa cinta.
+
+    Si la cinta viene de un solo corte (caso normal), el folio usa el mismo
+    formato 'M010017075-2-1' que ya se usa en el resto del sistema
+    (DetalleSlitter.folio_corte). Si no se puede determinar el corte de
+    origen (por ejemplo, una cinta armada empalmando varios cortes), se
+    regresan campos vacíos y el usuario los captura a mano como hasta
+    ahora -- esto es un atajo, no reemplaza la captura manual cuando no
+    aplica."""
+    from materia_terminada.models import ProductoTerminado
+
+    pt = get_object_or_404(ProductoTerminado, id=pt_id)
+    detalle = pt.detalle_slitter
+
+    folio_rollo_padre = detalle.folio_corte if detalle else None
+    espesor_rollo_padre = detalle.espesor if detalle else None
+
+    return JsonResponse({
+        'folio_rollo_padre': folio_rollo_padre or '',
+        # f"{float(x):g}" en vez de str(x): un DecimalField como espesor
+        # (max_digits=10, decimal_places=4) imprime siempre sus 4 decimales
+        # ('0.0350'); pasando por float se ve como se captura normalmente
+        # en el sistema ('0.035').
+        'espesor_rollo_padre': f"{float(espesor_rollo_padre):g}" if espesor_rollo_padre else '',
+        'peso_rollo_padre': f"{float(pt.peso_kg):g}" if pt.peso_kg else '',
+    })
+
+
+@roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
 def lista_ordenes(request):
     estado       = request.GET.get('estado', '')
     tipo_proceso = request.GET.get('tipo_proceso', '')
@@ -200,6 +234,59 @@ def cambiar_estado(request, orden_id, nuevo_estado):
         return HttpResponse("Estado no válido.")
 
     orden = get_object_or_404(OrdenProduccion, id=orden_id)
+
+    if orden.estado == 'terminado' and nuevo_estado != 'terminado':
+        # Reabrir ("Regresar"/"Reabrir") una orden que ya estaba terminada:
+        # el producto terminado que se auto-generó al finalizarla por
+        # primera vez (y, si es Fleje, el estado 'embarcado' que le puso a
+        # la cinta origen) hay que revertirlos también. Antes esto no se
+        # tocaba: el PT viejo se quedaba huérfano/obsoleto (con los pesos
+        # de ANTES de la corrección) y la cinta origen se quedaba
+        # 'embarcado' para siempre, sin poder volver a elegirse como
+        # origen de un nuevo lote aunque la orden se reabriera para
+        # corregirla y volver a finalizarla.
+        from django.db import transaction
+        from materia_terminada.models import ProductoTerminado
+
+        productos = list(orden.productos_terminados.all())
+        # Si alguno de esos PT ya se movió de verdad (se vendió/embarcó,
+        # entró a una remisión de salida, o -si es una cinta- ya se usó
+        # como origen de otra orden de fleje), no es seguro borrarlo solo
+        # porque se reabrió la orden que lo generó: se bloquea el reabrir
+        # y se le pide al usuario resolver eso primero.
+        comprometidos = [
+            p for p in productos
+            if p.estado != 'en_almacen' or p.salida_detalle.exists() or p.ordenes_flejado.exists()
+        ]
+        if comprometidos:
+            nombres = ', '.join(p.numero_pt for p in comprometidos)
+            messages.error(
+                request,
+                f'No se puede reabrir la orden {orden.folio_orden or orden.id}: ya se movió el '
+                f'producto terminado que generó ({nombres} — vendido, embarcado, incluido en una '
+                'salida, o usado como origen de otra orden). Resuelve eso primero si de verdad '
+                'necesitas reabrirla.'
+            )
+            return redirect('lista_ordenes')
+
+        try:
+            with transaction.atomic():
+                pt_origen = orden.pt_origen
+                for p in productos:
+                    p.delete()
+                if pt_origen:
+                    pt_origen.refresh_from_db()
+                    if pt_origen.estado == 'embarcado' and pt_origen.peso_disponible_fleje > 0.01:
+                        pt_origen.estado = 'en_almacen'
+                        pt_origen.save(update_fields=['estado'])
+        except ProtectedError:
+            messages.error(
+                request,
+                f'No se puede reabrir la orden {orden.folio_orden or orden.id}: el producto terminado '
+                'que generó ya está referenciado en otro lugar del sistema.'
+            )
+            return redirect('lista_ordenes')
+
     orden.estado = nuevo_estado
     orden.save()
 

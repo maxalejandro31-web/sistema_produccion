@@ -116,6 +116,19 @@ class MovimientoMPForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'form-control')
 
 
+
+    def clean_peso(self):
+        # El "min" del <input type=number> es solo una sugerencia del navegador
+        # y no protege nada si el request se manda directo (o el navegador lo
+        # ignora); sin este chequeo, un peso negativo en un movimiento de
+        # CONSUMO/MERMA invierte la resta en MovimientoMP.save() y en vez de
+        # descontar, SUMA al peso_restante de la MP.
+        peso = self.cleaned_data.get('peso')
+        if peso is not None and peso <= 0:
+            raise forms.ValidationError('El peso debe ser un número positivo.')
+        return peso
+
+
 class RegistrarMovimientoForm(forms.ModelForm):
     """Form para registrar un movimiento sobre una MP específica (sin campo mp)."""
     class Meta:
@@ -134,3 +147,12 @@ class RegistrarMovimientoForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_peso(self):
+        # Ver comentario en MovimientoMPForm.clean_peso: sin este chequeo un
+        # peso negativo aquí invierte el efecto del movimiento sobre el
+        # peso_restante de la MP en vez de rechazarse.
+        peso = self.cleaned_data.get('peso')
+        if peso is not None and peso <= 0:
+            raise forms.ValidationError('El peso debe ser un número positivo.')
+        return peso

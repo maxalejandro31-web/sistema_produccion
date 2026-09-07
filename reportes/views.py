@@ -478,7 +478,12 @@ def reporte_detalles_slitter(request):
             _fmt(d.orden.mp.numero_mp if d.orden.mp else ""),
             d.no_corte,
             float(d.ancho) if d.ancho else "",
-            float(d.espesor) if d.espesor else "",
+            # DetalleSlitter.espesor se captura en PULGADAS; esta columna está
+            # etiquetada "Espesor (mm)", así que se convierte para que el
+            # valor exportado corresponda a su propio encabezado (antes se
+            # exportaba el número crudo en pulgadas, ~25x más chico de lo que
+            # el encabezado decía).
+            round(float(d.espesor) * 25.4, 4) if d.espesor else "",
             _fmt(d.rebaba),
             float(d.peso) if d.peso else "",
             _fmt(d.camber),

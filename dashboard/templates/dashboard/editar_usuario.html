@@ -95,6 +95,7 @@
         <!-- Cambiar rol -->
         <div class="card">
             <h2>🎭 Cambiar rol</h2>
+            {% if usuario != request.user %}
             <form method="POST">
                 {% csrf_token %}
                 <input type="hidden" name="accion" value="cambiar_rol">
@@ -117,6 +118,9 @@
 
                 <button type="submit" class="btn btn-primary">Guardar rol</button>
             </form>
+            {% else %}
+            <p class="hint" style="margin-top:0;">No puedes cambiar tu propio rol desde aquí. Pide a otro Admin Total que lo haga.</p>
+            {% endif %}
         </div>
 
         <!-- Cambiar contraseña -->

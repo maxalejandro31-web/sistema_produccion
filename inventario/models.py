@@ -263,6 +263,15 @@ class MovimientoMP(models.Model):
                     mp.estado = 'Terminado'
                 elif mp.estado == 'Disponible' and self.tipo_movimiento in ['CONSUMO', 'MERMA', 'TRASPASO']:
                     mp.estado = 'En Proceso'
+                elif mp.estado == 'Terminado':
+                    # Un AJUSTE_POSITIVO (por ejemplo al eliminar/editar una orden
+                    # que había consumido todo el rollo) puede devolverle peso a
+                    # una MP que ya estaba marcada 'Terminado'. Sin esto se queda
+                    # con ese estado para siempre aunque vuelva a tener peso
+                    # disponible: desaparece de los filtros "Disponible"/"En
+                    # Proceso" y de los reportes que excluyen 'Terminado', pese a
+                    # ser en la práctica un rollo con material utilizable de nuevo.
+                    mp.estado = 'En Proceso'
 
                 mp.save()
 

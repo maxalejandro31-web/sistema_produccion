@@ -67,7 +67,14 @@ def permisos_usuario(request):
                 'url': '/ordenes/?estado=proceso',
             })
     except Exception:
-        pass
+        # No queremos que un error aquí tumbe TODAS las páginas del sistema
+        # (este context processor corre en cada request), pero tampoco debe
+        # desaparecer en silencio: si algo falla, las alertas de la campana
+        # simplemente se quedan en 0/vacías, y aquí queda registrado el motivo.
+        import logging
+        logging.getLogger(__name__).exception(
+            "Error calculando alertas globales en permisos_usuario()"
+        )
 
     alertas_count = mp_vencidas + mp_por_vencer + urgentes if alertas_items else 0
 

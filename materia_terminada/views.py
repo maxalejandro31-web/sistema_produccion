@@ -72,7 +72,16 @@ def en_proceso(request):
         tipo_producto='cinta', estado='en_almacen'
     ).select_related('cliente', 'detalle_slitter', 'detalle_slitter__orden', 'detalle_slitter__orden__mp')
 
-    disponibles = list(base_qs.exclude(ordenes_flejado__isnull=False).order_by('-fecha_ingreso'))
+    # Solo se excluye una cinta de "disponibles" si tiene una orden de fleje
+    # ACTIVA (pendiente/proceso) tomándola ahora mismo. Antes se excluía
+    # cualquier cinta con CUALQUIER orden de fleje relacionada, sin importar
+    # su estado — así que una cinta cortada en dos lotes (normal en planta)
+    # desaparecía de esta lista en cuanto el primer lote terminaba, aunque
+    # le quedara peso real sin usar (ver también el mismo ajuste en
+    # produccion/forms.py OrdenProduccionForm y materia_terminada/signals.py).
+    disponibles = list(
+        base_qs.exclude(ordenes_flejado__estado__in=['pendiente', 'proceso']).order_by('-fecha_ingreso')
+    )
 
     en_proceso_qs = base_qs.filter(
         ordenes_flejado__estado__in=['pendiente', 'proceso']
@@ -88,11 +97,22 @@ def en_proceso(request):
             'peso_disponible': cinta.peso_disponible_fleje,
         })
 
-    peso_total_disponible = sum(float(c.peso_kg or 0) for c in disponibles)
+    # peso_disponible_fleje (no peso_kg completo): una cinta que ya se usó
+    # parcialmente en un lote de fleje anterior (terminado) sigue apareciendo
+    # aquí como disponible, pero con lo que REALMENTE le queda, no con su
+    # peso original completo — si no, esta lista sobreestimaría cuánto hay
+    # realmente para el siguiente lote.
+    filas_disponibles = [
+        {'cinta': cinta, 'peso_disponible': cinta.peso_disponible_fleje}
+        for cinta in disponibles
+    ]
+
+    peso_total_disponible = sum(f['peso_disponible'] for f in filas_disponibles)
     peso_total_en_proceso = sum(float(c.peso_kg or 0) for c in en_proceso_qs)
 
     return render(request, 'materia_terminada/en_proceso.html', {
         'disponibles': disponibles,
+        'filas_disponibles': filas_disponibles,
         'filas_en_proceso': filas_en_proceso,
         'peso_total_disponible': peso_total_disponible,
         'peso_total_en_proceso': peso_total_en_proceso,
@@ -164,6 +184,8 @@ def crear_salida(request):
             )
 
             peso_total = 0
+            pt_registrados = 0
+            pt_omitidos = 0
             for pt_id in pt_ids:
                 try:
                     pt = pt_disponibles.get(pk=pt_id)
@@ -176,11 +198,32 @@ def crear_salida(request):
                     pt.estado = 'embarcado'
                     pt.save()
                     peso_total += float(pt.peso_kg)
+                    pt_registrados += 1
                 except ProductoTerminado.DoesNotExist:
-                    pass
+                    # Otro usuario ya embarcó/tomó este PT entre que se cargó
+                    # la página y se envió el formulario. Antes esto se
+                    # ignoraba en silencio y el mensaje de éxito reportaba
+                    # len(pt_ids) PT igual, aunque algunos nunca se guardaran.
+                    pt_omitidos += 1
+
+            if pt_registrados == 0:
+                # Ningún PT seleccionado seguía disponible: no dejar un folio
+                # de salida vacío/fantasma en el sistema.
+                salida.delete()
+                messages.error(
+                    request,
+                    'Ninguno de los PT seleccionados sigue disponible (alguien más ya los registró). '
+                    'No se creó la salida; actualiza la página e inténtalo de nuevo.'
+                )
+                return redirect('crear_salida')
 
             Salida.objects.filter(pk=salida.pk).update(peso_total=peso_total)
-            messages.success(request, f'Salida {salida.folio_remision} registrada con {len(pt_ids)} PT ({peso_total:.1f} kg).')
+            if pt_omitidos:
+                messages.warning(
+                    request,
+                    f'{pt_omitidos} PT seleccionado(s) ya no estaban disponibles y no se incluyeron en esta salida.'
+                )
+            messages.success(request, f'Salida {salida.folio_remision} registrada con {pt_registrados} PT ({peso_total:.1f} kg).')
             return redirect('detalle_salida', salida_id=salida.pk)
 
     return render(request, 'materia_terminada/crear_salida.html', {
