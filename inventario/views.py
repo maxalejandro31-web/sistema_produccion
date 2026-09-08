@@ -337,7 +337,12 @@ def reporte_rollo_excel(request, mp_id):
     for bloque in datos['bloques']:
         orden = bloque['orden']
         escribir_titulo(f"SLITTER — Orden {orden.folio_orden or orden.id} · {orden.fecha or ''}")
-        headers = ['No. de corte', 'Ancho', 'Espesor', 'Rebaba', 'Peso', 'Clasificación', 'Peso scrap/descarte']
+        # "Espesor" aquí es DetalleSlitter.espesor, capturado en PULGADAS —
+        # unidad distinta al "ESPESOR (MILS)" de la MP que se exporta unas
+        # filas arriba en esta misma hoja. Antes ambas columnas decían
+        # "Espesor" a secas, lo que invitaba a leer este valor como si
+        # también fuera mils (0.035 pulg ≠ 0.035 mils).
+        headers = ['No. de corte', 'Ancho', 'Espesor (pulg)', 'Rebaba', 'Peso', 'Clasificación', 'Peso scrap/descarte']
         for i, h in enumerate(headers, start=1):
             c = ws.cell(row=fila, column=i, value=h)
             c.font = negrita
@@ -535,44 +540,57 @@ def dar_salida_mp(request, mp_id):
             messages.error(request, 'El peso debe ser un número positivo.')
             return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
 
-        if mp.peso_restante is not None and peso > float(mp.peso_restante):
-            messages.error(request, f'El peso ingresado ({peso} kg) supera el peso restante ({mp.peso_restante} kg).')
-            return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
+        # select_for_update() dentro de una transacción bloquea la fila de
+        # la MP hasta que esta vista termine: si dos personas registran una
+        # salida sobre el MISMO rollo casi al mismo instante, la segunda
+        # espera a que la primera termine y entonces valida contra el peso
+        # YA actualizado, en vez de leer el mismo peso_restante "viejo" que
+        # leyó la primera y dejar pasar dos salidas que en conjunto superan
+        # lo que el rollo realmente tenía. (En SQLite esto no bloquea de
+        # verdad —la BD no lo soporta— pero tampoco falla; en Postgres,
+        # producción, sí protege. Mismo patrón que MovimientoMP.save().)
+        from django.db import transaction
+        with transaction.atomic():
+            mp = MateriaPrima.objects.select_for_update().get(pk=mp.pk)
 
-        cliente_nombre = ''
-        if cliente_id:
-            try:
-                cliente_nombre = Cliente.objects.get(pk=cliente_id).nombre
-            except Cliente.DoesNotExist:
-                pass
+            if mp.peso_restante is not None and peso > float(mp.peso_restante):
+                messages.error(request, f'El peso ingresado ({peso} kg) supera el peso restante ({mp.peso_restante} kg).')
+                return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
 
-        from django.utils import timezone as tz
-        fecha_dt = tz.now()
-        if fecha_salida:
-            try:
-                import datetime
-                fecha_dt = datetime.datetime.fromisoformat(fecha_salida)
-                if timezone.is_naive(fecha_dt):
-                    fecha_dt = timezone.make_aware(fecha_dt)
-            except (ValueError, TypeError):
-                # Antes esto se ignoraba en silencio y la salida se guardaba
-                # con la fecha/hora actual sin avisar que la fecha capturada
-                # no se pudo usar.
-                messages.warning(
-                    request,
-                    f'No se pudo interpretar la fecha "{fecha_salida}"; se usó la fecha/hora actual en su lugar.'
-                )
+            cliente_nombre = ''
+            if cliente_id:
+                try:
+                    cliente_nombre = Cliente.objects.get(pk=cliente_id).nombre
+                except Cliente.DoesNotExist:
+                    pass
 
-        MovimientoMP.objects.create(
-            mp=mp,
-            tipo_movimiento='SALIDA',
-            peso=peso,
-            fecha=fecha_dt,
-            ubicacion_origen=mp.ubicacion or '',
-            ubicacion_destino=cliente_nombre,
-            observaciones=observaciones,
-            usuario=request.user,
-        )
+            from django.utils import timezone as tz
+            fecha_dt = tz.now()
+            if fecha_salida:
+                try:
+                    import datetime
+                    fecha_dt = datetime.datetime.fromisoformat(fecha_salida)
+                    if timezone.is_naive(fecha_dt):
+                        fecha_dt = timezone.make_aware(fecha_dt)
+                except (ValueError, TypeError):
+                    # Antes esto se ignoraba en silencio y la salida se guardaba
+                    # con la fecha/hora actual sin avisar que la fecha capturada
+                    # no se pudo usar.
+                    messages.warning(
+                        request,
+                        f'No se pudo interpretar la fecha "{fecha_salida}"; se usó la fecha/hora actual en su lugar.'
+                    )
+
+            MovimientoMP.objects.create(
+                mp=mp,
+                tipo_movimiento='SALIDA',
+                peso=peso,
+                fecha=fecha_dt,
+                ubicacion_origen=mp.ubicacion or '',
+                ubicacion_destino=cliente_nombre,
+                observaciones=observaciones,
+                usuario=request.user,
+            )
 
         registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'MOVIMIENTO',
             f'Salida de {peso} kg de MP {mp.numero_mp} hacia {cliente_nombre or "destino no especificado"}.')

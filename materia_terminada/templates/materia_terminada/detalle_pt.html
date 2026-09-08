@@ -198,14 +198,24 @@
         {% endif %}
     </div>
 
+    {% if producto.tiene_nc_critica_abierta %}
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin:14px 0;color:#991b1b;font-size:13px;">
+        ⚠ Este PT tiene una <strong>no conformidad crítica</strong> abierta — no se puede marcar como vendido/embarcado ni incluir en una salida hasta cerrarla en Calidad.
+    </div>
+    {% endif %}
+
     <div class="acciones">
         <a class="btn btn-volver" href="{% url 'lista_pt' %}">Volver a lista</a>
         {% if es_admin_total or es_administrador or es_supervisor %}
             {% if producto.estado == 'en_almacen' %}
+                {% if not producto.tiene_nc_critica_abierta %}
                 <a class="btn btn-vender" href="{% url 'cambiar_estado_pt' producto.id 'vendido' %}">Marcar como vendido</a>
                 <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' producto.id 'embarcado' %}">Marcar como embarcado</a>
+                {% endif %}
             {% elif producto.estado == 'vendido' %}
+                {% if not producto.tiene_nc_critica_abierta %}
                 <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' producto.id 'embarcado' %}">Marcar como embarcado</a>
+                {% endif %}
                 <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' producto.id 'en_almacen' %}">Regresar a almacén</a>
             {% elif producto.estado == 'embarcado' %}
                 <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' producto.id 'en_almacen' %}">Regresar a almacén</a>

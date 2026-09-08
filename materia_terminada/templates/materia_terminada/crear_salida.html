@@ -87,6 +87,15 @@
             0 PT seleccionados · 0.00 kg
         </div>
 
+        {% if pt_bloqueados_nc %}
+        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:14px;color:#991b1b;font-size:13px;">
+            {{ pt_bloqueados_nc|length }} PT no aparece{{ pt_bloqueados_nc|length|pluralize:",n" }} en la lista de abajo por tener una <strong>no conformidad crítica abierta</strong> — hay que cerrarla en Calidad antes de poder embarcarlo{{ pt_bloqueados_nc|length|pluralize }}:
+            {% for pt in pt_bloqueados_nc %}
+                <a href="{% url 'detalle_pt' pt.id %}" style="color:#991b1b;text-decoration:underline;">{{ pt.numero_pt }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
         {% if pt_disponibles %}
         <table class="tabla-pt">
             <thead>

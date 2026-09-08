@@ -128,6 +128,20 @@ def cambiar_estado_pt(request, pt_id, nuevo_estado):
         return HttpResponse("Estado no válido.")
 
     producto = get_object_or_404(ProductoTerminado, id=pt_id)
+
+    if nuevo_estado in ('vendido', 'embarcado'):
+        # Mismo bloqueo que en Crear Salida: un PT con una no conformidad
+        # crítica todavía abierta/en revisión no se puede marcar como
+        # vendido/embarcado desde aquí tampoco — este botón era una forma
+        # de saltarse por completo el bloqueo de Crear Salida.
+        if producto.tiene_nc_critica_abierta:
+            messages.error(
+                request,
+                f'No se puede marcar {producto.numero_pt} como {"vendido" if nuevo_estado == "vendido" else "embarcado"}: '
+                'tiene una no conformidad crítica abierta. Ciérrala en Calidad primero.'
+            )
+            return redirect('lista_pt')
+
     producto.estado = nuevo_estado
     producto.save()
 
@@ -156,11 +170,23 @@ def crear_salida(request):
     # a 'embarcado' cuando esa orden se termina), así que sin este exclude
     # se podría dar de salida por error una cinta que una orden de
     # producción sigue necesitando. Ver también la vista "en_proceso".
-    pt_disponibles = ProductoTerminado.objects.filter(
+    #
+    # Además: un PT con una no conformidad CRÍTICA todavía abierta/en
+    # revisión no se puede embarcar. Antes una no conformidad (incluso
+    # crítica) no tenía ningún efecto sobre esta pantalla y el PT se podía
+    # dar de salida igual. Menor/Mayor no bloquean (decisión del negocio).
+    base_qs = ProductoTerminado.objects.filter(
         estado='en_almacen'
     ).exclude(
         tipo_producto='cinta', ordenes_flejado__estado__in=['pendiente', 'proceso']
-    ).select_related('cliente', 'orden').order_by('-fecha_ingreso')
+    )
+    bloqueo_nc = {'no_conformidades__severidad': 'critica', 'no_conformidades__estado__in': ['abierta', 'en_revision']}
+
+    pt_disponibles = base_qs.exclude(**bloqueo_nc).select_related('cliente', 'orden').order_by('-fecha_ingreso')
+
+    # Solo para avisar en pantalla por qué un PT que de otra forma se vería
+    # "en almacén" no aparece en la lista de arriba.
+    pt_bloqueados_nc = base_qs.filter(**bloqueo_nc).distinct().select_related('cliente', 'orden').order_by('-fecha_ingreso')
 
     clientes = Cliente.objects.filter(activo=True).order_by('nombre')
 
@@ -186,6 +212,7 @@ def crear_salida(request):
             peso_total = 0
             pt_registrados = 0
             pt_omitidos = 0
+            pt_bloqueados_por_nc = []
             for pt_id in pt_ids:
                 try:
                     pt = pt_disponibles.get(pk=pt_id)
@@ -200,24 +227,46 @@ def crear_salida(request):
                     peso_total += float(pt.peso_kg)
                     pt_registrados += 1
                 except ProductoTerminado.DoesNotExist:
-                    # Otro usuario ya embarcó/tomó este PT entre que se cargó
-                    # la página y se envió el formulario. Antes esto se
-                    # ignoraba en silencio y el mensaje de éxito reportaba
-                    # len(pt_ids) PT igual, aunque algunos nunca se guardaran.
-                    pt_omitidos += 1
+                    # No estaba en pt_disponibles: o bien otro usuario ya
+                    # embarcó/tomó este PT entre que se cargó la página y se
+                    # envió el formulario, o tiene una no conformidad crítica
+                    # abierta que lo bloquea (alguien pudo forzar el POST
+                    # directo, sin pasar por el checkbox ya deshabilitado en
+                    # pantalla). Se distingue el motivo para el mensaje.
+                    # Antes esto se ignoraba en silencio y el mensaje de
+                    # éxito reportaba len(pt_ids) PT igual, aunque algunos
+                    # nunca se guardaran.
+                    if ProductoTerminado.objects.filter(pk=pt_id, **bloqueo_nc).exists():
+                        pt_bloqueados_por_nc.append(pt_id)
+                    else:
+                        pt_omitidos += 1
 
             if pt_registrados == 0:
                 # Ningún PT seleccionado seguía disponible: no dejar un folio
                 # de salida vacío/fantasma en el sistema.
                 salida.delete()
-                messages.error(
-                    request,
-                    'Ninguno de los PT seleccionados sigue disponible (alguien más ya los registró). '
-                    'No se creó la salida; actualiza la página e inténtalo de nuevo.'
-                )
+                if pt_bloqueados_por_nc and not pt_omitidos:
+                    messages.error(
+                        request,
+                        'No se creó la salida: el/los PT seleccionados tienen una no conformidad '
+                        'crítica abierta. Ciérrala en Calidad antes de poder embarcarlos.'
+                    )
+                else:
+                    messages.error(
+                        request,
+                        'Ninguno de los PT seleccionados sigue disponible (alguien más ya los registró, '
+                        'o tienen una no conformidad crítica abierta). No se creó la salida; actualiza '
+                        'la página e inténtalo de nuevo.'
+                    )
                 return redirect('crear_salida')
 
             Salida.objects.filter(pk=salida.pk).update(peso_total=peso_total)
+            if pt_bloqueados_por_nc:
+                messages.warning(
+                    request,
+                    f'{len(pt_bloqueados_por_nc)} PT no se incluyeron por tener una no conformidad '
+                    'crítica abierta — ciérrala en Calidad antes de poder embarcarlos.'
+                )
             if pt_omitidos:
                 messages.warning(
                     request,
@@ -228,6 +277,7 @@ def crear_salida(request):
 
     return render(request, 'materia_terminada/crear_salida.html', {
         'pt_disponibles': pt_disponibles,
+        'pt_bloqueados_nc': pt_bloqueados_nc,
         'clientes': clientes,
     })
 

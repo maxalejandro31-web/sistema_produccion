@@ -163,15 +163,22 @@
                 <td>{{ pt.fecha_ingreso|date:"d/m/Y H:i" }}</td>
                 <td>
                     <a class="btn btn-detalle" href="{% url 'detalle_pt' pt.id %}">Detalle</a>
+                    {% if pt.tiene_nc_critica_abierta %}
+                        <span class="badge" style="background:#fee2e2;color:#991b1b;" title="No conformidad crítica abierta">⚠ NC crítica</span>
+                    {% endif %}
                     {% if es_admin_total or es_administrador or es_supervisor %}
                         {% if pt.estado == 'en_almacen' %}
+                            {% if not pt.tiene_nc_critica_abierta %}
                             <a class="btn btn-vender" href="{% url 'cambiar_estado_pt' pt.id 'vendido' %}"
                                onclick="return confirm('¿Marcar {{ pt.numero_pt }} como Vendido?')">Vender</a>
                             <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}"
                                onclick="return confirm('¿Marcar {{ pt.numero_pt }} como Embarcado?')">Embarcar</a>
+                            {% endif %}
                         {% elif pt.estado == 'vendido' %}
+                            {% if not pt.tiene_nc_critica_abierta %}
                             <a class="btn btn-embarcar" href="{% url 'cambiar_estado_pt' pt.id 'embarcado' %}"
                                onclick="return confirm('¿Marcar {{ pt.numero_pt }} como Embarcado?')">Embarcar</a>
+                            {% endif %}
                             <a class="btn btn-regresar" href="{% url 'cambiar_estado_pt' pt.id 'en_almacen' %}"
                                onclick="return confirm('¿Regresar {{ pt.numero_pt }} a En Almacén?')">Regresar</a>
                         {% elif pt.estado == 'embarcado' %}

@@ -65,6 +65,16 @@ class ProductoTerminado(models.Model):
         return self.numero_pt
 
     @property
+    def tiene_nc_critica_abierta(self):
+        """True si este PT tiene una no conformidad de severidad 'critica'
+        todavía 'abierta' o 'en_revision'. Se usa para bloquear que se
+        marque como vendido/embarcado o se incluya en una salida —
+        Menor/Mayor no bloquean (decisión del negocio), solo Crítica."""
+        return self.no_conformidades.filter(
+            severidad='critica', estado__in=['abierta', 'en_revision']
+        ).exists()
+
+    @property
     def peso_consumido_fleje(self):
         """Cuánto de esta cinta ya se ha metido a proceso de fleje, sumando
         TODAS las órdenes de fleje que la han tomado como origen (puede ser
