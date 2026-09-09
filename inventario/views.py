@@ -170,7 +170,7 @@ def editar_mp(request, mp_id):
 def detalle_mp(request, mp_id):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador', 'Almacen', 'Coordinador']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Operador', 'Almacen', 'Coordinador', 'Capturista']).exists()
     ):
         return HttpResponse("No tienes permiso para ver la materia prima.")
 
@@ -518,7 +518,7 @@ def registrar_movimiento(request, mp_id):
 def dar_salida_mp(request, mp_id):
     if not (
         request.user.is_superuser or
-        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Almacen', 'Coordinador']).exists()
+        request.user.groups.filter(name__in=['Administrador', 'Supervisor', 'Almacen', 'Coordinador', 'Capturista']).exists()
     ):
         messages.error(request, 'No tienes permiso para registrar salidas.')
         return redirect('detalle_mp', mp_id=mp_id)

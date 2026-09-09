@@ -163,7 +163,7 @@ def lista_salidas(request):
     })
 
 
-@roles_required('Administrador', 'Supervisor', 'Coordinador')
+@roles_required('Administrador', 'Supervisor', 'Coordinador', 'Capturista')
 def crear_salida(request):
     # Una cinta que ya fue tomada como origen de una orden de fleje que
     # todavía no termina sigue con estado 'en_almacen' (ese campo solo pasa
