@@ -5,6 +5,7 @@ from .views import (
     lista_usuarios, crear_usuario, editar_usuario,
     configuracion_empresa,
     historial_general,
+    alertas_json,
 )
 
 urlpatterns = [
@@ -13,6 +14,7 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('cargar-datos/', cargar_datos_view, name='cargar_datos'),
     path('cambiar-password/', cambiar_password, name='cambiar_password'),
+    path('alertas/actuales/', alertas_json, name='alertas_json'),
     path('usuarios/', lista_usuarios, name='lista_usuarios'),
     path('usuarios/crear/', crear_usuario, name='crear_usuario'),
     path('usuarios/<int:user_id>/editar/', editar_usuario, name='editar_usuario'),

@@ -229,3 +229,51 @@ class PtOrigenQuerysetTests(TestCase):
 
         form = OrdenProduccionForm()
         self.assertIn(cinta, form.fields['pt_origen'].queryset)
+
+
+class ListaOrdenesFiltroAlertasTests(TestCase):
+    """`?urgentes=1` y `?anomalia=bajo` son a donde llevan los links de las
+    alertas de dashboard/alertas.py — deben filtrar exactamente al mismo
+    subconjunto que generó el conteo de esa alerta."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.user = crear_usuario_con_rol('lista_ordenes_user', 'Administrador')
+        self.client.force_login(self.user)
+
+    def test_urgentes_filtra_solo_pendientes_y_en_proceso_con_prioridad_urgente(self):
+        urgente_pendiente = crear_orden_slitter(peso_usado=50)
+        urgente_pendiente.prioridad = 'urgente'
+        urgente_pendiente.save()
+
+        urgente_terminada = crear_orden_slitter(peso_usado=50, terminar=True)
+        urgente_terminada.prioridad = 'urgente'
+        urgente_terminada.save()
+
+        normal_pendiente = crear_orden_slitter(peso_usado=50)  # prioridad='media' por defecto
+
+        resp = self.client.get(reverse('lista_ordenes'), {'urgentes': '1'})
+        ids = [o.id for o in resp.context['ordenes']]
+        self.assertIn(urgente_pendiente.id, ids)
+        self.assertNotIn(urgente_terminada.id, ids)
+        self.assertNotIn(normal_pendiente.id, ids)
+
+    def test_anomalia_bajo_filtra_solo_ordenes_con_rendimiento_anomalo(self):
+        cliente = crear_cliente()
+        for i in range(5):
+            mp_base = crear_mp(cliente=cliente, peso=1000, material='Acero Galvanizado')
+            orden_base = crear_orden_slitter(mp=mp_base, cliente=cliente, peso_usado=500)
+            orden_base.peso_producido = 490  # 98%
+            orden_base.estado = 'terminado'
+            orden_base.save()
+
+        mp_mala = crear_mp(cliente=cliente, peso=1000, material='Acero Galvanizado')
+        orden_mala = crear_orden_slitter(mp=mp_mala, cliente=cliente, peso_usado=500)
+        orden_mala.peso_producido = 350  # 70%, muy por debajo del promedio (~98%)
+        orden_mala.estado = 'terminado'
+        orden_mala.save()
+
+        resp = self.client.get(reverse('lista_ordenes'), {'anomalia': 'bajo'})
+        ids = [o.id for o in resp.context['ordenes']]
+        self.assertEqual(ids, [orden_mala.id])

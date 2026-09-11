@@ -22,50 +22,17 @@ def permisos_usuario(request):
     es_superuser = request.user.is_superuser
     grupos = set(request.user.groups.values_list('name', flat=True))
 
-    # ── Alertas globales ──────────────────────────────────────────────────────
+    # ── Alertas globales (campanita del navbar) ─────────────────────────────
+    # Misma función que arma las tarjetas del dashboard (dashboard/alertas.py)
+    # — antes cada uno calculaba esto por su cuenta y la campanita solo
+    # cubría 3 de las 5 categorías de alerta reales, así que podía mostrar
+    # "sin alertas" mientras el dashboard sí mostraba una.
     alertas_items = []
-    mp_vencidas = mp_por_vencer = urgentes = 0
+    alertas_count = 0
     try:
-        from inventario.models import MateriaPrima
-        from produccion.models import OrdenProduccion
-        hoy = timezone.localdate()
-
-        mp_vencidas = MateriaPrima.objects.filter(
-            fecha_entrada__lt=hoy - datetime.timedelta(days=30)
-        ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
-        if mp_vencidas:
-            alertas_items.append({
-                'tipo': 'danger',
-                'icono': '🔴',
-                'texto': f'{mp_vencidas} MP con cobro activo',
-                'url': '/lista-mp/?cobro=vencido',
-            })
-
-        mp_por_vencer = MateriaPrima.objects.filter(
-            fecha_entrada__range=(
-                hoy - datetime.timedelta(days=30),
-                hoy - datetime.timedelta(days=23),
-            )
-        ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
-        if mp_por_vencer:
-            alertas_items.append({
-                'tipo': 'warning',
-                'icono': '⚠️',
-                'texto': f'{mp_por_vencer} MP por vencer pronto',
-                'url': '/lista-mp/?cobro=por_vencer',
-            })
-
-        urgentes = OrdenProduccion.objects.filter(
-            estado__in=['pendiente', 'proceso'],
-            prioridad='urgente',
-        ).count()
-        if urgentes:
-            alertas_items.append({
-                'tipo': 'warning',
-                'icono': '⚡',
-                'texto': f'{urgentes} orden(es) urgente(s)',
-                'url': '/ordenes/?estado=proceso',
-            })
+        from dashboard.alertas import obtener_alertas
+        alertas_items = obtener_alertas()
+        alertas_count = sum(a['count'] for a in alertas_items)
     except Exception:
         # No queremos que un error aquí tumbe TODAS las páginas del sistema
         # (este context processor corre en cada request), pero tampoco debe
@@ -75,8 +42,6 @@ def permisos_usuario(request):
         logging.getLogger(__name__).exception(
             "Error calculando alertas globales en permisos_usuario()"
         )
-
-    alertas_count = mp_vencidas + mp_por_vencer + urgentes if alertas_items else 0
 
     return {
         'es_admin_total': es_superuser,

@@ -1,9 +1,12 @@
+import datetime
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
+from django.utils import timezone
 
 from .models import OrdenProduccion, DetalleSlitter
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet, DetalleFlejeFormSet
@@ -193,6 +196,8 @@ def lista_ordenes(request):
     fecha_fin    = request.GET.get('fecha_fin', '')
     q            = request.GET.get('q', '')
     cliente_id   = request.GET.get('cliente', '')
+    urgentes     = request.GET.get('urgentes', '')
+    anomalia     = request.GET.get('anomalia', '')
 
     qs = OrdenProduccion.objects.select_related(
         'cliente', 'mp', 'linea'
@@ -210,6 +215,29 @@ def lista_ordenes(request):
         qs = qs.filter(folio_orden__icontains=q)
     if cliente_id:
         qs = qs.filter(cliente_id=cliente_id)
+    if urgentes == '1':
+        # A dónde lleva la alerta "órdenes urgentes pendientes" — mismo
+        # criterio exacto usado para contar esa alerta (dashboard/alertas.py),
+        # así que lo que ves aquí siempre coincide con el número que la
+        # generó.
+        qs = qs.filter(estado__in=['pendiente', 'proceso'], prioridad='urgente')
+    if anomalia == 'bajo':
+        # A dónde lleva la alerta "órdenes con rendimiento anómalo". La
+        # anomalía es un cálculo en Python (compara contra el promedio
+        # histórico, ver produccion/analitica.py), no algo que se pueda
+        # filtrar directo en la base de datos — así que primero se
+        # recalcula sobre el mismo universo exacto que usó la alerta
+        # (terminadas, últimos 30 días) y luego se filtra el queryset por
+        # esos IDs, para no perder la paginación/orden normal de la lista.
+        hoy = timezone.localdate()
+        candidatas = OrdenProduccion.objects.select_related('mp').filter(
+            estado='terminado', fecha__gte=hoy - datetime.timedelta(days=30),
+        )
+        ids_bajo = [
+            o.id for o in anotar_anomalias(candidatas)
+            if o.anomalia_rendimiento and o.anomalia_rendimiento['bucket'] == 'bajo'
+        ]
+        qs = qs.filter(pk__in=ids_bajo)
 
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get('page', 1))

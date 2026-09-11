@@ -289,42 +289,134 @@
             display: flex; align-items: center; justify-content: center;
             padding: 0 3px;
             line-height: 1;
+            box-shadow: 0 0 0 2px #1f2d3d;
+            animation: bellBadgePulse 2.2s infinite;
+        }
+        @keyframes bellBadgePulse {
+            0%   { box-shadow: 0 0 0 2px #1f2d3d, 0 0 0 2px rgba(239,68,68,0.45); }
+            70%  { box-shadow: 0 0 0 2px #1f2d3d, 0 0 0 8px rgba(239,68,68,0); }
+            100% { box-shadow: 0 0 0 2px #1f2d3d, 0 0 0 2px rgba(239,68,68,0); }
         }
         .notifs-panel {
             display: none;
             position: absolute;
-            top: calc(100% + 8px);
+            top: calc(100% + 10px);
             right: 0;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-            min-width: 260px;
+            border-radius: 14px;
+            box-shadow: 0 12px 32px rgba(15,23,42,0.2);
+            width: 340px;
+            max-width: calc(100vw - 32px);
             z-index: 200;
             overflow: hidden;
+            border: 1px solid #eef0f3;
         }
-        .notifs-panel.open { display: block; }
+        .notifs-panel.open { display: block; animation: notifsPanelIn .15s ease; }
+        @keyframes notifsPanelIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: none; }
+        }
         .notifs-header {
-            padding: 12px 16px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #1f2d3d;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .notif-item {
+            padding: 13px 16px 11px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
-            padding: 10px 16px;
-            font-size: 13px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .notifs-header-titulo {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #1f2d3d;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+        .notifs-live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #22c55e;
+            flex-shrink: 0;
+            animation: notifsLiveDot 2s infinite;
+        }
+        @keyframes notifsLiveDot {
+            0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
+            70%  { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+            100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+        }
+        .notifs-actualizado {
+            font-size: 10.5px;
+            color: #9ca3af;
+            white-space: nowrap;
+        }
+        .notifs-lista {
+            max-height: 360px;
+            overflow-y: auto;
+            padding: 6px;
+        }
+        /* Los selectores de abajo van prefijados con ".notifs-panel" a
+           propósito: la campana vive dentro de ".navbar", y ".navbar a"
+           (color blanco, fondo, padding, "white-space:nowrap", más arriba
+           en esta misma hoja) tiene la MISMA o mayor especificidad que un
+           ".notif-item" o ".notifs-footer a" sueltos, así que sin este
+           prefijo esas reglas del navbar ganaban y el texto se pintaba
+           blanco sobre blanco (invisible) y sin poder hacer wrap. */
+        .notifs-panel .notif-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12.5px;
             text-decoration: none;
             color: #374151;
-            border-bottom: 1px solid #f3f4f6;
+            white-space: normal;
+            background: none;
             transition: background .12s;
         }
-        .notif-item:hover { background: #f9fafb; }
-        .notif-item.danger { border-left: 3px solid #ef4444; }
-        .notif-item.warning { border-left: 3px solid #f59e0b; }
-        .notifs-empty { padding: 14px 16px; font-size: 13px; color: #9ca3af; }
+        .notifs-panel .notif-item:hover { background: #f8fafc; }
+        .notif-icono {
+            flex-shrink: 0;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .notif-cuerpo { flex: 1; min-width: 0; line-height: 1.42; }
+        .notif-titulo { display: block; font-weight: 700; color: #1f2d3d; font-size: 12.5px; margin-bottom: 2px; }
+        .notif-desc { color: #6b7280; font-size: 11.5px; }
+
+        .notif-item.critica     .notif-icono  { background: #fee2e2; color: #dc2626; }
+        .notif-item.critica     .notif-titulo { color: #991b1b; }
+        .notif-item.rendimiento .notif-icono  { background: #fce7f3; color: #be185d; }
+        .notif-item.rendimiento .notif-titulo { color: #9d174d; }
+        .notif-item.aviso       .notif-icono  { background: #fef3c7; color: #b45309; }
+        .notif-item.aviso       .notif-titulo { color: #92400e; }
+        .notif-item.info        .notif-icono  { background: #dbeafe; color: #1d4ed8; }
+        .notif-item.info        .notif-titulo { color: #1e3a8a; }
+
+        .notifs-empty {
+            padding: 30px 16px;
+            text-align: center;
+            font-size: 12.5px;
+            color: #9ca3af;
+        }
+        .notifs-empty .icono-svg { display: block; margin: 0 auto 8px; color: #c5cbd3; }
+        .notifs-footer {
+            padding: 9px 16px;
+            text-align: center;
+            border-top: 1px solid #f0f0f0;
+        }
+        .notifs-panel .notifs-footer a {
+            font-size: 11.5px;
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--color-primario);
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            white-space: normal;
+        }
+        .notifs-panel .notifs-footer a:hover { text-decoration: underline; background: none; }
 
         /* ── Mensajes flash ── */
         .messages-wrap {
@@ -486,22 +578,37 @@
         <div class="bell-wrap" id="bellWrap">
             <button class="bell-btn" onclick="toggleNotifs(event)" title="Notificaciones">
                 {% include 'partials/icono.html' with nombre='campana' tam=17 %}
-                {% if alertas_count > 0 %}
-                <span class="bell-badge">{{ alertas_count }}</span>
-                {% endif %}
+                <span class="bell-badge" id="bellBadge" {% if alertas_count <= 0 %}hidden{% endif %}>{{ alertas_count }}</span>
             </button>
             <div class="notifs-panel" id="notifsPanel">
-                <div class="notifs-header">Alertas del sistema</div>
-                {% if alertas_items %}
-                    {% for a in alertas_items %}
-                    <a href="{{ a.url }}" class="notif-item {{ a.tipo }}">
-                        <span>{{ a.icono }}</span>
-                        <span>{{ a.texto }}</span>
-                    </a>
-                    {% endfor %}
-                {% else %}
-                    <div class="notifs-empty">Sin alertas activas ✓</div>
-                {% endif %}
+                <div class="notifs-header">
+                    <div class="notifs-header-titulo">
+                        <span class="notifs-live-dot"></span>
+                        Alertas del sistema
+                    </div>
+                    <span class="notifs-actualizado" id="notifsActualizado">actualizado ahora</span>
+                </div>
+                <div class="notifs-lista" id="notifsLista">
+                    {% if alertas_items %}
+                        {% for a in alertas_items %}
+                        <a href="{{ a.url }}" class="notif-item {{ a.tipo }}">
+                            <div class="notif-icono">{% include 'partials/icono.html' with nombre=a.icono tam=15 %}</div>
+                            <div class="notif-cuerpo">
+                                <span class="notif-titulo">{{ a.titulo }}</span>
+                                <span class="notif-desc">{{ a.descripcion }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="notifs-empty">
+                            {% include 'partials/icono.html' with nombre='check' tam=28 %}
+                            Sin alertas activas
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="notifs-footer">
+                    <a href="{% url 'inicio' %}">Ver todo en el Dashboard</a>
+                </div>
             </div>
         </div>
         <a href="{% url 'cambiar_password' %}">Mi contraseña</a>
@@ -556,8 +663,106 @@ function toggleNotifs(e) {
     const panel = document.getElementById('notifsPanel');
     const abrir = !panel.classList.contains('open');
     cerrarMenusNav(null);
-    if (abrir) panel.classList.add('open');
+    if (abrir) {
+        panel.classList.add('open');
+        // Al abrir la campana, refrescar de inmediato: el usuario quiere ver
+        // el estado actual justo en ese momento, no el que tenía la página
+        // cuando cargó (hasta 45s de diferencia con solo el polling).
+        if (window.refrescarAlertas) window.refrescarAlertas();
+    }
 }
+
+(function () {
+    // Campanita de notificaciones: refresca sola contra /alertas/actuales/
+    // (misma fuente que arma las tarjetas del dashboard — dashboard/alertas.py)
+    // para que lo que muestra siempre sea el estado real, no una foto vieja
+    // de cuando cargó la página.
+    const bellWrap = document.getElementById('bellWrap');
+    if (!bellWrap) return;
+
+    const urlAlertas = '{% url "alertas_json" %}';
+    const badge = document.getElementById('bellBadge');
+    const lista = document.getElementById('notifsLista');
+    const actualizadoEl = document.getElementById('notifsActualizado');
+    let ultimaActualizacion = Date.now();
+    let refrescando = false;
+
+    const ICONOS = {
+        'tendencia-baja': '<path d="m3 7 7 7 4-4 7 7"/><path d="M15 17h6v-6"/>',
+        'alerta-circulo': '<circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>',
+        'alerta-triangulo': '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/>',
+        'alerta-octagono': '<path d="M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86L7.86 2Z"/><path d="M12 8v5"/><path d="M12 16h.01"/>',
+        'check': '<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/>',
+    };
+
+    function svgIcono(nombre, tam) {
+        const inner = ICONOS[nombre] || ICONOS['alerta-circulo'];
+        return '<svg class="icono-svg" width="' + tam + '" height="' + tam +
+            '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+    }
+
+    function escaparHtml(texto) {
+        const d = document.createElement('div');
+        d.textContent = texto == null ? '' : texto;
+        return d.innerHTML;
+    }
+
+    function pintar(data) {
+        if (data.count > 0) {
+            badge.textContent = data.count;
+            badge.hidden = false;
+        } else {
+            badge.hidden = true;
+        }
+
+        if (!data.items.length) {
+            lista.innerHTML = '<div class="notifs-empty">' + svgIcono('check', 28) + 'Sin alertas activas</div>';
+            return;
+        }
+        lista.innerHTML = data.items.map(function (a) {
+            return '<a href="' + a.url + '" class="notif-item ' + escaparHtml(a.tipo) + '">' +
+                '<div class="notif-icono">' + svgIcono(a.icono, 15) + '</div>' +
+                '<div class="notif-cuerpo">' +
+                    '<span class="notif-titulo">' + escaparHtml(a.titulo) + '</span>' +
+                    '<span class="notif-desc">' + escaparHtml(a.descripcion) + '</span>' +
+                '</div>' +
+            '</a>';
+        }).join('');
+    }
+
+    function refrescarAlertas() {
+        if (refrescando) return;
+        refrescando = true;
+        fetch(urlAlertas, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (data) {
+                    pintar(data);
+                    ultimaActualizacion = Date.now();
+                    actualizadoEl.textContent = 'actualizado ahora';
+                }
+            })
+            .catch(function () {
+                // Si falla el polling (sin red, etc.) se deja lo último que
+                // se vio — no tiene sentido vaciar la campana por un fetch
+                // fallido y dar la falsa impresión de "sin alertas".
+            })
+            .finally(function () { refrescando = false; });
+    }
+    window.refrescarAlertas = refrescarAlertas;
+
+    setInterval(function () {
+        const segundos = Math.floor((Date.now() - ultimaActualizacion) / 1000);
+        if (segundos < 5) actualizadoEl.textContent = 'actualizado ahora';
+        else if (segundos < 60) actualizadoEl.textContent = 'actualizado hace ' + segundos + 's';
+        else actualizadoEl.textContent = 'actualizado hace ' + Math.floor(segundos / 60) + ' min';
+    }, 1000);
+
+    // Refresco automático de fondo cada 45s, aunque el panel esté cerrado,
+    // para que el número en la campanita (no solo el panel) se mantenga real.
+    setInterval(refrescarAlertas, 45000);
+})();
 
 document.querySelectorAll('[data-navdrop]').forEach(function (wrap) {
     const btn = wrap.querySelector('[data-navdrop-btn]');

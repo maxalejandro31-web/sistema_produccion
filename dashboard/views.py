@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User, Group
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core.management import call_command
 from django.conf import settings
 from django.core.paginator import Paginator
@@ -17,8 +17,8 @@ from django.utils import timezone
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
-from produccion.analitica import anotar_anomalias, ids_rollos_rendimiento_bajo
 from materia_terminada.models import Salida
+from .alertas import obtener_alertas
 from .models import ConfiguracionEmpresa, HistorialCambio, registrar_historial
 from .forms import ConfiguracionEmpresaForm
 
@@ -129,38 +129,10 @@ def inicio(request):
     # ── Alertas ───────────────────────────────────────────────────────────────
     hoy = timezone.localdate()
 
-    mp_cobro_activo = MateriaPrima.objects.filter(
-        fecha_entrada__isnull=False,
-        fecha_entrada__lt=hoy - datetime.timedelta(days=30),
-    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
-
-    mp_por_vencer = MateriaPrima.objects.filter(
-        fecha_entrada__isnull=False,
-        fecha_entrada__range=(
-            hoy - datetime.timedelta(days=30),
-            hoy - datetime.timedelta(days=23),
-        ),
-    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
-
-    ordenes_urgentes = OrdenProduccion.objects.filter(
-        estado__in=['pendiente', 'proceso'],
-        prioridad='urgente',
-    ).count()
-
-    ordenes_recientes_terminadas = OrdenProduccion.objects.select_related('mp').filter(
-        estado='terminado',
-        fecha__gte=hoy - datetime.timedelta(days=30),
-    ).order_by('-fecha')
-    ordenes_rendimiento_bajo = sum(
-        1 for o in anotar_anomalias(ordenes_recientes_terminadas)
-        if o.anomalia_rendimiento and o.anomalia_rendimiento['bucket'] == 'bajo'
-    )
-
-    # Rollos ya terminados cuyo rendimiento TOTAL (suma de kg producidos /
-    # suma de kg usados en todas las órdenes que lo consumieron) quedó por
-    # debajo del 96.5% — umbral fijo de buen uso de MP, distinto de la
-    # comparación estadística de arriba.
-    rollos_rendimiento_bajo = len(ids_rollos_rendimiento_bajo())
+    # Misma función que usa la campanita del navbar (core/context_processors.py)
+    # — así las tarjetas de aquí y la campanita nunca se pueden desincronizar,
+    # porque literalmente comparten el mismo cálculo.
+    alertas = obtener_alertas()
 
     # ── Datos para gráficas ───────────────────────────────────────────────────
 
@@ -250,16 +222,32 @@ def inicio(request):
         'scrap_total': scrap_total,
         'ultimas_ordenes': ultimas_ordenes,
         'mp_critica': mp_critica,
-        'mp_cobro_activo': mp_cobro_activo,
-        'mp_por_vencer': mp_por_vencer,
-        'ordenes_urgentes': ordenes_urgentes,
-        'ordenes_rendimiento_bajo': ordenes_rendimiento_bajo,
-        'rollos_rendimiento_bajo': rollos_rendimiento_bajo,
+        'alertas': alertas,
         'resumen_mes_chart': resumen_mes_chart,
         'nombre_mes_actual': nombre_mes_actual,
         'rendimiento_mensual_chart': rendimiento_mensual_chart,
         'rendimiento_mes_actual': rendimiento_mes_actual,
         'ordenes_semana_chart': ordenes_semana_chart,
+    })
+
+
+@login_required
+def alertas_json(request):
+    """Para el polling automático de la campanita del navbar: recalcula las
+    alertas EN VIVO (misma fuente que usa el primer render de la página y
+    las tarjetas del dashboard — dashboard/alertas.py) y las devuelve en
+    JSON, para que el badge y el panel se puedan refrescar sin recargar
+    toda la página."""
+    alertas = obtener_alertas()
+    return JsonResponse({
+        'count': sum(a['count'] for a in alertas),
+        'items': [
+            {
+                'tipo': a['tipo'], 'icono': a['icono'], 'titulo': a['titulo'],
+                'descripcion': a['descripcion'], 'url': a['url'], 'cta': a['cta'],
+            }
+            for a in alertas
+        ],
     })
 
 

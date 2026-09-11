@@ -60,11 +60,15 @@ def lista_mp(request):
     if cliente_id:
         qs = qs.filter(cliente_id=cliente_id)
     if cobro == 'vencido':
-        qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30))
+        # El material propio de la maquila nunca genera cobro — sin este
+        # exclude, este filtro (al que llega el link "Ver MP" de la alerta
+        # de cobro activo) mostraba más filas de las que decía el conteo de
+        # la alerta, porque ese conteo sí excluye lo propio.
+        qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC')
     elif cobro == 'por_vencer':
         qs = qs.filter(
             fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
-        )
+        ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC')
     elif cobro == 'libre':
         qs = qs.filter(fecha_entrada__gte=hoy - datetime.timedelta(days=22))
 

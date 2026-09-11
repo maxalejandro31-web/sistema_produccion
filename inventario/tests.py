@@ -7,10 +7,13 @@ sistema (para que no se vuelvan a romper sin darnos cuenta): el TOCTOU de
 dar_salida_mp, el revertir estado 'Terminado' -> 'En Proceso' con un
 AJUSTE_POSITIVO, y el permiso de Capturista para dar salidas de MP.
 """
+import datetime
 from decimal import Decimal
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from core.factories import crear_usuario_con_rol, crear_cliente, crear_mp
 
@@ -199,3 +202,37 @@ class DarSalidaMPFlujoTests(TestCase):
         )
         self.mp.refresh_from_db()
         self.assertEqual(self.mp.peso_restante, Decimal('500.00'))
+
+
+class ListaMpFiltroCobroTests(TestCase):
+    """El filtro `?cobro=vencido`/`?cobro=por_vencer` de lista_mp es a donde
+    llevan los links "Ver MP" de las alertas de cobro por estancia — antes
+    solo el CONTEO de la alerta excluía el material propio de la maquila,
+    pero la lista filtrada sí lo incluía, así que el número de la alerta no
+    coincidía con lo que se veía al hacer clic."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('lista_mp_user', password='pass12345')
+        self.client.force_login(self.user)
+        self.propia = crear_cliente(nombre='MAQUILAS Y SERVICIOS JC')
+        self.externo = crear_cliente(nombre='Cliente Externo SA')
+
+    def test_cobro_vencido_excluye_material_propio(self):
+        hace_40_dias = timezone.localdate() - datetime.timedelta(days=40)
+        crear_mp(numero_mp='MP-PROPIA-V', cliente=self.propia, fecha_entrada=hace_40_dias)
+        crear_mp(numero_mp='MP-CLIENTE-V', cliente=self.externo, fecha_entrada=hace_40_dias)
+
+        resp = self.client.get(reverse('lista_mp'), {'cobro': 'vencido'})
+        numeros = [mp.numero_mp for mp in resp.context['materias_primas']]
+        self.assertIn('MP-CLIENTE-V', numeros)
+        self.assertNotIn('MP-PROPIA-V', numeros)
+
+    def test_cobro_por_vencer_excluye_material_propio(self):
+        hace_25_dias = timezone.localdate() - datetime.timedelta(days=25)
+        crear_mp(numero_mp='MP-PROPIA-PV', cliente=self.propia, fecha_entrada=hace_25_dias)
+        crear_mp(numero_mp='MP-CLIENTE-PV', cliente=self.externo, fecha_entrada=hace_25_dias)
+
+        resp = self.client.get(reverse('lista_mp'), {'cobro': 'por_vencer'})
+        numeros = [mp.numero_mp for mp in resp.context['materias_primas']]
+        self.assertIn('MP-CLIENTE-PV', numeros)
+        self.assertNotIn('MP-PROPIA-PV', numeros)
