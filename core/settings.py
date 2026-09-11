@@ -14,6 +14,37 @@ SECRET_KEY = os.getenv(
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
+# Monitoreo de errores (Sentry). Solo se activa si existe SENTRY_DSN — en
+# desarrollo local normalmente no está configurada, así que esto no hace
+# nada ahí. Si el paquete sentry-sdk no llegara a estar instalado (por
+# ejemplo un entorno que no corrió pip install todavía), no se rompe el
+# arranque: se ignora en silencio y el sistema sigue funcionando igual,
+# solo sin monitoreo.
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[
+                DjangoIntegration(),
+                # Cualquier logger.exception()/logger.error() del código
+                # (ya usamos esto en core/context_processors.py, por
+                # ejemplo) también se manda a Sentry como evento, además
+                # de los 500 no capturados que ya cubre DjangoIntegration.
+                LoggingIntegration(level=None, event_level="ERROR"),
+            ],
+            environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
+            release=os.getenv("RENDER_GIT_COMMIT"),
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+            send_default_pii=False,
+        )
+    except ImportError:
+        pass
+
 # Único usuario autorizado para eliminar registros (MP, órdenes, etc.)
 USUARIO_CON_PERMISO_ELIMINAR = os.getenv("USUARIO_CON_PERMISO_ELIMINAR", "admin")
 

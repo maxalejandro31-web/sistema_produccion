@@ -19,7 +19,7 @@ from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
 from produccion.analitica import anotar_anomalias, ids_rollos_rendimiento_bajo
 from materia_terminada.models import Salida
-from .models import ConfiguracionEmpresa, HistorialCambio
+from .models import ConfiguracionEmpresa, HistorialCambio, registrar_historial
 from .forms import ConfiguracionEmpresaForm
 
 
@@ -312,6 +312,9 @@ def crear_usuario(request):
             elif grupo_id:
                 user.groups.add(Group.objects.get(id=grupo_id))
             user.save()
+            rol_desc = 'Admin Total' if es_admin else (user.groups.first().name if user.groups.exists() else 'sin rol')
+            registrar_historial(request, 'Usuario', user.id, str(user), 'CREAR',
+                f'Usuario creado con rol: {rol_desc}.')
             messages.success(request, f'Usuario "{username}" creado correctamente.')
             return redirect('lista_usuarios')
 
@@ -351,6 +354,9 @@ def editar_usuario(request, user_id):
             if grupo_id and not es_admin:
                 usuario.groups.add(Group.objects.get(id=grupo_id))
             usuario.save()
+            rol_desc = 'Admin Total' if es_admin else (usuario.groups.first().name if usuario.groups.exists() else 'sin rol')
+            registrar_historial(request, 'Usuario', usuario.id, str(usuario), 'EDITAR',
+                f'Rol cambiado a: {rol_desc}.')
             messages.success(request, f'Rol de "{usuario.username}" actualizado.')
             return redirect('lista_usuarios')
 
@@ -364,6 +370,10 @@ def editar_usuario(request, user_id):
             else:
                 usuario.set_password(nueva)
                 usuario.save()
+                # Nunca se guarda la contraseña en sí en el historial, solo
+                # que se cambió y quién lo hizo.
+                registrar_historial(request, 'Usuario', usuario.id, str(usuario), 'EDITAR',
+                    'Contraseña actualizada.')
                 messages.success(request, f'Contraseña de "{usuario.username}" actualizada.')
                 return redirect('lista_usuarios')
 
@@ -374,6 +384,8 @@ def editar_usuario(request, user_id):
                 usuario.is_active = not usuario.is_active
                 usuario.save()
                 estado = 'activado' if usuario.is_active else 'desactivado'
+                registrar_historial(request, 'Usuario', usuario.id, str(usuario), 'ESTADO',
+                    f'Usuario {estado}.')
                 messages.success(request, f'Usuario "{usuario.username}" {estado}.')
             return redirect('lista_usuarios')
 
@@ -397,6 +409,8 @@ def configuracion_empresa(request):
         form = ConfiguracionEmpresaForm(request.POST, request.FILES, instance=config)
         if form.is_valid():
             form.save()
+            registrar_historial(request, 'ConfiguracionEmpresa', config.id, str(config), 'EDITAR',
+                'Configuración de la empresa actualizada.')
             messages.success(request, 'Configuración actualizada correctamente.')
             return redirect('configuracion_empresa')
     else:

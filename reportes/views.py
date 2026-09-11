@@ -146,22 +146,22 @@ def reporte_inventario_mp(request):
             _fmt(mp.material),
             _fmt(mp.grado),
             _fmt(mp.acabado),
-            float(mp.espesor_mils) if mp.espesor_mils else "",
-            float(mp.espesor_valor) if mp.espesor_valor else "",
+            float(mp.espesor_mils) if mp.espesor_mils is not None else "",
+            float(mp.espesor_valor) if mp.espesor_valor is not None else "",
             _fmt(mp.unidad_espesor),
-            float(mp.ancho) if mp.ancho else "",
-            float(mp.largo) if mp.largo else "",
-            float(mp.peso) if mp.peso else "",
-            float(mp.peso_restante) if mp.peso_restante else "",
-            float(mp.diametro_interior) if mp.diametro_interior else "",
-            float(mp.diametro_exterior) if mp.diametro_exterior else "",
+            float(mp.ancho) if mp.ancho is not None else "",
+            float(mp.largo) if mp.largo is not None else "",
+            float(mp.peso) if mp.peso is not None else "",
+            float(mp.peso_restante) if mp.peso_restante is not None else "",
+            float(mp.diametro_interior) if mp.diametro_interior is not None else "",
+            float(mp.diametro_exterior) if mp.diametro_exterior is not None else "",
             _fmt(mp.proveedor),
             _fmt(mp.ubicacion),
             _fmt(mp.estado),
             mp.fecha_entrada.strftime("%d/%m/%Y") if mp.fecha_entrada else "",
             mp.dias_en_fabrica_num if mp.dias_en_fabrica_num is not None else "",
             ESTATUS_LABEL.get(mp.estatus_cobro, ""),
-            mp.meses_a_cobrar if mp.meses_a_cobrar else "",
+            mp.meses_a_cobrar if mp.meses_a_cobrar is not None else "",
             _fmt(mp.observaciones),
         ])
 
@@ -233,11 +233,11 @@ def reporte_levantamiento_mp(request):
             _fmt(mp.tipo_mp),
             cliente_o_propia,
             _fmt(mp.material),
-            float(mp.espesor_mils) if mp.espesor_mils else "",
-            "mils" if mp.espesor_mils else "",
-            float(mp.ancho) if mp.ancho else "",
+            float(mp.espesor_mils) if mp.espesor_mils is not None else "",
+            "mils" if mp.espesor_mils is not None else "",
+            float(mp.ancho) if mp.ancho is not None else "",
             diam,
-            float(mp.peso_restante) if mp.peso_restante else "",
+            float(mp.peso_restante) if mp.peso_restante is not None else "",
             mp.fecha_entrada.strftime("%d/%m/%Y") if mp.fecha_entrada else "",
             _fmt(mp.ubicacion),
             _fmt(mp.observaciones),
@@ -420,11 +420,11 @@ def reporte_ordenes_produccion(request):
             op.tiempo_preparacion_min or "",
             op.tiempo_proceso_min or "",
             op.tiempo_muerto_min or "",
-            float(op.peso_usado) if op.peso_usado else "",
-            float(op.peso_producido) if op.peso_producido else "",
-            float(op.scrap_total) if op.scrap_total else "",
-            float(op.merma_kg) if op.merma_kg else "",
-            float(op.rendimiento_porcentaje) if op.rendimiento_porcentaje else "",
+            float(op.peso_usado) if op.peso_usado is not None else "",
+            float(op.peso_producido) if op.peso_producido is not None else "",
+            float(op.scrap_total) if op.scrap_total is not None else "",
+            float(op.merma_kg) if op.merma_kg is not None else "",
+            float(op.rendimiento_porcentaje) if op.rendimiento_porcentaje is not None else "",
             ANOMALIA_LABEL.get(anomalia['bucket'], "—") if anomalia else "—",
             op.cantidad_paquetes or "",
             op.cantidad_piezas or "",
@@ -596,7 +596,15 @@ def reporte_cobros_estancia(request):
     solo = request.GET.get("solo", "")  # "vencido" | "por_vencer" | ""
     cliente_id = request.GET.get("cliente")
 
-    qs = MateriaPrima.objects.select_related("cliente").filter(fecha_entrada__isnull=False)
+    # El material propio de la maquila (sin cliente externo) no se le cobra
+    # estancia a nadie — sin este exclude, un rollo propio con más de 30
+    # días en patio aparecía en este mismo reporte de "Cobros por Estancia"
+    # como si se le pudiera facturar renta de almacenaje a un cliente.
+    # Mismo exclude ya usado en inventario/views.py, dashboard/views.py y
+    # core/context_processors.py para este mismo cálculo.
+    qs = MateriaPrima.objects.select_related("cliente").filter(
+        fecha_entrada__isnull=False
+    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC')
 
     if solo == "vencido":
         qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30))
@@ -639,11 +647,11 @@ def reporte_cobros_estancia(request):
             _fmt(mp.cliente.nombre if mp.cliente else ""),
             _fmt(mp.tipo_mp),
             _fmt(mp.material),
-            float(mp.peso_restante) if mp.peso_restante else "",
+            float(mp.peso_restante) if mp.peso_restante is not None else "",
             mp.fecha_entrada.strftime("%d/%m/%Y") if mp.fecha_entrada else "",
             mp.dias_en_fabrica_num if mp.dias_en_fabrica_num is not None else "",
             ESTATUS_LABEL.get(mp.estatus_cobro, ""),
-            mp.meses_a_cobrar if mp.meses_a_cobrar else 0,
+            mp.meses_a_cobrar if mp.meses_a_cobrar is not None else 0,
             _fmt(mp.ubicacion),
             _fmt(mp.observaciones),
         ])
