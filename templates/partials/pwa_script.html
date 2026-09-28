@@ -1,0 +1,41 @@
+{% comment %}
+Registro del service worker (pantalla de "sin conexión") y botón "Instalar
+app". Va al final del <body> de base.html y de login.html.
+{% endcomment %}
+<script>
+(function () {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('{% url "pwa_sw" %}', { scope: '/' }).catch(function () {
+                // Si el navegador no lo permite, el sistema funciona igual,
+                // solo sin la pantalla bonita de "sin conexión".
+            });
+        });
+    }
+
+    // Botón "Instalar app": solo aparece cuando el navegador (Edge/Chrome)
+    // avisa que se puede instalar; si ya está instalada o el navegador no lo
+    // soporta, nunca se muestra.
+    const btn = document.getElementById('btnInstalarApp');
+    if (!btn) return;
+    let eventoInstalar = null;
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        eventoInstalar = e;
+        btn.hidden = false;
+    });
+    btn.addEventListener('click', function () {
+        if (!eventoInstalar) return;
+        eventoInstalar.prompt();
+        eventoInstalar.userChoice.finally(function () {
+            eventoInstalar = null;
+            btn.hidden = true;
+        });
+    });
+    window.addEventListener('appinstalled', function () {
+        eventoInstalar = null;
+        btn.hidden = true;
+    });
+})();
+</script>

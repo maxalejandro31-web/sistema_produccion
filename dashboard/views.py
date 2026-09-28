@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Sum
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from inventario.models import MateriaPrima
 from produccion.models import OrdenProduccion
@@ -51,6 +52,14 @@ def login_view(request):
         )
         if user is not None:
             login(request, user)
+            # Regresar a la pantalla que se pidió antes del login (por
+            # ejemplo un acceso directo de la app instalada, como "Capturar
+            # orden"), solo si es una dirección de este mismo sistema.
+            siguiente = request.POST.get('next') or request.GET.get('next')
+            if siguiente and url_has_allowed_host_and_scheme(
+                siguiente, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+            ):
+                return redirect(siguiente)
             return redirect('inicio')
         error = 'Usuario o contraseña incorrectos'
     return render(request, 'dashboard/login.html', {'error': error})

@@ -1,0 +1,11 @@
+{% load static %}{% comment %}
+Etiquetas para que el sistema se pueda instalar como programa (ver
+core/pwa.py). Va dentro del <head> de base.html y de login.html.
+{% endcomment %}
+    <link rel="manifest" href="{% url 'pwa_manifest' %}">
+    <meta name="theme-color" content="#1f2d3d">
+    <meta name="application-name" content="{{ config_empresa.nombre_empresa|default:'Sistema de Producción' }}">
+    <meta name="apple-mobile-web-app-title" content="{{ config_empresa.nombre_empresa|default:'Sistema de Producción' }}">
+    <link rel="icon" href="{% static 'pwa/favicon.ico' %}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'pwa/apple-touch-icon.png' %}">

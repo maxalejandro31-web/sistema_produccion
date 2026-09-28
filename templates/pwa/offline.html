@@ -1,0 +1,50 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1f2d3d">
+    <title>Sin conexión — {{ nombre_empresa }}</title>
+    <style>
+        body {
+            margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: #f4f6f8; color: #1f2937;
+        }
+        .barra { background: #1f2d3d; color: white; padding: 14px 24px; font-weight: 700; font-size: 16px; }
+        .contenido { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+        .tarjeta {
+            background: white; border-radius: 16px; padding: 40px 36px; max-width: 440px; width: 100%;
+            text-align: center; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+        }
+        .tarjeta img { width: 72px; height: 72px; margin-bottom: 18px; }
+        h1 { font-size: 21px; margin: 0 0 10px; color: #1f2d3d; }
+        p { color: #6b7280; line-height: 1.55; margin: 0 0 24px; font-size: 14px; }
+        button {
+            background: #1f2d3d; color: white; border: none; border-radius: 10px;
+            padding: 12px 26px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+        }
+        button:hover { background: #2c4a6e; }
+        .estado { margin-top: 16px; font-size: 12px; color: #9ca3af; }
+    </style>
+</head>
+<body>
+    <div class="barra">{{ nombre_empresa }}</div>
+    <div class="contenido">
+        <div class="tarjeta">
+            <img src="{% static 'pwa/icon-192.png' %}" alt="">
+            <h1>Sin conexión a internet</h1>
+            <p>No se pudo conectar con el sistema. Revisa que la computadora tenga
+               internet; en cuanto regrese la conexión, esta pantalla se recarga sola.</p>
+            <button type="button" onclick="location.reload()">Reintentar</button>
+            <div class="estado" id="estado">Esperando conexión…</div>
+        </div>
+    </div>
+    <script>
+        window.addEventListener('online', function () {
+            document.getElementById('estado').textContent = 'Conexión recuperada, recargando…';
+            location.reload();
+        });
+    </script>
+</body>
+</html>

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Producción{% endblock %}</title>
+{% include 'partials/pwa_head.html' %}
     <style>
         /* ══════════════════════════════════════════════════════════════
            Sistema de diseño compartido — variables centrales.
@@ -47,6 +48,11 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; }
+
+        /* El atributo "hidden" debe ganarle a cualquier "display" de una
+           clase (p. ej. .bell-badge usa display:flex): sin esto, un
+           elemento con hidden seguía visible. */
+        [hidden] { display: none !important; }
 
         html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
@@ -503,6 +509,32 @@
             margin-top: 8px;
         }
 
+        /* ── Modo programa (instalado como app de escritorio) ──
+           En la ventana de la app no hay botones de Atrás/Recargar del
+           navegador, así que se muestran estos. En el navegador normal
+           quedan ocultos. */
+        .app-nav { display: none; gap: 4px; }
+        @media (display-mode: standalone), (display-mode: window-controls-overlay) {
+            .app-nav { display: inline-flex; }
+        }
+        .app-nav-btn, .btn-instalar {
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: white;
+            padding: 6px 9px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.15s;
+        }
+        .app-nav-btn:hover, .btn-instalar:hover { background: rgba(255,255,255,0.2); }
+        .btn-instalar { background: rgba(22,160,133,0.35); }
+        .btn-instalar:hover { background: rgba(22,160,133,0.6); }
+
         @media (max-width: 768px) {
             .contenido { padding: 14px; }
             .navbar { padding: 0 14px; }
@@ -525,6 +557,10 @@
         {{ config_empresa.nombre_empresa }}
     </div>
     <div class="links">
+        <span class="app-nav">
+            <button type="button" class="app-nav-btn" onclick="history.back()" title="Atrás (Alt + ←)">{% include 'partials/icono.html' with nombre='flecha-izquierda' tam=15 %}</button>
+            <button type="button" class="app-nav-btn" onclick="location.reload()" title="Recargar (F5)">{% include 'partials/icono.html' with nombre='recargar' tam=15 %}</button>
+        </span>
         <span class="usuario">{% include 'partials/icono.html' with nombre='usuario' tam=13 %} {{ request.user.username }}</span>
         <a href="{% url 'inicio' %}">Dashboard</a>
 
@@ -611,6 +647,7 @@
                 </div>
             </div>
         </div>
+        <button type="button" class="btn-instalar" id="btnInstalarApp" hidden title="Instalar el sistema como programa en esta computadora">{% include 'partials/icono.html' with nombre='descarga' tam=14 %} Instalar app</button>
         <a href="{% url 'cambiar_password' %}">Mi contraseña</a>
         <a href="{% url 'logout' %}" class="logout">Salir</a>
     </div>
@@ -646,6 +683,7 @@
 </footer>
 
 {% block extra_js %}{% endblock %}
+{% include 'partials/pwa_script.html' %}
 <script>
 function cerrarMenusNav(exceptoPanel) {
     document.querySelectorAll('.navdrop-panel.open').forEach(function (p) {
