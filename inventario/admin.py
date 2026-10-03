@@ -1,4 +1,5 @@
 from django.contrib import admin
+from .forms import MateriaPrimaAdminForm
 from .models import Cliente, MateriaPrima
 
 
@@ -11,6 +12,8 @@ class ClienteAdmin(admin.ModelAdmin):
 
 @admin.register(MateriaPrima)
 class MateriaPrimaAdmin(admin.ModelAdmin):
+    # Mismo peso obligatorio que la captura normal (ver PesoObligatorioMixin).
+    form = MateriaPrimaAdminForm
     list_display = (
         'numero_mp',
         'tipo_mp',

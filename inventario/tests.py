@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from core.factories import crear_usuario_con_rol, crear_cliente, crear_mp
 
-from .forms import MovimientoMPForm, RegistrarMovimientoForm
+from .forms import MateriaPrimaForm, MovimientoMPForm, RegistrarMovimientoForm
 from .models import MateriaPrima, MovimientoMP
 
 
@@ -236,3 +236,166 @@ class ListaMpFiltroCobroTests(TestCase):
         numeros = [mp.numero_mp for mp in resp.context['materias_primas']]
         self.assertIn('MP-CLIENTE-PV', numeros)
         self.assertNotIn('MP-PROPIA-PV', numeros)
+
+
+class BajaRolloSinPesoTests(TestCase):
+    """Rollos que quedaron sin peso (nunca se capturó, o quedó en 0) no se
+    podían dar de salida: el peso era obligatorio y no podía superar un
+    restante vacío/0. Ahora se pueden dar de baja sin peso, con motivo
+    obligatorio, y quedan 'Terminado'."""
+
+    def setUp(self):
+        self.user = crear_usuario_con_rol('capt_baja', 'Capturista')
+        self.client.force_login(self.user)
+
+    def _mp_sin_peso(self, numero='MP-SINPESO-1', peso=None):
+        # Se crea "a la antigua" (directo en BD) porque el formulario ya no
+        # deja capturar MP sin peso.
+        mp = MateriaPrima.objects.create(numero_mp=numero, cliente=crear_cliente(), peso=peso)
+        if peso == 0:
+            MateriaPrima.objects.filter(pk=mp.pk).update(peso_restante=0)
+            mp.refresh_from_db()
+        return mp
+
+    def _post(self, mp, **datos):
+        datos.setdefault('fecha_salida', '')
+        datos.setdefault('cliente_id', '')
+        return self.client.post(reverse('dar_salida_mp', args=[mp.id]), datos)
+
+    def test_sin_peso_se_detecta(self):
+        self.assertTrue(self._mp_sin_peso().sin_peso)
+        self.assertTrue(self._mp_sin_peso('MP-CERO', peso=0).sin_peso)
+        self.assertFalse(crear_mp(peso=500).sin_peso)
+
+    def test_pantalla_de_baja_no_exige_peso(self):
+        mp = self._mp_sin_peso()
+        resp = self.client.get(reverse('dar_salida_mp', args=[mp.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Rollo sin peso registrado')
+        self.assertContains(resp, 'Motivo de la baja')
+
+    def test_baja_sin_peso_con_motivo_deja_terminado(self):
+        mp = self._mp_sin_peso()
+        resp = self._post(mp, peso='', observaciones='Consumido en planta, no se registró el peso')
+        self.assertEqual(resp.status_code, 302)
+        mp.refresh_from_db()
+        self.assertEqual(mp.estado, 'Terminado')
+        self.assertEqual(mp.peso_restante, Decimal('0.00'))
+        mov = MovimientoMP.objects.get(mp=mp, tipo_movimiento='SALIDA')
+        self.assertEqual(mov.peso, Decimal('0.00'))
+        self.assertIn('Baja sin peso registrado', mov.observaciones)
+        self.assertEqual(mov.usuario, self.user)
+
+    def test_baja_de_rollo_en_cero_tambien_funciona(self):
+        mp = self._mp_sin_peso('MP-CERO-2', peso=0)
+        self._post(mp, peso='', observaciones='Se regresó al cliente')
+        mp.refresh_from_db()
+        self.assertEqual(mp.estado, 'Terminado')
+
+    def test_baja_sin_peso_exige_motivo(self):
+        mp = self._mp_sin_peso()
+        resp = self._post(mp, peso='', observaciones='   ')
+        self.assertEqual(resp.status_code, 200)
+        mp.refresh_from_db()
+        self.assertNotEqual(mp.estado, 'Terminado')
+        self.assertFalse(MovimientoMP.objects.filter(mp=mp).exists())
+
+    def test_si_se_conoce_el_peso_queda_guardado(self):
+        mp = self._mp_sin_peso()
+        self._post(mp, peso='842.5', observaciones='Peso de la etiqueta')
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso, Decimal('842.50'))
+        self.assertEqual(mp.peso_restante, Decimal('0.00'))
+        self.assertEqual(mp.estado, 'Terminado')
+        self.assertEqual(MovimientoMP.objects.get(mp=mp).peso, Decimal('842.50'))
+
+    def test_rollo_con_peso_sigue_exigiendo_peso(self):
+        mp = crear_mp(peso=500)
+        resp = self._post(mp, peso='', observaciones='intento sin peso')
+        self.assertEqual(resp.status_code, 200)
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso_restante, Decimal('500.00'))
+        self.assertFalse(MovimientoMP.objects.filter(mp=mp).exists())
+
+    def test_rollo_ya_terminado_no_se_puede_dar_de_baja_otra_vez(self):
+        mp = self._mp_sin_peso()
+        self._post(mp, peso='', observaciones='Primera baja')
+        resp = self._post(mp, peso='', observaciones='Segunda baja')
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(MovimientoMP.objects.filter(mp=mp).count(), 1)
+
+    def test_operador_no_puede_dar_de_baja(self):
+        mp = self._mp_sin_peso()
+        self.client.force_login(crear_usuario_con_rol('oper_baja', 'Operador'))
+        self._post(mp, peso='', observaciones='No debería poder')
+        mp.refresh_from_db()
+        self.assertNotEqual(mp.estado, 'Terminado')
+
+    def test_lista_filtra_sin_peso(self):
+        sin = self._mp_sin_peso('MP-SIN-LISTA')
+        con = crear_mp(numero_mp='MP-CON-LISTA', peso=300)
+        resp = self.client.get(reverse('lista_mp'), {'sin_peso': '1'})
+        numeros = [m.numero_mp for m in resp.context['materias_primas']]
+        self.assertIn(sin.numero_mp, numeros)
+        self.assertNotIn(con.numero_mp, numeros)
+        self.assertEqual(resp.context['sin_peso_count'], 1)
+
+
+class PesoObligatorioEnCapturaTests(TestCase):
+    """La restricción para que no vuelvan a quedar rollos sin peso."""
+
+    def _datos(self, **extra):
+        datos = {
+            'numero_mp': 'MP-NUEVA-1', 'tipo_mp': 'Rollo', 'origen_mp': 'Interna',
+            'unidad_espesor': 'mils', 'ubicacion': 'Almacén 1', 'estado': 'Disponible',
+        }
+        datos.update(extra)
+        return datos
+
+    def test_captura_sin_peso_se_rechaza(self):
+        form = MateriaPrimaForm(data=self._datos())
+        self.assertFalse(form.is_valid())
+        self.assertIn('peso', form.errors)
+
+    def test_captura_con_peso_cero_o_negativo_se_rechaza(self):
+        for peso in ['0', '-5']:
+            form = MateriaPrimaForm(data=self._datos(peso=peso))
+            self.assertFalse(form.is_valid(), peso)
+            self.assertIn('peso', form.errors)
+
+    def test_captura_con_peso_valido_pasa(self):
+        form = MateriaPrimaForm(data=self._datos(peso='1250.5'))
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_vista_de_captura_no_guarda_mp_sin_peso(self):
+        self.client.force_login(crear_usuario_con_rol('capt_cap', 'Capturista'))
+        self.client.post(reverse('captura_mp'), self._datos())
+        self.assertFalse(MateriaPrima.objects.filter(numero_mp='MP-NUEVA-1').exists())
+
+    def test_editar_no_permite_borrar_el_peso(self):
+        mp = crear_mp(numero_mp='MP-EDIT-1', peso=500)
+        form = MateriaPrimaForm(data=self._datos(numero_mp='MP-EDIT-1'), instance=mp)
+        self.assertFalse(form.is_valid())
+        self.assertIn('peso', form.errors)
+
+    def test_rollo_ya_dado_de_baja_sin_peso_se_puede_editar(self):
+        mp = MateriaPrima.objects.create(numero_mp='MP-HIST-1', estado='Terminado', peso=None)
+        form = MateriaPrimaForm(data=self._datos(numero_mp='MP-HIST-1', estado='Terminado',
+                                                 observaciones='nota'), instance=mp)
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_completar_peso_a_rollo_sin_peso_actualiza_restante(self):
+        admin = crear_usuario_con_rol('admin_edit', 'Administrador')
+        self.client.force_login(admin)
+        mp = MateriaPrima.objects.create(numero_mp='MP-COMPLETAR', peso=None)
+        self.client.post(reverse('editar_mp', args=[mp.id]), self._datos(numero_mp='MP-COMPLETAR', peso='900'))
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso, Decimal('900.00'))
+        self.assertEqual(mp.peso_restante, Decimal('900.00'))
+        self.assertFalse(mp.sin_peso)
+
+    def test_admin_de_django_tambien_exige_peso(self):
+        from .forms import MateriaPrimaAdminForm
+        form = MateriaPrimaAdminForm(data=self._datos())
+        self.assertFalse(form.is_valid())
+        self.assertIn('peso', form.errors)

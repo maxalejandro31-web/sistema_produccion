@@ -10,7 +10,7 @@ from django.db.models import Sum, Max, ProtectedError
 from django.utils import timezone
 
 from .forms import MateriaPrimaForm, ClienteForm, RegistrarMovimientoForm
-from .models import MateriaPrima, Cliente, MovimientoMP
+from .models import MateriaPrima, Cliente, MovimientoMP, q_sin_peso
 from produccion.models import OrdenProduccion, DetalleSlitter
 from produccion.analitica import mapa_rendimiento_rollos_terminados, UMBRAL_RENDIMIENTO_ROLLO
 from dashboard.models import registrar_historial
@@ -42,6 +42,7 @@ def lista_mp(request):
     cliente_id    = request.GET.get('cliente', '')
     cobro         = request.GET.get('cobro', '')
     rendimiento_bajo = request.GET.get('rendimiento_bajo', '')
+    sin_peso      = request.GET.get('sin_peso', '')
 
     hoy = timezone.localdate()
 
@@ -71,6 +72,10 @@ def lista_mp(request):
         ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC')
     elif cobro == 'libre':
         qs = qs.filter(fecha_entrada__gte=hoy - datetime.timedelta(days=22))
+    if sin_peso == '1':
+        # MP activas sin peso (nunca se capturó o quedó en 0): las que se
+        # pueden dar de baja sin peso desde "Salida".
+        qs = qs.filter(q_sin_peso())
 
     # Filtro que llega desde la alerta del dashboard: rollos ya terminados
     # cuyo rendimiento TOTAL (suma de kg producidos / suma de kg usados en
@@ -85,6 +90,8 @@ def lista_mp(request):
     mp_por_vencer_count = MateriaPrima.objects.filter(
         fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
     ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
+
+    sin_peso_count = MateriaPrima.objects.filter(q_sin_peso()).count()
 
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get('page', 1))
@@ -104,6 +111,8 @@ def lista_mp(request):
         'cliente_id': cliente_id,
         'cobro': cobro,
         'rendimiento_bajo': rendimiento_bajo,
+        'sin_peso': sin_peso,
+        'sin_peso_count': sin_peso_count,
         'umbral_rendimiento_rollo': UMBRAL_RENDIMIENTO_ROLLO,
         'mp_vencidas_count': mp_vencidas_count,
         'mp_por_vencer_count': mp_por_vencer_count,
@@ -147,9 +156,20 @@ def editar_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
 
     if request.method == 'POST':
+        # Se lee ANTES de construir el form (is_valid() ya le pone los
+        # valores nuevos a la instancia).
+        estaba_sin_peso = mp.sin_peso
         form = MateriaPrimaForm(request.POST, request.FILES, instance=mp)
         if form.is_valid():
-            form.save()
+            mp = form.save(commit=False)
+            if estaba_sin_peso and mp.peso:
+                # Completar el peso de un rollo que estaba "sin peso": el
+                # peso restante arranca en el peso capturado. Sin esto, si
+                # el restante estaba en 0 se quedaba en 0 y el rollo seguía
+                # sin poder usarse aunque ya tuviera peso.
+                mp.peso_restante = mp.peso
+            mp.save()
+            form.save_m2m()
             registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'EDITAR', f'MP {mp.numero_mp} actualizada.')
             messages.success(request, f'Materia prima {mp.numero_mp} actualizada correctamente.')
             return redirect('lista_mp')
@@ -530,19 +550,48 @@ def dar_salida_mp(request, mp_id):
     mp = get_object_or_404(MateriaPrima, id=mp_id)
     clientes = Cliente.objects.filter(activo=True).order_by('nombre')
 
+    # Un rollo ya 'Terminado' sin peso restante ya no tiene nada que sacar:
+    # se bloquea para no registrar salidas/bajas duplicadas.
+    if mp.estado == 'Terminado' and not (mp.peso_restante and mp.peso_restante > 0):
+        messages.info(request, f'La MP {mp.numero_mp} ya está terminada (sin peso restante); no hay nada que dar de salida.')
+        return redirect('detalle_mp', mp_id=mp.id)
+
+    def _form(mp_actual):
+        return render(request, 'inventario/dar_salida_mp.html', {
+            'mp': mp_actual, 'clientes': clientes, 'post': request.POST,
+        })
+
     if request.method == 'POST':
-        peso_str      = request.POST.get('peso', '').replace(',', '.')
+        peso_str      = request.POST.get('peso', '').replace(',', '.').strip()
         cliente_id    = request.POST.get('cliente_id') or None
         fecha_salida  = request.POST.get('fecha_salida')
-        observaciones = request.POST.get('observaciones', '')
+        observaciones = request.POST.get('observaciones', '').strip()
 
-        try:
-            peso = float(peso_str)
-            if peso <= 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            messages.error(request, 'El peso debe ser un número positivo.')
-            return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
+        # Rollo sin peso registrado: se permite darlo de baja SIN escribir
+        # peso (antes era imposible: el peso era obligatorio y no podía
+        # superar un restante vacío/0). A cambio el motivo es obligatorio,
+        # para que quede claro en el historial por qué salió sin peso.
+        if mp.sin_peso:
+            if not observaciones:
+                messages.error(request, 'Escribe el motivo de la baja: este rollo no tiene peso registrado.')
+                return _form(mp)
+            peso = None
+            if peso_str:
+                try:
+                    peso = float(peso_str)
+                    if peso <= 0:
+                        raise ValueError
+                except (ValueError, TypeError):
+                    messages.error(request, 'Si escribes un peso, debe ser un número mayor a 0. Si no lo conoces, déjalo vacío.')
+                    return _form(mp)
+        else:
+            try:
+                peso = float(peso_str)
+                if peso <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                messages.error(request, 'El peso debe ser un número positivo.')
+                return _form(mp)
 
         # select_for_update() dentro de una transacción bloquea la fila de
         # la MP hasta que esta vista termine: si dos personas registran una
@@ -555,11 +604,30 @@ def dar_salida_mp(request, mp_id):
         # producción, sí protege. Mismo patrón que MovimientoMP.save().)
         from django.db import transaction
         with transaction.atomic():
+            sin_peso_al_abrir = mp.sin_peso
             mp = MateriaPrima.objects.select_for_update().get(pk=mp.pk)
 
-            if mp.peso_restante is not None and peso > float(mp.peso_restante):
+            if mp.sin_peso != sin_peso_al_abrir:
+                # Alguien le capturó (o le quitó) el peso mientras se llenaba
+                # este formulario: mejor volver a mostrarlo con el dato real.
+                messages.error(request, 'El peso de este rollo cambió mientras capturabas. Revisa los datos y vuelve a intentarlo.')
+                return _form(mp)
+
+            if not mp.sin_peso and peso > float(mp.peso_restante):
                 messages.error(request, f'El peso ingresado ({peso} kg) supera el peso restante ({mp.peso_restante} kg).')
-                return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
+                return _form(mp)
+
+            baja_sin_peso = mp.sin_peso
+            if baja_sin_peso:
+                # Si se conocía el peso aunque no estaba capturado, se guarda
+                # como peso del rollo para que su registro quede completo
+                # (entró con X kg y salieron X kg). Si no se conoce, el
+                # restante se fija en 0 para que la salida lo deje
+                # 'Terminado' sí o sí.
+                if peso and not mp.peso:
+                    mp.peso = peso
+                mp.peso_restante = peso or 0
+                mp.save(update_fields=['peso', 'peso_restante'])
 
             cliente_nombre = ''
             if cliente_id:
@@ -585,23 +653,33 @@ def dar_salida_mp(request, mp_id):
                         f'No se pudo interpretar la fecha "{fecha_salida}"; se usó la fecha/hora actual en su lugar.'
                     )
 
+            if baja_sin_peso and not peso:
+                obs_mov = f'Baja sin peso registrado. Motivo: {observaciones}'
+            else:
+                obs_mov = observaciones
+
             MovimientoMP.objects.create(
                 mp=mp,
                 tipo_movimiento='SALIDA',
-                peso=peso,
+                peso=peso or 0,
                 fecha=fecha_dt,
                 ubicacion_origen=mp.ubicacion or '',
                 ubicacion_destino=cliente_nombre,
-                observaciones=observaciones,
+                observaciones=obs_mov,
                 usuario=request.user,
             )
 
-        registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'MOVIMIENTO',
-            f'Salida de {peso} kg de MP {mp.numero_mp} hacia {cliente_nombre or "destino no especificado"}.')
-        messages.success(request, f'Salida de {peso} kg registrada. Peso restante: {mp.peso_restante} kg.')
+        if baja_sin_peso and not peso:
+            registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'MOVIMIENTO',
+                f'Baja de MP {mp.numero_mp} SIN peso registrado, hacia {cliente_nombre or "destino no especificado"}. Motivo: {observaciones}')
+            messages.success(request, f'MP {mp.numero_mp} dada de baja (sin peso registrado). Quedó como Terminado.')
+        else:
+            registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'MOVIMIENTO',
+                f'Salida de {peso} kg de MP {mp.numero_mp} hacia {cliente_nombre or "destino no especificado"}.')
+            messages.success(request, f'Salida de {peso} kg registrada. Peso restante: {mp.peso_restante} kg.')
         return redirect('detalle_mp', mp_id=mp.id)
 
-    return render(request, 'inventario/dar_salida_mp.html', {'mp': mp, 'clientes': clientes})
+    return _form(mp)
 
 
 @login_required

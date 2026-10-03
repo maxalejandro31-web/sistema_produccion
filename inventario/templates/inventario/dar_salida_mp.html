@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Dar Salida — {{ mp.numero_mp }}{% endblock %}
+{% load l10n %}
+{% block title %}{% if mp.sin_peso %}Dar de Baja{% else %}Dar Salida{% endif %} — {{ mp.numero_mp }}{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
@@ -9,7 +10,7 @@
     <span class="sep">›</span>
     <a href="{% url 'detalle_mp' mp.id %}">{{ mp.numero_mp }}</a>
     <span class="sep">›</span>
-    <span class="current">Dar Salida</span>
+    <span class="current">{% if mp.sin_peso %}Dar de Baja{% else %}Dar Salida{% endif %}</span>
 </div>
 {% endblock %}
 
@@ -31,17 +32,38 @@
     .acciones { display: flex; gap: 12px; margin-top: 24px; }
     .btn-salida { background: #e74c3c; color: white; border: none; padding: 11px 26px; border-radius: 8px; font-size: 15px; cursor: pointer; font-weight: 600; }
     .btn-salida:hover { background: #c0392b; }
+    .aviso-sin-peso { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 13.5px; line-height: 1.5; }
+    .aviso-sin-peso strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .peso-fila { display: flex; gap: 8px; }
+    .peso-fila input { flex: 1; }
+    .btn-todo { flex-shrink: 0; background: #f1f5f9; color: #1f2d3d; border: 1px solid #d1d5db; padding: 0 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .btn-todo:hover { background: #e2e8f0; }
+    .ayuda { display: block; margin-top: 5px; font-size: 12px; color: #6b7280; font-weight: normal; }
     .btn-cancelar { background: #f1f5f9; color: #374151; text-decoration: none; padding: 11px 22px; border-radius: 8px; font-size: 14px; }
 </style>
 
 <div class="card">
+    {% if mp.sin_peso %}
+    <h1>Dar de Baja Material</h1>
+    <p class="subtitulo">Este registro no tiene peso con qué trabajar; puedes darlo de baja sin escribir peso.</p>
+    {% else %}
     <h1>Dar Salida de Material</h1>
     <p class="subtitulo">Registra la salida de material. El peso disponible se actualizará automáticamente.</p>
+    {% endif %}
 
     {% if messages %}
         {% for msg in messages %}
         <div style="background:#fee2e2;border:1px solid #fca5a5;padding:10px 14px;border-radius:8px;margin-bottom:16px;color:#991b1b;">{{ msg }}</div>
         {% endfor %}
+    {% endif %}
+
+    {% if mp.sin_peso %}
+    <div class="aviso-sin-peso">
+        <strong>Rollo sin peso registrado</strong>
+        Puedes darlo de baja aunque no tenga peso: deja el peso vacío y escribe el motivo.
+        Si sí conoces el peso, escríbelo y quedará guardado en el registro del rollo.
+        Al darlo de baja quedará como <b>Terminado</b>.
+    </div>
     {% endif %}
 
     <div class="mp-info">
@@ -55,7 +77,7 @@
         </div>
         <div class="item">
             <label>Peso restante</label>
-            <strong id="peso-actual">{{ mp.peso_restante|default:"—" }} kg</strong>
+            <strong id="peso-actual">{% if mp.sin_peso %}Sin peso{% else %}{{ mp.peso_restante }} kg{% endif %}</strong>
         </div>
         <div class="item">
             <label>Ubicación</label>
@@ -67,10 +89,19 @@
         {% csrf_token %}
 
         <div class="campo">
-            <label>Peso a dar salida (kg) *</label>
+            {% if mp.sin_peso %}
+            <label for="id_peso">Peso (kg) — opcional</label>
             <input type="number" name="peso" id="id_peso" step="0.01" min="0.01"
-                   max="{{ mp.peso_restante }}" placeholder="Ej. 150.00" required>
+                   placeholder="Déjalo vacío si no se conoce" value="{{ post.peso|default:'' }}">
+            {% else %}
+            <label for="id_peso">Peso a dar salida (kg) *</label>
+            <div class="peso-fila">
+                <input type="number" name="peso" id="id_peso" step="0.01" min="0.01"
+                       max="{{ mp.peso_restante|unlocalize }}" placeholder="Ej. 150.00" value="{{ post.peso|default:'' }}" required>
+                <button type="button" class="btn-todo" id="btnTodoRollo" title="Dar salida a todo lo que queda del rollo">Todo el rollo ({{ mp.peso_restante }} kg)</button>
+            </div>
             <div class="aviso-peso" id="aviso-peso"></div>
+            {% endif %}
         </div>
 
         <div class="campo">
@@ -78,7 +109,7 @@
             <select name="cliente_id">
                 <option value="">-- Sin especificar --</option>
                 {% for c in clientes %}
-                <option value="{{ c.id }}">{{ c.nombre }}</option>
+                <option value="{{ c.id }}" {% if post.cliente_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -89,12 +120,19 @@
         </div>
 
         <div class="campo">
-            <label>Observaciones</label>
-            <textarea name="observaciones" rows="2" placeholder="Opcional..."></textarea>
+            {% if mp.sin_peso %}
+            <label for="id_observaciones">Motivo de la baja *
+                <span class="ayuda">Ej.: "Rollo consumido en planta, no se registró el peso" o "Se regresó al cliente".</span>
+            </label>
+            <textarea name="observaciones" id="id_observaciones" rows="3" required placeholder="¿Por qué se da de baja este rollo?">{{ post.observaciones|default:'' }}</textarea>
+            {% else %}
+            <label for="id_observaciones">Observaciones</label>
+            <textarea name="observaciones" id="id_observaciones" rows="2" placeholder="Opcional...">{{ post.observaciones|default:'' }}</textarea>
+            {% endif %}
         </div>
 
         <div class="acciones">
-            <button type="submit" class="btn-salida">Registrar Salida</button>
+            <button type="submit" class="btn-salida">{% if mp.sin_peso %}Dar de Baja{% else %}Registrar Salida{% endif %}</button>
             <a href="{% url 'detalle_mp' mp.id %}" class="btn-cancelar">Cancelar</a>
         </div>
     </form>
@@ -109,13 +147,14 @@
     document.getElementById('id_fecha_salida').value = local;
 })();
 
+{% if not mp.sin_peso %}
 // Validación visual del peso
 const pesoInput  = document.getElementById('id_peso');
 const avisoDiv   = document.getElementById('aviso-peso');
-const pesoActual = {{ mp.peso_restante|default:0 }};
+const pesoActual = {{ mp.peso_restante|unlocalize }};
 
-pesoInput.addEventListener('input', function () {
-    const val = parseFloat(this.value || 0);
+function actualizarAviso() {
+    const val = parseFloat(pesoInput.value || 0);
     if (!val) { avisoDiv.style.display = 'none'; return; }
     if (val > pesoActual) {
         avisoDiv.className = 'aviso-peso aviso-error';
@@ -126,6 +165,12 @@ pesoInput.addEventListener('input', function () {
         avisoDiv.textContent = `Peso restante después de la salida: ${restante} kg`;
     }
     avisoDiv.style.display = 'block';
+}
+pesoInput.addEventListener('input', actualizarAviso);
+document.getElementById('btnTodoRollo').addEventListener('click', function () {
+    pesoInput.value = pesoActual.toFixed(2);
+    actualizarAviso();
 });
+{% endif %}
 </script>
 {% endblock %}

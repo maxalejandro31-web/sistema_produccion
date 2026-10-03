@@ -13,7 +13,51 @@ class ClienteForm(forms.ModelForm):
         }
 
 
-class MateriaPrimaForm(forms.ModelForm):
+class PesoObligatorioMixin:
+    """Peso obligatorio y mayor a 0 al capturar/editar una MP. Una MP sin
+    peso no se puede consumir ni dar de salida bien (así se acumularon
+    rollos "sin peso" que luego no se podían dar de baja). Única excepción:
+    una MP que YA se dio de baja ('Terminado') sin peso — exigirlo ahí
+    bloquearía editar cualquier otro dato de ese registro histórico.
+
+    Lo usan tanto el formulario normal (captura/edición) como el del admin
+    de Django, para que no quede ninguna puerta para crear MP sin peso."""
+
+    def _configurar_peso_obligatorio(self):
+        if 'peso' not in self.fields:
+            return
+        peso_field = self.fields['peso']
+        peso_field.required = self._peso_obligatorio()
+        peso_field.label = 'Peso (kg)'
+        peso_field.error_messages['required'] = (
+            'El peso es obligatorio. Si no se conoce el peso exacto, pésalo o captura el de la etiqueta del rollo.'
+        )
+        peso_field.widget.attrs['min'] = '0.01'
+
+    def _peso_obligatorio(self):
+        inst = self.instance
+        if inst is not None and inst.pk and inst.estado == 'Terminado' and not inst.peso:
+            return False
+        return True
+
+    def clean_peso(self):
+        peso = self.cleaned_data.get('peso')
+        if peso is not None and peso <= 0:
+            raise forms.ValidationError('El peso debe ser mayor a 0 kg.')
+        return peso
+
+
+class MateriaPrimaAdminForm(PesoObligatorioMixin, forms.ModelForm):
+    class Meta:
+        model = MateriaPrima
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._configurar_peso_obligatorio()
+
+
+class MateriaPrimaForm(PesoObligatorioMixin, forms.ModelForm):
     # OJO: hay que fijar tambien el "format" del widget (no solo
     # input_formats, que solo controla el parseo del POST). Sin esto,
     # Django renderiza el valor inicial con el formato local (es-mx:
@@ -84,6 +128,8 @@ class MateriaPrimaForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.setdefault('class', 'form-control')
+
+        self._configurar_peso_obligatorio()
 
 
 class MovimientoMPForm(forms.ModelForm):

@@ -294,7 +294,7 @@
                 </div>
 
                 <div class="campo">
-                    <label for="{{ form.peso.id_for_label }}">{{ form.peso.label }}</label>
+                    <label for="{{ form.peso.id_for_label }}">{{ form.peso.label }} <span style="color:#c0392b;" title="Obligatorio">*</span></label>
                     {{ form.peso }}
                     {% if form.peso.errors %}<small class="error-texto">{{ form.peso.errors }}</small>{% endif %}
                 </div>

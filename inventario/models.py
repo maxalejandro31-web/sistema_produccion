@@ -1,4 +1,5 @@
 from django.db import models, transaction
+from django.db.models import Q
 from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
@@ -186,8 +187,23 @@ class MateriaPrima(models.Model):
             return None
         return 30 - dias
 
+    @property
+    def sin_peso(self):
+        """True si la MP sigue activa (no 'Terminado') pero no tiene peso
+        con qué trabajar: nunca se le capturó peso, o quedó en 0. Son los
+        rollos que no se podían dar de salida (la salida exigía un peso y no
+        podía superar el restante). Ver también q_sin_peso() para filtrar."""
+        if self.estado == 'Terminado':
+            return False
+        return self.peso_restante is None or self.peso_restante <= 0
+
     def __str__(self):
         return self.numero_mp
+
+
+def q_sin_peso():
+    """Filtro equivalente a MateriaPrima.sin_peso, para usar en consultas."""
+    return (Q(peso_restante__isnull=True) | Q(peso_restante__lte=0)) & ~Q(estado='Terminado')
 
 
 class MovimientoMP(models.Model):

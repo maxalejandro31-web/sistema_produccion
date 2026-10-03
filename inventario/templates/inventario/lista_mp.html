@@ -159,6 +159,23 @@
     </div>
     {% endif %}
 
+    {% if sin_peso == '1' %}
+    <div class="alerta-cobros" style="background:#fef3c7;border-color:#f59e0b;color:#92400e;">
+        ⚖️
+        <strong>Mostrando solo MP sin peso registrado.</strong>
+        Para darlas de baja usa el botón <b>Baja</b> de cada una (no pide peso, solo el motivo).
+        Si sí conoces el peso, usa <b>Editar</b> para capturarlo.
+        <a href="{% url 'lista_mp' %}">Quitar filtro</a>
+    </div>
+    {% elif sin_peso_count > 0 %}
+    <div class="alerta-cobros" style="background:#fef3c7;border-color:#f59e0b;color:#92400e;">
+        ⚖️
+        <strong>{{ sin_peso_count }} MP sin peso registrado.</strong>
+        Se pueden dar de baja sin peso o completarles el peso.
+        <a href="{% url 'lista_mp' %}?sin_peso=1">Ver cuáles son</a>
+    </div>
+    {% endif %}
+
     {% if rendimiento_bajo == '1' %}
     <div class="alerta-cobros" style="background:#fdecea;border-color:#e74c3c;">
         📉
@@ -198,6 +215,11 @@
             <option value="vencido"    {% if cobro == 'vencido' %}selected{% endif %}>Con cobro activo</option>
             <option value="por_vencer" {% if cobro == 'por_vencer' %}selected{% endif %}>Por vencer</option>
             <option value="libre"      {% if cobro == 'libre' %}selected{% endif %}>Sin cobro</option>
+        </select>
+
+        <select name="sin_peso">
+            <option value="">Todos (peso)</option>
+            <option value="1" {% if sin_peso == '1' %}selected{% endif %}>Sin peso registrado</option>
         </select>
 
         <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" title="Fecha entrada desde">
@@ -244,7 +266,13 @@
                 <td>{{ mp.material|default:"-" }}</td>
                 <td>{{ mp.descripcion|default:"-" }}</td>
                 <td>{{ mp.espesor_mils|default:"-" }}</td>
-                <td>{{ mp.peso_restante|default:"-" }}</td>
+                <td>
+                    {% if mp.sin_peso %}
+                        <span class="badge" style="background:#fef3c7;color:#92400e;" title="Esta MP no tiene peso registrado">Sin peso</span>
+                    {% else %}
+                        {{ mp.peso_restante|default_if_none:"-" }}
+                    {% endif %}
+                </td>
                 <td>{{ mp.ubicacion|default:"-" }}</td>
 
                 <td>
@@ -300,7 +328,11 @@
                     <a class="btn-detalle" href="{% url 'detalle_mp' mp.id %}">Detalle</a>
                     <a class="btn-editar" href="{% url 'editar_mp' mp.id %}">Editar</a>
                     {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen or es_coordinador or es_capturista %}
+                    {% if mp.sin_peso %}
+                    <a href="{% url 'dar_salida_mp' mp.id %}" title="Dar de baja sin peso" style="display:inline-block;padding:6px 10px;background:#d97706;color:white;border-radius:6px;text-decoration:none;font-size:12px;margin-bottom:4px;">Baja</a>
+                    {% elif mp.estado != 'Terminado' or mp.peso_restante %}
                     <a href="{% url 'dar_salida_mp' mp.id %}" style="display:inline-block;padding:6px 10px;background:#e74c3c;color:white;border-radius:6px;text-decoration:none;font-size:12px;margin-bottom:4px;">Salida</a>
+                    {% endif %}
                     {% endif %}
                     {% if puede_eliminar %}
                     <form method="post" action="{% url 'eliminar_mp' mp.id %}" style="display:inline-block;margin-bottom:4px;" onsubmit="return confirm('¿Eliminar permanentemente la MP {{ mp.numero_mp }}? Esto también borrará sus movimientos y órdenes ligadas. Esta acción no se puede deshacer.');">

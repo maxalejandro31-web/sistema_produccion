@@ -284,7 +284,13 @@
 
         <div class="campo">
             <label>Peso restante</label>
-            <div class="valor">{{ mp.peso_restante|default_if_none:"-" }}</div>
+            <div class="valor">
+                {% if mp.sin_peso %}
+                    <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;">Sin peso registrado</span>
+                {% else %}
+                    {{ mp.peso_restante|default_if_none:"-" }}
+                {% endif %}
+            </div>
         </div>
 
         <div class="campo">
@@ -529,7 +535,11 @@
         <a href="{% url 'reporte_rollo' mp.id %}" class="btn btn-outline">{% include 'partials/icono.html' with nombre='reporte' tam=15 %} Reporte del rollo</a>
         <a href="{% url 'reporte_rollo_excel' mp.id %}" class="btn btn-exito">{% include 'partials/icono.html' with nombre='descarga' tam=15 %} Exportar a Excel</a>
         {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen or es_coordinador or es_capturista %}
+            {% if mp.sin_peso %}
+        <a href="{% url 'dar_salida_mp' mp.id %}" class="btn btn-peligro" style="background:#d97706;" title="Este rollo no tiene peso: se puede dar de baja indicando el motivo">Dar de Baja (sin peso)</a>
+            {% elif mp.estado != 'Terminado' or mp.peso_restante %}
         <a href="{% url 'dar_salida_mp' mp.id %}" class="btn btn-peligro">Dar Salida</a>
+            {% endif %}
         {% endif %}
         {% if request.user.is_superuser or es_administrador or es_supervisor or es_almacen or es_coordinador %}
         <a href="{% url 'registrar_movimiento' mp.id %}" class="btn btn-exito">Registrar Movimiento</a>
