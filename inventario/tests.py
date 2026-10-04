@@ -476,3 +476,53 @@ class EditarPesoActualizaRestanteTests(TestCase):
         h = HistorialCambio.objects.filter(tipo_objeto='MateriaPrima', objeto_id=mp.id, accion='EDITAR').last()
         self.assertIn('213000', h.descripcion)
         self.assertIn('21300', h.descripcion)
+
+
+class ListaMpOcultaTerminadosTests(TestCase):
+    """Una MP a la que ya se le dio salida completa (queda 'Terminado') ya no
+    está en planta: no debe seguir saliendo en la lista por defecto ni
+    contando para las alertas de cobro por estancia."""
+
+    def setUp(self):
+        self.client.force_login(crear_usuario_con_rol('lista_term', 'Capturista'))
+        self.activa = crear_mp(numero_mp='MP-ACTIVA', peso=500)
+        self.salio = crear_mp(numero_mp='MP-SALIO', peso=500)
+        MovimientoMP.objects.create(mp=self.salio, tipo_movimiento='SALIDA', peso=Decimal('500'))
+        self.salio.refresh_from_db()
+
+    def _numeros(self, **params):
+        resp = self.client.get(reverse('lista_mp'), params)
+        return [m.numero_mp for m in resp.context['materias_primas']], resp
+
+    def test_salida_completa_deja_terminado(self):
+        self.assertEqual(self.salio.estado, 'Terminado')
+
+    def test_por_defecto_no_aparece_la_que_ya_salio(self):
+        numeros, resp = self._numeros()
+        self.assertIn('MP-ACTIVA', numeros)
+        self.assertNotIn('MP-SALIO', numeros)
+        self.assertEqual(resp.context['terminados_count'], 1)
+
+    def test_filtro_terminado_y_todos_si_la_muestran(self):
+        self.assertEqual(self._numeros(estado='Terminado')[0], ['MP-SALIO'])
+        self.assertIn('MP-SALIO', self._numeros(estado='todos')[0])
+
+    def test_buscar_por_numero_la_encuentra_aunque_este_terminada(self):
+        self.assertEqual(self._numeros(q='MP-SALIO')[0], ['MP-SALIO'])
+
+    def test_salida_parcial_sigue_apareciendo(self):
+        mp = crear_mp(numero_mp='MP-PARCIAL', peso=500)
+        MovimientoMP.objects.create(mp=mp, tipo_movimiento='SALIDA', peso=Decimal('200'))
+        self.assertIn('MP-PARCIAL', self._numeros()[0])
+
+    def test_terminada_no_cuenta_para_alerta_de_cobro(self):
+        import datetime
+        from django.utils import timezone
+        from dashboard.alertas import obtener_alertas
+        hace_40 = timezone.localdate() - datetime.timedelta(days=40)
+        MateriaPrima.objects.filter(pk__in=[self.activa.pk, self.salio.pk]).update(fecha_entrada=hace_40)
+        criticas = [a for a in obtener_alertas() if a['tipo'] == 'critica']
+        self.assertEqual(criticas[0]['count'], 1)
+        numeros, resp = self._numeros(cobro='vencido')
+        self.assertEqual(numeros, ['MP-ACTIVA'])
+        self.assertEqual(resp.context['mp_vencidas_count'], 1)

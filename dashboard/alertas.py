@@ -67,11 +67,13 @@ def obtener_alertas():
     # El material propio de la maquila nunca genera cobro — mismo exclude
     # que ya se usa en inventario/views.py, dashboard/views.py y el propio
     # reporte de Cobros por Estancia, para que el conteo de la campanita
-    # coincida exactamente con lo que ves al hacer clic en "Ver MP".
+    # coincida exactamente con lo que ves al hacer clic en "Ver MP". La MP ya
+    # 'Terminado' (salida completa / baja / consumida) tampoco cuenta: ya no
+    # está en la planta generando estancia.
     mp_vencidas = MateriaPrima.objects.filter(
         fecha_entrada__isnull=False,
         fecha_entrada__lt=hoy - datetime.timedelta(days=30),
-    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
+    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').exclude(estado='Terminado').count()
     if mp_vencidas:
         alertas.append({
             'tipo': 'critica', 'icono': 'alerta-circulo',
@@ -85,7 +87,7 @@ def obtener_alertas():
     mp_por_vencer = MateriaPrima.objects.filter(
         fecha_entrada__isnull=False,
         fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23)),
-    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
+    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').exclude(estado='Terminado').count()
     if mp_por_vencer:
         alertas.append({
             'tipo': 'aviso', 'icono': 'alerta-triangulo',

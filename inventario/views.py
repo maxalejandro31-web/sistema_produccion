@@ -52,8 +52,20 @@ def lista_mp(request):
         qs = qs.filter(numero_mp__icontains=busqueda)
     if tipo:
         qs = qs.filter(tipo_mp=tipo)
-    if estado:
+    # Por defecto la lista muestra solo la MP que sigue en planta. Una MP
+    # 'Terminado' (se le dio salida completa, se dio de baja o se consumió
+    # toda en producción) ya no está físicamente, y antes seguía saliendo en
+    # la lista como si estuviera. No se borra (sigue en reportes, historial
+    # y búsquedas): se ve eligiendo "Terminado" o "Todos (incluye
+    # terminados)" en el filtro de estado, o buscándola por número.
+    ocultando_terminados = False
+    if estado == 'todos':
+        pass
+    elif estado:
         qs = qs.filter(estado=estado)
+    elif not busqueda and rendimiento_bajo != '1':
+        qs = qs.exclude(estado='Terminado')
+        ocultando_terminados = True
     if fecha_inicio:
         qs = qs.filter(fecha_entrada__gte=fecha_inicio)
     if fecha_fin:
@@ -65,11 +77,13 @@ def lista_mp(request):
         # exclude, este filtro (al que llega el link "Ver MP" de la alerta
         # de cobro activo) mostraba más filas de las que decía el conteo de
         # la alerta, porque ese conteo sí excluye lo propio.
-        qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC')
+        # Tampoco cuenta la MP ya 'Terminado': si ya salió de la planta, ya
+        # no está generando estancia.
+        qs = qs.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').exclude(estado='Terminado')
     elif cobro == 'por_vencer':
         qs = qs.filter(
             fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
-        ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC')
+        ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').exclude(estado='Terminado')
     elif cobro == 'libre':
         qs = qs.filter(fecha_entrada__gte=hoy - datetime.timedelta(days=22))
     if sin_peso == '1':
@@ -86,10 +100,11 @@ def lista_mp(request):
         ids_bajo = [mp_id for mp_id, pct in mapa_rendimiento.items() if pct < UMBRAL_RENDIMIENTO_ROLLO]
         qs = qs.filter(id__in=ids_bajo)
 
-    mp_vencidas_count   = MateriaPrima.objects.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
+    mp_vencidas_count   = MateriaPrima.objects.filter(fecha_entrada__lt=hoy - datetime.timedelta(days=30)).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').exclude(estado='Terminado').count()
     mp_por_vencer_count = MateriaPrima.objects.filter(
         fecha_entrada__range=(hoy - datetime.timedelta(days=30), hoy - datetime.timedelta(days=23))
-    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').count()
+    ).exclude(cliente__nombre='MAQUILAS Y SERVICIOS JC').exclude(estado='Terminado').count()
+    terminados_count = MateriaPrima.objects.filter(estado='Terminado').count() if ocultando_terminados else 0
 
     sin_peso_count = MateriaPrima.objects.filter(q_sin_peso()).count()
 
@@ -112,6 +127,8 @@ def lista_mp(request):
         'cobro': cobro,
         'rendimiento_bajo': rendimiento_bajo,
         'sin_peso': sin_peso,
+        'ocultando_terminados': ocultando_terminados,
+        'terminados_count': terminados_count,
         'sin_peso_count': sin_peso_count,
         'umbral_rendimiento_rollo': UMBRAL_RENDIMIENTO_ROLLO,
         'mp_vencidas_count': mp_vencidas_count,
