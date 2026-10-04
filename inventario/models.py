@@ -197,6 +197,18 @@ class MateriaPrima(models.Model):
             return False
         return self.peso_restante is None or self.peso_restante <= 0
 
+    def totales_movimientos(self):
+        """(kg que entraron, kg que salieron) según sus MovimientoMP:
+        entradas = ENTRADA + AJUSTE_POSITIVO; salidas = CONSUMO +
+        AJUSTE_NEGATIVO + MERMA + SALIDA (lo mismo que suma/resta
+        MovimientoMP.save() al peso_restante). TRASPASO no cambia peso."""
+        from django.db.models import Sum
+        filas = self.movimientos.values('tipo_movimiento').annotate(t=Sum('peso'))
+        suma = {f['tipo_movimiento']: f['t'] or Decimal('0') for f in filas}
+        entradas = suma.get('ENTRADA', Decimal('0')) + suma.get('AJUSTE_POSITIVO', Decimal('0'))
+        salidas = sum((suma.get(t, Decimal('0')) for t in ('CONSUMO', 'AJUSTE_NEGATIVO', 'MERMA', 'SALIDA')), Decimal('0'))
+        return entradas, salidas
+
     def __str__(self):
         return self.numero_mp
 

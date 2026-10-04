@@ -159,20 +159,34 @@ def editar_mp(request, mp_id):
         # Se lee ANTES de construir el form (is_valid() ya le pone los
         # valores nuevos a la instancia).
         estaba_sin_peso = mp.sin_peso
+        peso_antes = mp.peso
+        restante_antes = mp.peso_restante
         form = MateriaPrimaForm(request.POST, request.FILES, instance=mp)
         if form.is_valid():
             mp = form.save(commit=False)
-            if estaba_sin_peso and mp.peso:
-                # Completar el peso de un rollo que estaba "sin peso": el
-                # peso restante arranca en el peso capturado. Sin esto, si
-                # el restante estaba en 0 se quedaba en 0 y el rollo seguía
-                # sin poder usarse aunque ya tuviera peso.
-                mp.peso_restante = mp.peso
-            mp.save()
-            form.save_m2m()
-            registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'EDITAR', f'MP {mp.numero_mp} actualizada.')
-            messages.success(request, f'Materia prima {mp.numero_mp} actualizada correctamente.')
-            return redirect('lista_mp')
+            restante_nuevo, error_peso = _peso_restante_tras_editar(
+                mp, estaba_sin_peso, peso_antes, restante_antes,
+            )
+            if error_peso:
+                form.add_error('peso', error_peso)
+            else:
+                detalle = ''
+                if restante_nuevo is not None and restante_nuevo != restante_antes:
+                    mp.peso_restante = restante_nuevo
+                    if restante_nuevo == 0 and mp.estado != 'Terminado':
+                        mp.estado = 'Terminado'
+                    elif restante_nuevo > 0 and mp.estado == 'Terminado':
+                        mp.estado = 'En Proceso' if mp.movimientos.exists() else 'Disponible'
+                    detalle = (f' Peso: {peso_antes if peso_antes is not None else "sin peso"} → {mp.peso} kg;'
+                               f' peso restante: {restante_antes if restante_antes is not None else "sin peso"} → {restante_nuevo} kg.')
+                mp.save()
+                form.save_m2m()
+                registrar_historial(request, 'MateriaPrima', mp.id, str(mp), 'EDITAR', f'MP {mp.numero_mp} actualizada.{detalle}')
+                if detalle:
+                    messages.success(request, f'Materia prima {mp.numero_mp} actualizada. Peso restante ajustado a {mp.peso_restante} kg.')
+                else:
+                    messages.success(request, f'Materia prima {mp.numero_mp} actualizada correctamente.')
+                return redirect('lista_mp')
     else:
         form = MateriaPrimaForm(instance=mp)
 
@@ -188,6 +202,48 @@ def editar_mp(request, mp_id):
         'mp': mp,
         'pdf_url': pdf_url,
     })
+
+
+def _peso_restante_tras_editar(mp, estaba_sin_peso, peso_antes, restante_antes):
+    """Calcula el peso_restante que debe quedar al editar el PESO de una MP.
+    Devuelve (restante_nuevo o None si no cambia, mensaje_de_error o None).
+
+    Antes, editar el peso solo cambiaba `peso`, y `peso_restante` (lo que se
+    ve en la lista y suman el dashboard y los reportes) se quedaba con el
+    valor mal capturado: corregir 213000 → 21300 dejaba 213000 en la lista.
+
+    - Rollo que estaba sin peso: el restante arranca en el peso capturado.
+    - Rollo con el restante "imposible" (mayor que su peso más lo que le ha
+      entrado — justo lo que dejó el error de arriba): se recalcula con sus
+      movimientos: peso + entradas − salidas/consumos. Así basta con abrir
+      Editar y Guardar para que se corrija solo.
+    - Corrección normal del peso: el restante se mueve exactamente lo mismo
+      que el peso (lo ya consumido/salido no cambia). Si el peso nuevo es
+      menor a lo que ya se usó del rollo, se rechaza.
+    """
+    from decimal import Decimal
+    peso_nuevo = mp.peso
+    if peso_nuevo is None:
+        return None, None
+    if estaba_sin_peso:
+        return peso_nuevo, None
+
+    entradas, salidas = mp.totales_movimientos()
+    base_peso = peso_antes if peso_antes is not None else peso_nuevo
+    if restante_antes is not None and restante_antes > base_peso + entradas:
+        restante = peso_nuevo + entradas - salidas
+        return max(restante, Decimal('0')), None
+
+    if peso_antes is None or peso_nuevo == peso_antes:
+        return None, None
+
+    base_restante = restante_antes if restante_antes is not None else peso_antes
+    restante = base_restante + (peso_nuevo - peso_antes)
+    if restante < 0:
+        usado = peso_antes - base_restante
+        return None, (f'De este rollo ya se usaron/salieron {usado} kg; el peso no puede '
+                      f'ser menor a eso (capturaste {peso_nuevo} kg).')
+    return restante, None
 
 
 @login_required

@@ -399,3 +399,80 @@ class PesoObligatorioEnCapturaTests(TestCase):
         form = MateriaPrimaAdminForm(data=self._datos())
         self.assertFalse(form.is_valid())
         self.assertIn('peso', form.errors)
+
+
+class EditarPesoActualizaRestanteTests(TestCase):
+    """Corregir el peso de un rollo (p. ej. 213000 mal capturado → 21300)
+    antes solo cambiaba `peso`; el peso restante —lo que muestra la lista y
+    suman el dashboard/reportes— se quedaba con el valor equivocado."""
+
+    def setUp(self):
+        self.client.force_login(crear_usuario_con_rol('admin_peso', 'Administrador'))
+
+    def _editar(self, mp, peso, **extra):
+        datos = {
+            'numero_mp': mp.numero_mp, 'tipo_mp': 'Rollo', 'origen_mp': 'Interna',
+            'unidad_espesor': 'mils', 'ubicacion': 'Almacén 1', 'estado': mp.estado,
+            'peso': peso,
+        }
+        datos.update(extra)
+        return self.client.post(reverse('editar_mp', args=[mp.id]), datos)
+
+    def test_corregir_peso_sin_consumo_actualiza_restante(self):
+        mp = crear_mp(numero_mp='4A626499PDT00', peso=213000)
+        self._editar(mp, '21300')
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso, Decimal('21300.00'))
+        self.assertEqual(mp.peso_restante, Decimal('21300.00'))
+
+    def test_corregir_peso_respeta_lo_ya_consumido(self):
+        mp = crear_mp(numero_mp='MP-CONS', peso=213000)
+        MovimientoMP.objects.create(mp=mp, tipo_movimiento='CONSUMO', peso=Decimal('5000'))
+        mp.refresh_from_db()
+        self._editar(mp, '21300')
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso_restante, Decimal('16300.00'))
+
+    def test_peso_menor_a_lo_consumido_se_rechaza(self):
+        mp = crear_mp(numero_mp='MP-MENOR', peso=1000)
+        MovimientoMP.objects.create(mp=mp, tipo_movimiento='CONSUMO', peso=Decimal('800'))
+        resp = self._editar(mp, '500')
+        self.assertEqual(resp.status_code, 200)
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso, Decimal('1000.00'))
+        self.assertEqual(mp.peso_restante, Decimal('200.00'))
+
+    def test_registro_ya_danado_se_corrige_al_guardar(self):
+        # El caso real: ya se había corregido el peso a 21300 pero el
+        # restante se quedó en 213000. Abrir Editar y Guardar lo arregla.
+        mp = crear_mp(numero_mp='MP-DANADO', peso=21300)
+        MateriaPrima.objects.filter(pk=mp.pk).update(peso_restante=Decimal('213000'))
+        mp.refresh_from_db()
+        self._editar(mp, '21300')
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso_restante, Decimal('21300.00'))
+
+    def test_registro_danado_con_consumo_se_recalcula_con_movimientos(self):
+        mp = crear_mp(numero_mp='MP-DANADO-2', peso=21300)
+        MovimientoMP.objects.create(mp=mp, tipo_movimiento='CONSUMO', peso=Decimal('1300'))
+        MateriaPrima.objects.filter(pk=mp.pk).update(peso_restante=Decimal('211700'))
+        mp.refresh_from_db()
+        self._editar(mp, '21300')
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso_restante, Decimal('20000.00'))
+
+    def test_editar_otro_dato_no_toca_el_restante(self):
+        mp = crear_mp(numero_mp='MP-OTRO', peso=1000)
+        MovimientoMP.objects.create(mp=mp, tipo_movimiento='CONSUMO', peso=Decimal('300'))
+        mp.refresh_from_db()
+        self._editar(mp, '1000', observaciones='solo una nota')
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso_restante, Decimal('700.00'))
+
+    def test_correccion_queda_en_historial(self):
+        from dashboard.models import HistorialCambio
+        mp = crear_mp(numero_mp='MP-HIST-PESO', peso=213000)
+        self._editar(mp, '21300')
+        h = HistorialCambio.objects.filter(tipo_objeto='MateriaPrima', objeto_id=mp.id, accion='EDITAR').last()
+        self.assertIn('213000', h.descripcion)
+        self.assertIn('21300', h.descripcion)

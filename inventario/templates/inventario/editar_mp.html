@@ -78,6 +78,13 @@
                         {{ field }}
                     {% endif %}
 
+                    {% if field.name == 'peso' %}
+                        <small style="display:block;margin-top:4px;color:#6b7280;">
+                            Peso restante actual: <strong>{% if mp.peso_restante is None %}sin peso{% else %}{{ mp.peso_restante }} kg{% endif %}</strong>.
+                            Si corriges el peso, el restante se ajusta solo.
+                        </small>
+                    {% endif %}
+
                     {% if field.errors %}
                         <small style="color:red;">{{ field.errors }}</small>
                     {% endif %}
