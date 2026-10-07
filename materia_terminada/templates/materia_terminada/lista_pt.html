@@ -154,7 +154,7 @@
                 <td>{{ pt.get_tipo_producto_display }}</td>
                 <td>{{ pt.cliente|default:"-" }}</td>
                 <td>{% if pt.detalle_slitter %}{{ pt.detalle_slitter.ancho|default:"-" }}{% else %}-{% endif %}</td>
-                <td>{% if pt.detalle_slitter %}{{ pt.detalle_slitter.espesor|default:"-" }}{% else %}-{% endif %}</td>
+                <td>{% if pt.detalle_slitter %}{{ pt.detalle_slitter.espesor|default_if_none:"-" }}{% else %}-{% endif %}</td>
                 <td>{{ pt.peso_kg }}</td>
                 <td>{{ pt.cantidad_piezas|default:"-" }}</td>
                 <td>

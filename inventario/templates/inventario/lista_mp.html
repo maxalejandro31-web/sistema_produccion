@@ -274,7 +274,7 @@
 
                 <td>{{ mp.material|default:"-" }}</td>
                 <td>{{ mp.descripcion|default:"-" }}</td>
-                <td>{{ mp.espesor_mils|default:"-" }}</td>
+                <td>{{ mp.espesor_mils|default_if_none:"-" }}</td>
                 <td>
                     {% if mp.sin_peso %}
                         <span class="badge" style="background:#fef3c7;color:#92400e;" title="Esta MP no tiene peso registrado">Sin peso</span>
@@ -298,7 +298,7 @@
 
                 {% if rendimiento_bajo == '1' %}
                 <td>
-                    <strong style="color:#e74c3c;">{{ mp.rendimiento_total|default:"-" }}%</strong>
+                    <strong style="color:#e74c3c;">{{ mp.rendimiento_total|default_if_none:"-" }}%</strong>
                 </td>
                 {% endif %}
 

@@ -155,10 +155,10 @@
                 <td>{{ orden.operador_nombre|default:"-" }}</td>
                 <td>{{ orden.get_turno_display|default:"-" }}</td>
                 <td>{{ orden.get_prioridad_display }}</td>
-                <td>{{ orden.peso_usado|default:"-" }}</td>
-                <td>{{ orden.peso_producido|default:"-" }}</td>
+                <td>{{ orden.peso_usado|default_if_none:"-" }}</td>
+                <td>{{ orden.peso_producido|default_if_none:"-" }}</td>
                 <td>
-                    {{ orden.rendimiento_porcentaje|default:"-" }}{% if orden.rendimiento_porcentaje %}%{% endif %}
+                    {{ orden.rendimiento_porcentaje|default_if_none:"-" }}{% if orden.rendimiento_porcentaje is not None %}%{% endif %}
                     {% with anom=orden.anomalia_rendimiento %}
                         {% if anom.bucket == 'bajo' %}
                             <span class="badge rend-bajo" title="Promedio {{ anom.promedio }}% ({{ anom.muestra }} órdenes)">⚠ Bajo</span>

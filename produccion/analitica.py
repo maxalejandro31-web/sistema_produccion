@@ -10,6 +10,9 @@ from django.core.cache import cache
 from django.db.models import Sum
 
 MUESTRA_MINIMA = 5
+# Rendimientos arriba de esto son errores de captura (producido > usado):
+# no se usan para calcular el promedio "normal" de cada material/proceso.
+RENDIMIENTO_MAXIMO_VALIDO = 101
 LIMITE_POR_GRUPO = 20
 UMBRAL_MINIMO_PP = 5.0
 FACTOR_DESVIACION = 1.5
@@ -38,6 +41,7 @@ def mapear_baselines_rendimiento(limite_por_grupo=LIMITE_POR_GRUPO, usar_cache=T
         .filter(
             estado='terminado',
             rendimiento_porcentaje__isnull=False,
+            rendimiento_porcentaje__lte=RENDIMIENTO_MAXIMO_VALIDO,
             mp__material__isnull=False,
         )
         .exclude(mp__material='')

@@ -74,6 +74,19 @@ class ProductoTerminado(models.Model):
             severidad='critica', estado__in=['abierta', 'en_revision']
         ).exists()
 
+    def sin_movimientos(self):
+        """True si este PT nunca se movió: sigue en almacén, no está en
+        ninguna salida, no se usó como origen de fleje y no tiene registros
+        de calidad (certificados / no conformidades, que se borrarían en
+        cascada). Solo un PT así se puede quitar sin perder información."""
+        return (
+            self.estado == 'en_almacen'
+            and not self.salida_detalle.exists()
+            and not self.ordenes_flejado.exists()
+            and not self.certificados.exists()
+            and not self.no_conformidades.exists()
+        )
+
     @property
     def peso_consumido_fleje(self):
         """Cuánto de esta cinta ya se ha metido a proceso de fleje, sumando

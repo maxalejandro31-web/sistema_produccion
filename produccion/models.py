@@ -217,6 +217,40 @@ class OrdenProduccion(models.Model):
                         )
 
 
+# Tolerancia para aceptar un peso producido mayor al usado (diferencias
+# normales de báscula). Arriba de esto se considera error de captura.
+TOLERANCIA_PRODUCIDO_SOBRE_USADO = Decimal('0.01')   # 1%
+
+
+def peso_producido_slitter(detalles):
+    """Peso producido de una orden de slitter: SOLO los cortes 'normal'.
+    Un corte marcado Scrap o Descarte es desperdicio, no producto: si se
+    sumara (como pasaba antes) el rendimiento salía inflado y ese peso se
+    daba de alta como cinta en Producto Terminado."""
+    return sum(
+        float(d.peso) for d in detalles
+        if d.peso and (d.clasificacion or 'normal') == 'normal'
+    )
+
+
+def error_producido_mayor_a_usado(peso_usado, peso_producido):
+    """Mensaje de error si lo producido supera lo usado (más la tolerancia
+    de báscula); None si está bien. Un rendimiento > 100% es físicamente
+    imposible: siempre es un peso mal capturado, y antes se guardaba sin
+    aviso (el scrap quedaba en 0 escondiendo el error)."""
+    if peso_usado is None or peso_producido is None:
+        return None
+    usado = Decimal(str(peso_usado))
+    producido = Decimal(str(peso_producido))
+    if usado <= 0:
+        return None
+    if producido > usado * (1 + TOLERANCIA_PRODUCIDO_SOBRE_USADO):
+        pct = round(producido / usado * 100, 1)
+        return (f'El peso producido ({producido} kg) es mayor que el peso usado ({usado} kg): '
+                f'daría un rendimiento de {pct}%, que no es posible. Revisa los pesos capturados.')
+    return None
+
+
 class DetalleSlitter(models.Model):
     CLASIFICACION_CHOICES = [
         ('normal', 'Normal'),

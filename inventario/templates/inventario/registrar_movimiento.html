@@ -88,7 +88,7 @@
     <div class="mp-info">
         <div><span>MP: </span><strong>{{ mp.numero_mp }}</strong></div>
         <div><span>Cliente: </span><strong>{{ mp.cliente|default:"—" }}</strong></div>
-        <div><span>Peso restante: </span><strong>{{ mp.peso_restante|default:"—" }} kg</strong></div>
+        <div><span>Peso restante: </span><strong>{{ mp.peso_restante|default_if_none:"—" }} kg</strong></div>
         <div><span>Estado: </span><strong>{{ mp.estado }}</strong></div>
     </div>
 

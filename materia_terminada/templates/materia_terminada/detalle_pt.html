@@ -150,15 +150,15 @@
             </div>
             <div class="campo">
                 <div class="etiqueta">Peso usado (kg)</div>
-                <div class="valor">{{ producto.orden.peso_usado|default:"—" }}</div>
+                <div class="valor">{{ producto.orden.peso_usado|default_if_none:"—" }}</div>
             </div>
             <div class="campo">
                 <div class="etiqueta">Scrap</div>
-                <div class="valor">{{ producto.orden.scrap_total|default:"—" }}</div>
+                <div class="valor">{{ producto.orden.scrap_total|default_if_none:"—" }}</div>
             </div>
             <div class="campo">
                 <div class="etiqueta">Rendimiento</div>
-                <div class="valor">{{ producto.orden.rendimiento_porcentaje|default:"—" }}{% if producto.orden.rendimiento_porcentaje %}%{% endif %}</div>
+                <div class="valor">{{ producto.orden.rendimiento_porcentaje|default_if_none:"—" }}{% if producto.orden.rendimiento_porcentaje is not None %}%{% endif %}</div>
             </div>
             <div class="campo">
                 <div class="etiqueta">Fecha de orden</div>

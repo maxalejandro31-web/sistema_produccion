@@ -523,7 +523,8 @@
                 </div>
 
                 <div id="resumen-slitter" class="resumen-slitter">
-                    <strong>Total cortes:</strong> <span id="total-peso">0.00</span> kg |
+                    <strong>Producido (cortes normales):</strong> <span id="total-peso">0.00</span> kg |
+                    <strong>Scrap/descarte:</strong> <span id="total-scrap-cortes">0.00</span> kg |
                     <strong>Diferencia:</strong> <span id="diferencia-peso">0.00</span> kg
                 </div>
 
@@ -772,11 +773,14 @@ document.addEventListener('DOMContentLoaded', function () {
             producido = parseFloat(pesoProducidoInput.value) || 0;
         }
 
+        // Peso usado: lo capturado en "peso usado". En fleje, si se dejó
+        // vacío, el servidor toma lo que le queda a la cinta (aquí se usa el
+        // peso de la cinta solo como referencia visual).
         let usado = 0;
-        if (modoFlejeActivo && pesoRolloPadreInput && pesoRolloPadreInput.value) {
-            usado = parseFloat(pesoRolloPadreInput.value) || 0;
-        } else if (pesoUsadoInput) {
+        if (pesoUsadoInput && pesoUsadoInput.value) {
             usado = parseFloat(pesoUsadoInput.value) || 0;
+        } else if (modoFlejeActivo && pesoRolloPadreInput && pesoRolloPadreInput.value) {
+            usado = parseFloat(pesoRolloPadreInput.value) || 0;
         }
 
         let diferencia = usado - producido;
@@ -784,6 +788,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (scrapInput) scrapInput.value = diferencia.toFixed(2);
         if (mermaInput) mermaInput.value = diferencia.toFixed(2);
+        avisoRendimiento(usado, producido);
+    }
+
+    // Aviso en pantalla si lo producido supera lo usado (rendimiento > 100%,
+    // imposible): el servidor rechaza guardarlo arriba de 1% de tolerancia.
+    const avisoRend = document.createElement('small');
+    avisoRend.style.cssText = 'display:none;margin-top:4px;font-weight:600;';
+    if (pesoProducidoInput) pesoProducidoInput.parentNode.appendChild(avisoRend);
+
+    function avisoRendimiento(usado, producido) {
+        if (!usado || !producido) { avisoRend.style.display = 'none'; return; }
+        const pct = producido / usado * 100;
+        if (pct > 101) {
+            avisoRend.style.display = 'block';
+            avisoRend.style.color = '#b91c1c';
+            avisoRend.textContent = `⚠ Rendimiento de ${pct.toFixed(1)}%: lo producido no puede ser mayor que lo usado. Revisa los pesos.`;
+        } else {
+            avisoRend.style.display = 'block';
+            avisoRend.style.color = '#4b5563';
+            avisoRend.textContent = `Rendimiento: ${pct.toFixed(2)}%`;
+        }
     }
 
     // ── Vista previa del folio de corte (rollo-no_corte) mientras se captura ──
@@ -873,22 +898,31 @@ document.addEventListener('DOMContentLoaded', function () {
     function calcularTotales() {
         if (!tablaBody || !totalPesoSpan || !diferenciaSpan) return;
 
+        // Producido = solo cortes 'normal'. Los cortes Scrap/Descarte son
+        // desperdicio: se muestran aparte y NO cuentan como producido.
         let total = 0;
+        let totalScrap = 0;
         const filas = Array.from(tablaBody.querySelectorAll('.detalle-row')).filter(f => f.style.display !== 'none');
 
         filas.forEach(fila => {
-            const inputPeso = fila.querySelector('input[name*="-peso"]');
+            const inputPeso = fila.querySelector('input[name$="-peso"]');
+            const clasif = fila.querySelector('select[name$="-clasificacion"]');
+            const esNormal = !clasif || !clasif.value || clasif.value === 'normal';
             if (inputPeso) {
                 const val = parseFloat(inputPeso.value);
-                if (!isNaN(val)) total += val;
+                if (!isNaN(val)) {
+                    if (esNormal) total += val; else totalScrap += val;
+                }
             }
         });
 
         totalPesoSpan.innerText = total.toFixed(2);
+        const totalScrapSpan = document.getElementById('total-scrap-cortes');
+        if (totalScrapSpan) totalScrapSpan.innerText = totalScrap.toFixed(2);
 
         const pesoUsado = parseFloat(pesoUsadoInput ? pesoUsadoInput.value : '');
         if (!isNaN(pesoUsado)) {
-            const diferencia = pesoUsado - total;
+            const diferencia = pesoUsado - total - totalScrap;
             diferenciaSpan.innerText = diferencia.toFixed(2);
 
             if (Math.abs(diferencia) > 50) {
@@ -1180,6 +1214,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? 'Peso total de tiras (kg, automático)'
                 : (modoSlitter ? 'Peso producido (kg, automático)' : 'Peso producido (kg)');
         }
+        const labelPesoUsado = document.querySelector('label[for="id_peso_usado"]');
+        if (labelPesoUsado) {
+            if (!labelPesoUsado.dataset.original) labelPesoUsado.dataset.original = labelPesoUsado.textContent;
+            labelPesoUsado.textContent = modoFleje
+                ? 'Peso de cinta que entra en este lote (kg)'
+                : labelPesoUsado.dataset.original;
+        }
 
         if (pesoProducidoInput) {
             if (modoSlitter || modoFleje) {
@@ -1242,6 +1283,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tablaBody.addEventListener('change', function (e) {
             if (e.target.matches('select[name*="-clasificacion"]')) {
                 actualizarClaseFila(e.target);
+                calcularTotales();
             }
         });
     }
@@ -1440,6 +1482,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (pesoRolloPadreInputAuto && data.peso_rollo_padre) {
                         pesoRolloPadreInputAuto.value = data.peso_rollo_padre;
                         pesoRolloPadreInputAuto.dispatchEvent(new Event('input', {bubbles: true}));
+                    }
+                    // Peso usado del lote = lo que le queda a la cinta
+                    // (si se va a procesar solo una parte, se corrige a mano).
+                    if (pesoUsadoInput && data.peso_disponible) {
+                        pesoUsadoInput.value = data.peso_disponible;
+                        pesoUsadoInput.dispatchEvent(new Event('input', {bubbles: true}));
                     }
                 })
                 .catch(function () {});

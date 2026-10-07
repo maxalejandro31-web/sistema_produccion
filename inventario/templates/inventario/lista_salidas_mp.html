@@ -115,7 +115,7 @@
                     {% else %}
                         <span class="badge-cantidad cantidad-parcial">Salida parcial</span>
                         <div style="font-size:11px;color:#6b7280;margin-top:2px;">
-                            Peso restante de la MP: {{ mov.mp.peso_restante|default:"0" }} kg
+                            Peso restante de la MP: {{ mov.mp.peso_restante|default_if_none:"0" }} kg
                         </div>
                     {% endif %}
                 </td>

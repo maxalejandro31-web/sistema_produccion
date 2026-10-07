@@ -77,8 +77,8 @@
                 <th colspan="2">ANCHO</th>
             </tr>
             <tr>
-                <td colspan="2">{{ mp.peso|default:"—" }}</td>
-                <td>{{ mp.espesor_mils|default:"—" }}</td>
+                <td colspan="2">{{ mp.peso|default_if_none:"—" }}</td>
+                <td>{{ mp.espesor_mils|default_if_none:"—" }}</td>
                 <td colspan="2">{{ mp.ancho|default:"—" }}</td>
             </tr>
         </table>
@@ -99,15 +99,15 @@
                 <tr>
                     <td>{{ d.folio_corte|default:d.no_corte }}</td>
                     <td>{{ d.ancho|default:"—" }}</td>
-                    <td>{{ d.espesor|default:"—" }}</td>
+                    <td>{{ d.espesor|default_if_none:"—" }}</td>
                     <td>{{ d.rebaba|default:"—" }}</td>
-                    <td>{{ d.peso|default:"—" }}</td>
+                    <td>{{ d.peso|default_if_none:"—" }}</td>
                     <td>
                         {% if d.clasificacion == 'scrap' %}<span class="tag-scrap">SCRAP</span>
                         {% elif d.clasificacion == 'descarte' %}<span class="tag-descarte">DESCARTE</span>
                         {% else %}—{% endif %}
                     </td>
-                    <td>{{ d.peso_merma|default:"—" }}</td>
+                    <td>{{ d.peso_merma|default_if_none:"—" }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="7">Sin cortes capturados</td></tr>
@@ -131,9 +131,9 @@
                 <tr>
                     <td>{{ d.numero_descarga|default:d.no_fleje }}</td>
                     <td>{{ oh.tipo_fleje|default:"—" }}</td>
-                    <td>{{ d.peso_descarga|default:"—" }}</td>
+                    <td>{{ d.peso_descarga|default_if_none:"—" }}</td>
                     <td>{{ d.numero_flejes|default:"—" }}</td>
-                    <td>{{ d.peso_por_fleje|default:"—" }}</td>
+                    <td>{{ d.peso_por_fleje|default_if_none:"—" }}</td>
                     <td>{{ d.ancho|default:"—" }}</td>
                     <td>{{ d.folio_descarga|default:"—" }}</td>
                 </tr>
@@ -142,8 +142,8 @@
                 {% endfor %}
                 <tr>
                     <td colspan="2" class="rollo-total">Peso total</td>
-                    <td class="rollo-total">{{ oh.peso_producido|default:"—" }}</td>
-                    <td colspan="4" class="rollo-total">Scrap: {{ oh.scrap_total|default:"—" }} kg</td>
+                    <td class="rollo-total">{{ oh.peso_producido|default_if_none:"—" }}</td>
+                    <td colspan="4" class="rollo-total">Scrap: {{ oh.scrap_total|default_if_none:"—" }} kg</td>
                 </tr>
             </table>
             {% empty %}

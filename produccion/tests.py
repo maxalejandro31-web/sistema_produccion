@@ -277,3 +277,204 @@ class ListaOrdenesFiltroAlertasTests(TestCase):
         resp = self.client.get(reverse('lista_ordenes'), {'anomalia': 'bajo'})
         ids = [o.id for o in resp.context['ordenes']]
         self.assertEqual(ids, [orden_mala.id])
+
+
+class RendimientoCapturaTests(TestCase):
+    """Cálculo de rendimiento al capturar/editar órdenes."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.user = crear_usuario_con_rol('rend_admin', 'Administrador')
+        self.client.force_login(self.user)
+        self.cliente = crear_cliente()
+        self.linea = crear_linea()
+
+    def _datos(self, tipo, cortes=(), descargas=(), **orden):
+        datos = {
+            'tipo_proceso': tipo, 'linea': self.linea.id, 'cliente': self.cliente.id,
+            'prioridad': 'media', 'estado': 'pendiente',
+            'detalles-TOTAL_FORMS': str(len(cortes)), 'detalles-INITIAL_FORMS': '0',
+            'detalles-MIN_NUM_FORMS': '0', 'detalles-MAX_NUM_FORMS': '1000',
+            'detalles_fleje-TOTAL_FORMS': str(len(descargas)), 'detalles_fleje-INITIAL_FORMS': '0',
+            'detalles_fleje-MIN_NUM_FORMS': '0', 'detalles_fleje-MAX_NUM_FORMS': '1000',
+        }
+        for i, c in enumerate(cortes):
+            datos[f'detalles-{i}-no_corte'] = str(c['no'])
+            datos[f'detalles-{i}-peso'] = str(c['peso'])
+            datos[f'detalles-{i}-clasificacion'] = c.get('clasif', 'normal')
+            if c.get('merma') is not None:
+                datos[f'detalles-{i}-peso_merma'] = str(c['merma'])
+        for i, d in enumerate(descargas):
+            datos[f'detalles_fleje-{i}-no_fleje'] = str(i + 1)
+            datos[f'detalles_fleje-{i}-peso_descarga'] = str(d)
+            datos[f'detalles_fleje-{i}-numero_flejes'] = '1'
+        datos.update({k: str(v) for k, v in orden.items()})
+        return datos
+
+    def _ultima(self):
+        return OrdenProduccion.objects.order_by('-id').first()
+
+    # ── Slitter: scrap/descarte no es producto ──────────────────────────
+    def test_cortes_scrap_y_descarte_no_cuentan_como_producido(self):
+        mp = crear_mp(cliente=self.cliente, peso=1000)
+        self.client.post(reverse('captura_orden'), self._datos('slitter', mp=mp.id, peso_usado=1000, cortes=[
+            {'no': 1, 'peso': 450}, {'no': 2, 'peso': 450},
+            {'no': 3, 'peso': 60, 'clasif': 'scrap'}, {'no': 4, 'peso': 30, 'clasif': 'descarte'},
+        ]))
+        orden = self._ultima()
+        self.assertEqual(orden.peso_producido, Decimal('900.00'))
+        self.assertEqual(orden.rendimiento_porcentaje, Decimal('90.00'))
+        self.assertEqual(orden.scrap_total, Decimal('100.00'))
+
+    def test_al_terminar_no_se_crea_pt_de_los_cortes_scrap(self):
+        mp = crear_mp(cliente=self.cliente, peso=1000)
+        self.client.post(reverse('captura_orden'), self._datos('slitter', mp=mp.id, peso_usado=1000, cortes=[
+            {'no': 1, 'peso': 900}, {'no': 2, 'peso': 80, 'clasif': 'scrap'},
+        ]))
+        orden = self._ultima()
+        orden.estado = 'terminado'
+        orden.save()
+        pts = ProductoTerminado.objects.filter(orden=orden)
+        self.assertEqual(pts.count(), 1)
+        self.assertEqual(pts.first().peso_kg, Decimal('900.00'))
+
+    def test_cambiar_corte_a_scrap_quita_su_pt_si_no_se_ha_movido(self):
+        orden = crear_orden_slitter(peso_usado=500, cortes=[{'no_corte': 1, 'peso': 400}, {'no_corte': 2, 'peso': 90}], terminar=True)
+        self.assertEqual(ProductoTerminado.objects.filter(orden=orden).count(), 2)
+        d2 = orden.detalles_slitter.get(no_corte=2)
+        d2.clasificacion = 'scrap'
+        d2.save()
+        self.assertEqual(ProductoTerminado.objects.filter(orden=orden).count(), 1)
+
+    # ── Producido > usado ──────────────────────────────────────────────
+    def test_producido_mayor_a_usado_se_rechaza(self):
+        mp = crear_mp(cliente=self.cliente, peso=5000)
+        resp = self.client.post(reverse('captura_orden'), self._datos('slitter', mp=mp.id, peso_usado=1000, cortes=[
+            {'no': 1, 'peso': 1200},
+        ]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(OrdenProduccion.objects.exists())
+        mp.refresh_from_db()
+        self.assertEqual(mp.peso_restante, Decimal('5000.00'))
+
+    def test_diferencia_de_bascula_menor_a_1_por_ciento_se_acepta(self):
+        mp = crear_mp(cliente=self.cliente, peso=5000)
+        self.client.post(reverse('captura_orden'), self._datos('slitter', mp=mp.id, peso_usado=1000, cortes=[
+            {'no': 1, 'peso': 1005},
+        ]))
+        self.assertTrue(OrdenProduccion.objects.exists())
+
+    def test_corte_liso_producido_mayor_se_rechaza(self):
+        mp = crear_mp(cliente=self.cliente, peso=5000)
+        self.client.post(reverse('captura_orden'), self._datos('corte_liso', mp=mp.id, peso_usado=1000, peso_producido=1500))
+        self.assertFalse(OrdenProduccion.objects.exists())
+
+    def test_editar_con_producido_mayor_no_guarda_nada_a_medias(self):
+        orden = crear_orden_slitter(peso_usado=500, cortes=[{'no_corte': 1, 'peso': 480}])
+        d = orden.detalles_slitter.get()
+        datos = self._datos('slitter', mp=orden.mp_id, peso_usado=500)
+        datos.update({
+            'detalles-TOTAL_FORMS': '1', 'detalles-INITIAL_FORMS': '1',
+            'detalles-0-id': str(d.id), 'detalles-0-orden': str(orden.id),
+            'detalles-0-no_corte': '1', 'detalles-0-peso': '900', 'detalles-0-clasificacion': 'normal',
+        })
+        resp = self.client.post(reverse('editar_orden', args=[orden.id]), datos)
+        self.assertEqual(resp.status_code, 200)
+        d.refresh_from_db()
+        orden.refresh_from_db()
+        self.assertEqual(d.peso, Decimal('480.00'))       # el corte no se quedó guardado
+        self.assertEqual(orden.peso_producido, Decimal('500.00'))  # la orden tampoco cambió
+
+    # ── Fleje por lotes ────────────────────────────────────────────────
+    def _cinta(self, peso=3000):
+        orden = crear_orden_slitter(cliente=self.cliente, peso_usado=peso, cortes=[{'no_corte': 1, 'peso': peso}], terminar=True)
+        return ProductoTerminado.objects.get(orden=orden)
+
+    def test_fleje_respeta_el_peso_usado_del_lote(self):
+        cinta = self._cinta(3000)
+        self.client.post(reverse('captura_orden'), self._datos(
+            'fleje', pt_origen=cinta.id, peso_rollo_padre=3000, peso_usado=1500, descargas=[1470]))
+        lote = self._ultima()
+        self.assertEqual(lote.peso_usado, Decimal('1500.00'))
+        self.assertEqual(lote.rendimiento_porcentaje, Decimal('98.00'))
+
+    def test_fleje_sin_peso_usado_toma_lo_que_le_queda_a_la_cinta(self):
+        cinta = self._cinta(3000)
+        self.client.post(reverse('captura_orden'), self._datos(
+            'fleje', pt_origen=cinta.id, peso_rollo_padre=3000, peso_usado=1000, descargas=[990], estado='terminado'))
+        self.client.post(reverse('captura_orden'), self._datos(
+            'fleje', pt_origen=cinta.id, peso_rollo_padre=3000, descargas=[1960]))
+        lote2 = self._ultima()
+        self.assertEqual(lote2.peso_usado, Decimal('2000.00'))
+        self.assertEqual(lote2.rendimiento_porcentaje, Decimal('98.00'))
+
+    def test_cinta_no_se_agota_con_el_primer_lote(self):
+        cinta = self._cinta(3000)
+        self.client.post(reverse('captura_orden'), self._datos(
+            'fleje', pt_origen=cinta.id, peso_rollo_padre=3000, peso_usado=1000, descargas=[990], estado='terminado'))
+        cinta.refresh_from_db()
+        self.assertEqual(cinta.estado, 'en_almacen')
+        self.assertEqual(cinta.peso_disponible_fleje, 2000)
+
+    def test_lote_mayor_a_lo_que_queda_se_rechaza(self):
+        cinta = self._cinta(3000)
+        self.client.post(reverse('captura_orden'), self._datos(
+            'fleje', pt_origen=cinta.id, peso_rollo_padre=3000, peso_usado=2500, descargas=[2450], estado='terminado'))
+        antes = OrdenProduccion.objects.count()
+        self.client.post(reverse('captura_orden'), self._datos(
+            'fleje', pt_origen=cinta.id, peso_rollo_padre=3000, peso_usado=1000, descargas=[490]))
+        self.assertEqual(OrdenProduccion.objects.count(), antes)
+
+    def test_api_cinta_devuelve_peso_disponible(self):
+        cinta = self._cinta(3000)
+        self.client.post(reverse('captura_orden'), self._datos(
+            'fleje', pt_origen=cinta.id, peso_rollo_padre=3000, peso_usado=1200, descargas=[1180], estado='terminado'))
+        data = self.client.get(reverse('api_datos_pt_origen', args=[cinta.id])).json()
+        self.assertEqual(data['peso_disponible'], '1800')
+        self.assertEqual(data['peso_rollo_padre'], '3000')
+
+
+class RendimientoDashboardYPromedioTests(TestCase):
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def test_rendimiento_mensual_solo_cuenta_ordenes_terminadas(self):
+        user = crear_usuario_con_rol('dash_rend', 'Administrador')
+        self.client.force_login(user)
+        terminada = crear_orden_slitter(peso_usado=1000, terminar=True)
+        OrdenProduccion.objects.filter(pk=terminada.pk).update(peso_producido=Decimal('950'))
+        # Orden pendiente con lo producido todavía vacío: antes bajaba el %.
+        pendiente = crear_orden_slitter(peso_usado=1000)
+        OrdenProduccion.objects.filter(pk=pendiente.pk).update(peso_producido=None)
+        resp = self.client.get(reverse('inicio'))
+        self.assertEqual(resp.context['rendimiento_mes_actual'], 95.0)
+
+    def test_rendimientos_imposibles_no_entran_al_promedio(self):
+        from .analitica import mapear_baselines_rendimiento
+        for i in range(5):
+            o = crear_orden_slitter(mp=crear_mp(peso=1000, material='Acero X'), peso_usado=500, terminar=True)
+            OrdenProduccion.objects.filter(pk=o.pk).update(rendimiento_porcentaje=Decimal('98'))
+        malo = crear_orden_slitter(mp=crear_mp(peso=1000, material='Acero X'), peso_usado=500, terminar=True)
+        OrdenProduccion.objects.filter(pk=malo.pk).update(rendimiento_porcentaje=Decimal('950'))
+        stats = mapear_baselines_rendimiento(usar_cache=False)[('slitter', 'Acero X')]
+        self.assertEqual(stats['promedio'], 98.0)
+        self.assertEqual(stats['muestra'], 5)
+
+
+class CerosRealesSeMuestranTests(TestCase):
+    """Un scrap o rendimiento real de 0 se mostraba como "—"/"-", igual que
+    un dato no capturado."""
+
+    def test_scrap_cero_y_rendimiento_cero_se_ven(self):
+        self.client.force_login(crear_usuario_con_rol('ceros_admin', 'Administrador'))
+        orden = crear_orden_slitter(peso_usado=500)
+        OrdenProduccion.objects.filter(pk=orden.pk).update(
+            scrap_total=Decimal('0'), merma_kg=Decimal('0'), rendimiento_porcentaje=Decimal('0'),
+        )
+        detalle = self.client.get(reverse('detalle_orden', args=[orden.id])).content.decode()
+        self.assertIn('Scrap total:</strong> 0.00', detalle)
+        self.assertIn('Rendimiento:</strong> 0.00', detalle)
+        lista = self.client.get(reverse('lista_ordenes')).content.decode()
+        self.assertIn('0.00%', lista)

@@ -32,9 +32,11 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
         return
 
     if instance.tipo_proceso == 'slitter':
-        # Un PT por cada corte del detalle slitter
+        # Un PT por cada corte del detalle slitter — solo los cortes
+        # 'normal': un corte marcado Scrap o Descarte es desperdicio, no una
+        # cinta que entre al almacén de producto terminado.
         for detalle in instance.detalles_slitter.all():
-            if not detalle.peso:
+            if not detalle.peso or (detalle.clasificacion or 'normal') != 'normal':
                 continue
             numero_pt = f"PT-{instance.folio_orden}-C{detalle.no_corte}"
             ProductoTerminado.objects.create(
@@ -105,6 +107,16 @@ def sincronizar_pt_desde_detalle_slitter(sender, instance, **kwargs):
       se saltó al generar el PT la primera vez- y luego se corrigió el peso.
     """
     from materia_terminada.models import ProductoTerminado
+
+    if (instance.clasificacion or 'normal') != 'normal':
+        # El corte es (o se cambió a) Scrap/Descarte: no debe existir como
+        # cinta en almacén. Si ya se le había generado su PT y ese PT no se
+        # ha movido, se quita; si ya se movió (salida, fleje, calidad) se
+        # deja para no perder esa información.
+        pt = ProductoTerminado.objects.filter(detalle_slitter=instance).first()
+        if pt and pt.sin_movimientos():
+            pt.delete()
+        return
 
     if not instance.peso:
         return

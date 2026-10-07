@@ -193,11 +193,17 @@ def inicio(request):
             anio -= 1
         return anio, mes
 
+    # Solo órdenes TERMINADAS con ambos pesos capturados: antes entraban
+    # también las pendientes/en proceso (con lo producido todavía
+    # incompleto o vacío pero lo usado completo), y eso bajaba el % del mes
+    # sin que la planta hubiera rendido menos.
     rendimiento_labels, rendimiento_data = [], []
     for i in range(5, -1, -1):
         anio_i, mes_i = _mes_atras(hoy, i)
         agg_mes = OrdenProduccion.objects.filter(
             fecha__year=anio_i, fecha__month=mes_i,
+            estado='terminado',
+            peso_usado__isnull=False, peso_producido__isnull=False,
         ).aggregate(usado=Sum('peso_usado'), producido=Sum('peso_producido'))
         usado_mes = float(agg_mes['usado'] or 0)
         producido_mes = float(agg_mes['producido'] or 0)

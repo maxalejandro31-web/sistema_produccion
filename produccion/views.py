@@ -8,7 +8,9 @@ from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
 from django.utils import timezone
 
-from .models import OrdenProduccion, DetalleSlitter
+from .models import (
+    OrdenProduccion, DetalleSlitter, peso_producido_slitter, error_producido_mayor_a_usado,
+)
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet, DetalleFlejeFormSet
 from .analitica import anotar_anomalias
 from core.decorators import roles_required, solo_dueno_puede_eliminar
@@ -27,6 +29,34 @@ def _calcular_scrap_merma(orden):
     diferencia = diferencia if diferencia > 0 else 0
     orden.scrap_total = diferencia
     orden.merma_kg = diferencia
+
+
+def _peso_usado_fleje(orden, excluir_orden_id=None, validar=True):
+    """Peso de cinta que entra en ESTE lote de fleje.
+
+    Antes se forzaba siempre al peso COMPLETO de la cinta (peso_rollo_padre),
+    aunque la cinta se procesara en varios lotes: cada lote quedaba con un
+    rendimiento falsamente bajo y la cinta se "agotaba" desde el primer lote.
+    Ahora se respeta el peso usado que se capture; si se deja vacío, se toma
+    lo que le queda disponible a la cinta (que en un solo lote es la cinta
+    completa, igual que antes). Devuelve un mensaje de error si el lote pide
+    más de lo que le queda a la cinta, o None."""
+    from decimal import Decimal
+
+    pt = orden.pt_origen
+    disponible = _disponible_cinta(pt, excluir_orden_id) if pt is not None else None
+
+    if not orden.peso_usado:
+        if disponible is not None:
+            orden.peso_usado = disponible
+        elif orden.peso_rollo_padre:
+            orden.peso_usado = orden.peso_rollo_padre
+
+    if (validar and disponible is not None and orden.peso_usado
+            and Decimal(str(orden.peso_usado)) > disponible + Decimal('0.01')):
+        return (f'A la cinta {pt.numero_pt} solo le quedan {disponible} kg para fleje; '
+                f'el peso usado de este lote ({orden.peso_usado} kg) no puede ser mayor.')
+    return None
 
 
 def _cortes_duplicados(mp, detalles, excluir_orden_id=None):
@@ -91,26 +121,36 @@ def captura_orden(request):
                         'formset_fleje': formset_fleje,
                     })
 
-                suma_pesos = 0
-
-                for d in detalles:
-                    if d.peso:
-                        suma_pesos += float(d.peso)
-
-                orden.peso_producido = suma_pesos
+                # Solo cortes 'normal': scrap/descarte no es producto.
+                orden.peso_producido = peso_producido_slitter(detalles)
                 detalles_fleje = []
             elif tipo == 'fleje':
                 suma_pesos = sum(
                     float(d.peso_descarga) for d in detalles_fleje if d.peso_descarga
                 )
                 orden.peso_producido = suma_pesos
-                if orden.peso_rollo_padre:
-                    orden.peso_usado = orden.peso_rollo_padre
+                error_fleje = _peso_usado_fleje(orden)
+                if error_fleje:
+                    messages.error(request, error_fleje)
+                    return render(request, 'produccion/captura_orden.html', {
+                        'form': form,
+                        'formset': formset,
+                        'formset_fleje': formset_fleje,
+                    })
                 orden.mp = None
                 detalles = []
             else:
                 detalles = []
                 detalles_fleje = []
+
+            error_pesos = error_producido_mayor_a_usado(orden.peso_usado, orden.peso_producido)
+            if error_pesos:
+                messages.error(request, error_pesos)
+                return render(request, 'produccion/captura_orden.html', {
+                    'form': form,
+                    'formset': formset,
+                    'formset_fleje': formset_fleje,
+                })
 
             _calcular_scrap_merma(orden)
 
@@ -185,7 +225,20 @@ def api_datos_pt_origen(request, pt_id):
         # en el sistema ('0.035').
         'espesor_rollo_padre': f"{float(espesor_rollo_padre):g}" if espesor_rollo_padre else '',
         'peso_rollo_padre': f"{float(pt.peso_kg):g}" if pt.peso_kg else '',
+        # Lo que le queda a la cinta para fleje (descontando los lotes que
+        # ya la usaron) — es el valor sugerido para "peso usado" del lote.
+        'peso_disponible': f"{float(_disponible_cinta(pt, request.GET.get('excluir_orden'))):g}",
     })
+
+
+def _disponible_cinta(pt, excluir_orden_id=None):
+    from decimal import Decimal
+    from django.db.models import Sum
+    otros = pt.ordenes_flejado.all()
+    if excluir_orden_id and str(excluir_orden_id).isdigit():
+        otros = otros.exclude(pk=int(excluir_orden_id))
+    consumido = otros.aggregate(t=Sum('peso_usado'))['t'] or Decimal('0')
+    return max(Decimal(str(pt.peso_kg or 0)) - consumido, Decimal('0'))
 
 
 @roles_required('Administrador', 'Supervisor', 'Operador', 'Capturista', 'Coordinador')
@@ -376,6 +429,10 @@ def editar_orden(request, orden_id):
 
     try:
         if request.method == 'POST':
+            # Antes de construir el form (is_valid() le pone los valores
+            # nuevos a la instancia).
+            peso_usado_antes = orden.peso_usado
+            pt_origen_antes = orden.pt_origen_id
             form = OrdenProduccionForm(request.POST, instance=orden)
             formset = DetalleSlitterFormSet(request.POST, instance=orden, prefix='detalles')
             formset_fleje = DetalleFlejeFormSet(request.POST, instance=orden, prefix='detalles_fleje')
@@ -397,57 +454,78 @@ def editar_orden(request, orden_id):
                 formsets_validos = True
 
             if form.is_valid() and formsets_validos:
-                orden_actualizada = form.save(commit=False)
-
-                if orden.tipo_proceso == 'slitter':
-                    detalles = formset.save(commit=False)
-
-                    duplicados = _cortes_duplicados(orden_actualizada.mp, detalles, excluir_orden_id=orden.id)
-                    if duplicados:
-                        lista = ', '.join(str(n) for n in duplicados)
-                        messages.error(
-                            request,
-                            f'El rollo {orden_actualizada.mp.numero_mp} ya tiene registrado el corte '
-                            f'No. {lista} en otra orden. Usa un número de corte distinto.'
-                        )
-                        return render(request, 'produccion/editar_orden.html', {
-                            'form': form,
-                            'formset': formset,
-                            'formset_fleje': formset_fleje,
-                            'orden': orden,
-                        })
-
-                    for d in detalles:
-                        d.orden = orden_actualizada
-                        d.save()
-                    for obj in formset.deleted_objects:
-                        obj.delete()
-
-                if orden.tipo_proceso == 'fleje':
-                    detalles_fleje = formset_fleje.save(commit=False)
-                    for d in detalles_fleje:
-                        d.orden = orden_actualizada
-                        d.save()
-                    for obj in formset_fleje.deleted_objects:
-                        obj.delete()
-
-                if orden_actualizada.tipo_proceso == 'slitter':
-                    suma_pesos = sum(
-                        float(d.peso) for d in orden_actualizada.detalles_slitter.all() if d.peso
-                    )
-                    orden_actualizada.peso_producido = suma_pesos
-                elif orden_actualizada.tipo_proceso == 'fleje':
-                    suma_pesos = sum(
-                        float(d.peso_descarga) for d in orden_actualizada.detalles_fleje.all() if d.peso_descarga
-                    )
-                    orden_actualizada.peso_producido = suma_pesos
-                    if orden_actualizada.peso_rollo_padre:
-                        orden_actualizada.peso_usado = orden_actualizada.peso_rollo_padre
-                    orden_actualizada.mp = None
-
-                _calcular_scrap_merma(orden_actualizada)
+                from django.db import transaction
                 try:
-                    orden_actualizada.save()
+                    with transaction.atomic():
+                        orden_actualizada = form.save(commit=False)
+
+                        if orden.tipo_proceso == 'slitter':
+                            detalles = formset.save(commit=False)
+
+                            duplicados = _cortes_duplicados(orden_actualizada.mp, detalles, excluir_orden_id=orden.id)
+                            if duplicados:
+                                lista = ', '.join(str(n) for n in duplicados)
+                                messages.error(
+                                    request,
+                                    f'El rollo {orden_actualizada.mp.numero_mp} ya tiene registrado el corte '
+                                    f'No. {lista} en otra orden. Usa un número de corte distinto.'
+                                )
+                                return render(request, 'produccion/editar_orden.html', {
+                                    'form': form,
+                                    'formset': formset,
+                                    'formset_fleje': formset_fleje,
+                                    'orden': orden,
+                                })
+
+                            for d in detalles:
+                                d.orden = orden_actualizada
+                                d.save()
+                            for obj in formset.deleted_objects:
+                                obj.delete()
+
+                        if orden.tipo_proceso == 'fleje':
+                            detalles_fleje = formset_fleje.save(commit=False)
+                            for d in detalles_fleje:
+                                d.orden = orden_actualizada
+                                d.save()
+                            for obj in formset_fleje.deleted_objects:
+                                obj.delete()
+
+                        error_pesos = None
+                        if orden_actualizada.tipo_proceso == 'slitter':
+                            # Solo cortes 'normal': scrap/descarte no es producto.
+                            orden_actualizada.peso_producido = peso_producido_slitter(
+                                orden_actualizada.detalles_slitter.all()
+                            )
+                        elif orden_actualizada.tipo_proceso == 'fleje':
+                            suma_pesos = sum(
+                                float(d.peso_descarga) for d in orden_actualizada.detalles_fleje.all() if d.peso_descarga
+                            )
+                            orden_actualizada.peso_producido = suma_pesos
+                            # Solo se valida contra lo disponible de la cinta si de
+                            # verdad se cambió el peso usado o la cinta: así una orden
+                            # vieja (capturada cuando el peso usado era siempre la
+                            # cinta completa) se puede seguir editando en lo demás.
+                            cambio_fleje = (
+                                orden_actualizada.peso_usado != peso_usado_antes
+                                or orden_actualizada.pt_origen_id != pt_origen_antes
+                            )
+                            error_pesos = _peso_usado_fleje(
+                                orden_actualizada, excluir_orden_id=orden.id, validar=cambio_fleje,
+                            )
+                            orden_actualizada.mp = None
+
+                        error_pesos = error_pesos or error_producido_mayor_a_usado(
+                            orden_actualizada.peso_usado, orden_actualizada.peso_producido,
+                        )
+
+                        _calcular_scrap_merma(orden_actualizada)
+                        if error_pesos:
+                            # Los cortes/descargas ya se guardaron arriba dentro de
+                            # esta misma transacción: al lanzar el error se deshace
+                            # TODO lo de esta edición, no queda guardado a medias.
+                            raise ValueError(error_pesos)
+                        orden_actualizada.save()
                 except ValueError as e:
                     messages.error(request, str(e))
                     return render(request, 'produccion/editar_orden.html', {
@@ -486,11 +564,18 @@ def _resumen_aprovechamiento_mp(orden, detalles, ordenes_fleje_hijas):
     peso_normal_slitter = sum(
         float(d.peso) for d in detalles if d.clasificacion == 'normal' and d.peso
     )
+    # Peso de un corte scrap/descarte: el pesado aparte (peso_merma) si se
+    # capturó; si no, el peso del propio renglón (que también es scrap, no
+    # producto). Antes, si solo se capturaba el peso del renglón, ese scrap
+    # no aparecía en ningún lado del resumen.
+    def _peso_desperdicio(d):
+        return float(d.peso_merma or d.peso or 0)
+
     peso_scrap_slitter = sum(
-        float(d.peso_merma) for d in detalles if d.clasificacion == 'scrap' and d.peso_merma
+        _peso_desperdicio(d) for d in detalles if d.clasificacion == 'scrap'
     )
     peso_descarte_slitter = sum(
-        float(d.peso_merma) for d in detalles if d.clasificacion == 'descarte' and d.peso_merma
+        _peso_desperdicio(d) for d in detalles if d.clasificacion == 'descarte'
     )
 
     peso_fleje_producido = sum(
