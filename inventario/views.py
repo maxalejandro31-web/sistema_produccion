@@ -325,7 +325,7 @@ def _datos_reporte_rollo(mp):
     from produccion.views import _resumen_aprovechamiento_mp
 
     ordenes_slitter = OrdenProduccion.objects.filter(
-        mp=mp, tipo_proceso='slitter'
+        mp=mp, tipo_proceso__in=OrdenProduccion.TIPOS_CON_CORTES
     ).select_related('cliente', 'linea').prefetch_related('detalles_slitter').order_by('fecha', 'id')
 
     bloques = []

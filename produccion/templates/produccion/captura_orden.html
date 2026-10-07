@@ -718,24 +718,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const cardFlejePadre = document.getElementById('card-fleje-padre');
     const step3Label = document.getElementById('step3-label');
 
+    // Captura por cortes: Slitter y Mini Slitter. Se decide SOLO por el tipo
+    // de proceso (antes también por el nombre de la línea: en "Baby Slitter"
+    // la pantalla pedía cortes aunque el proceso no los guardara, y se
+    // perdían al guardar).
     function esSlitter() {
-        let porLinea = false;
-        let porProceso = false;
-
-        if (lineaSelect && lineaSelect.selectedIndex >= 0) {
-            const opcion = lineaSelect.options[lineaSelect.selectedIndex];
-            if (opcion) {
-                const textoLinea = opcion.text.trim().toLowerCase();
-                porLinea = textoLinea.includes('slitter');
-            }
-        }
-
-        if (tipoProcesoSelect) {
-            const valorProceso = (tipoProcesoSelect.value || '').trim().toLowerCase();
-            porProceso = valorProceso === 'slitter';
-        }
-
-        return porLinea || porProceso;
+        const valorProceso = tipoProcesoSelect ? (tipoProcesoSelect.value || '').trim().toLowerCase() : '';
+        return valorProceso === 'slitter' || valorProceso === 'mini_slitter';
     }
 
     function esFleje() {
@@ -1533,6 +1522,26 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-siguiente').forEach(function (btn) {
         btn.addEventListener('click', function () { irAPaso(parseInt(btn.dataset.siguiente, 10)); });
     });
+
+    // Si al dar "Guardar orden" falta un dato obligatorio (p. ej. la línea)
+    // en un paso que está oculto, el navegador no lo puede señalar y antes
+    // simplemente no pasaba nada. Ahora se abre ese paso y se marca el campo.
+    const formOrden = document.getElementById('ordenForm');
+    let avisandoInvalido = false;
+    if (formOrden) {
+        formOrden.addEventListener('invalid', function (e) {
+            if (avisandoInvalido) return;
+            const paso = e.target.closest('.paso');
+            if (!paso || !paso.classList.contains('oculto')) return;
+            avisandoInvalido = true;
+            irAPaso(parseInt(paso.id.replace('paso-', ''), 10));
+            setTimeout(function () {
+                e.target.focus();
+                e.target.reportValidity();
+                avisandoInvalido = false;
+            }, 80);
+        }, true);
+    }
     document.querySelectorAll('.btn-atras').forEach(function (btn) {
         btn.addEventListener('click', function () { irAPaso(parseInt(btn.dataset.atras, 10)); });
     });

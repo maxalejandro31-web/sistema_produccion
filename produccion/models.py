@@ -109,6 +109,22 @@ class OrdenProduccion(models.Model):
         default='pendiente'
     )
 
+    # Procesos que se capturan corte por corte (cada corte = una cinta en
+    # Producto Terminado). Mini Slitter trabaja igual que Slitter.
+    TIPOS_CON_CORTES = ('slitter', 'mini_slitter')
+
+    @property
+    def usa_cortes(self):
+        return self.tipo_proceso in self.TIPOS_CON_CORTES
+
+    def folio_generado(self):
+        """Folio automático ORD-AAAA-NNNN. Se expone aparte porque el signal
+        que genera el Producto Terminado corre DENTRO de save(), antes de
+        que el folio quede asignado: sin esto, una orden capturada directo
+        como 'Terminado' generaba su cinta como "PT-2" en vez de
+        "PT-ORD-2026-0002"."""
+        return f'ORD-{timezone.localdate().year}-{self.pk:04d}'
+
     def __str__(self):
         return f"{self.folio_orden} - {self.get_tipo_proceso_display()}"
 
@@ -157,8 +173,7 @@ class OrdenProduccion(models.Model):
         super().save(*args, **kwargs)
 
         if generar_folio:
-            año = timezone.localdate().year
-            folio = f'ORD-{año}-{self.pk:04d}'
+            folio = self.folio_generado()
             OrdenProduccion.objects.filter(pk=self.pk).update(folio_orden=folio)
             self.folio_orden = folio
 
@@ -220,6 +235,21 @@ class OrdenProduccion(models.Model):
 # Tolerancia para aceptar un peso producido mayor al usado (diferencias
 # normales de báscula). Arriba de esto se considera error de captura.
 TOLERANCIA_PRODUCIDO_SOBRE_USADO = Decimal('0.01')   # 1%
+
+
+def corte_vacio(d):
+    """Renglón de corte sin ningún dato capturado. La pantalla de captura
+    pre-llena el No. de corte de los renglones extra; sin este filtro esos
+    renglones vacíos se guardaban como cortes reales (y el siguiente proceso
+    del mismo rollo se brincaba esos números de corte)."""
+    return not any([d.peso, d.peso_merma, d.ancho, d.espesor, d.rebaba, d.camber, d.observaciones])
+
+
+def tira_vacia(d):
+    """Ídem corte_vacio, para descargas de Fleje (el No. y el # de descarga
+    también se pre-llenan solos, así que no cuentan como dato)."""
+    return not any([d.peso_descarga, d.folio_descarga, d.porcentaje_rebaba, d.ancho,
+                    d.numero_flejes, d.observaciones])
 
 
 def peso_producido_slitter(detalles):

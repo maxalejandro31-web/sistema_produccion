@@ -69,7 +69,7 @@
             {% endfor %}
         </div>
 
-        {% if orden.tipo_proceso == 'slitter' %}
+        {% if orden.usa_cortes %}
         <div class="bloque-slitter">
             <h2>Detalle de Cortes Slitter</h2>
 
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalPesoSpan = document.getElementById('total-peso');
 
     const tipoProceso = '{{ orden.tipo_proceso }}';
-    const modoSlitter = tipoProceso === 'slitter';
+    const modoSlitter = tipoProceso === 'slitter' || tipoProceso === 'mini_slitter';
     const modoFleje = tipoProceso === 'fleje';
 
     const pesoUsadoInput = document.getElementById('id_peso_usado');

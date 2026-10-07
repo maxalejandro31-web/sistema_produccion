@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from .models import (
     OrdenProduccion, DetalleSlitter, peso_producido_slitter, error_producido_mayor_a_usado,
+    corte_vacio, tira_vacia,
 )
 from .forms import OrdenProduccionForm, DetalleSlitterFormSet, DetalleFlejeFormSet
 from .analitica import anotar_anomalias
@@ -59,6 +60,16 @@ def _peso_usado_fleje(orden, excluir_orden_id=None, validar=True):
     return None
 
 
+def _quitar_renglon_vacio(detalle):
+    """Borra un corte/tira que quedó sin datos. Si tenía una cinta/fleje en
+    Producto Terminado que nunca se movió, también se quita (si no, quedaría
+    huérfana con el peso viejo); si ya se movió, el PT se conserva."""
+    for pt in detalle.producto_terminado.all():
+        if pt.sin_movimientos():
+            pt.delete()
+    detalle.delete()
+
+
 def _cortes_duplicados(mp, detalles, excluir_orden_id=None):
     """Números de corte que ya existen para este mismo rollo en OTRA orden.
 
@@ -102,10 +113,12 @@ def captura_orden(request):
         if form.is_valid() and formset.is_valid() and formset_fleje.is_valid():
             orden = form.save(commit=False)
             tipo = orden.tipo_proceso
-            detalles = formset.save(commit=False)
-            detalles_fleje = formset_fleje.save(commit=False)
+            # Se descartan los renglones que no traen ningún dato (la
+            # pantalla les pre-llena el número de corte/tira).
+            detalles = [d for d in formset.save(commit=False) if not corte_vacio(d)]
+            detalles_fleje = [d for d in formset_fleje.save(commit=False) if not tira_vacia(d)]
 
-            if tipo == 'slitter':
+            if tipo in OrdenProduccion.TIPOS_CON_CORTES:
                 duplicados = _cortes_duplicados(orden.mp, detalles)
                 if duplicados:
                     lista = ', '.join(str(n) for n in duplicados)
@@ -446,7 +459,7 @@ def editar_orden(request, orden_id):
             # guardarse NUNCA, sin ningún error visible en pantalla. Por
             # eso aquí solo se exige (y más abajo solo se guarda) el
             # formset que de verdad se le mostró al usuario.
-            if orden.tipo_proceso == 'slitter':
+            if orden.usa_cortes:
                 formsets_validos = formset.is_valid()
             elif orden.tipo_proceso == 'fleje':
                 formsets_validos = formset_fleje.is_valid()
@@ -459,10 +472,13 @@ def editar_orden(request, orden_id):
                     with transaction.atomic():
                         orden_actualizada = form.save(commit=False)
 
-                        if orden.tipo_proceso == 'slitter':
+                        if orden.usa_cortes:
                             detalles = formset.save(commit=False)
 
-                            duplicados = _cortes_duplicados(orden_actualizada.mp, detalles, excluir_orden_id=orden.id)
+                            duplicados = _cortes_duplicados(
+                                orden_actualizada.mp, [d for d in detalles if not corte_vacio(d)],
+                                excluir_orden_id=orden.id,
+                            )
                             if duplicados:
                                 lista = ', '.join(str(n) for n in duplicados)
                                 messages.error(
@@ -482,6 +498,12 @@ def editar_orden(request, orden_id):
                                 d.save()
                             for obj in formset.deleted_objects:
                                 obj.delete()
+                            # Renglones que quedaron vacíos (los que se
+                            # guardaron así antes, o que se borraron a mano
+                            # al editar) se quitan para no dejar basura.
+                            for d in orden_actualizada.detalles_slitter.all():
+                                if corte_vacio(d):
+                                    _quitar_renglon_vacio(d)
 
                         if orden.tipo_proceso == 'fleje':
                             detalles_fleje = formset_fleje.save(commit=False)
@@ -490,9 +512,12 @@ def editar_orden(request, orden_id):
                                 d.save()
                             for obj in formset_fleje.deleted_objects:
                                 obj.delete()
+                            for d in orden_actualizada.detalles_fleje.all():
+                                if tira_vacia(d):
+                                    _quitar_renglon_vacio(d)
 
                         error_pesos = None
-                        if orden_actualizada.tipo_proceso == 'slitter':
+                        if orden_actualizada.usa_cortes:
                             # Solo cortes 'normal': scrap/descarte no es producto.
                             orden_actualizada.peso_producido = peso_producido_slitter(
                                 orden_actualizada.detalles_slitter.all()
@@ -611,7 +636,7 @@ def imprimir_orden(request, orden_id):
 
     ordenes_fleje_hijas = []
     resumen_mp = None
-    if orden.tipo_proceso == 'slitter':
+    if orden.usa_cortes:
         # Órdenes de fleje que consumieron alguno de los cortes de este rollo,
         # para reconstruir en el mismo reporte la cadena MP → Slitter → Fleje
         # tal como se ve en el formato de papel de planta.

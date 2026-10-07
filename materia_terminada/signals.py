@@ -31,14 +31,14 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
     if instance.productos_terminados.exists():
         return
 
-    if instance.tipo_proceso == 'slitter':
-        # Un PT por cada corte del detalle slitter — solo los cortes
+    if instance.tipo_proceso in instance.TIPOS_CON_CORTES:
+        # Slitter y Mini Slitter: un PT por cada corte del detalle — solo los cortes
         # 'normal': un corte marcado Scrap o Descarte es desperdicio, no una
         # cinta que entre al almacén de producto terminado.
         for detalle in instance.detalles_slitter.all():
             if not detalle.peso or (detalle.clasificacion or 'normal') != 'normal':
                 continue
-            numero_pt = f"PT-{instance.folio_orden}-C{detalle.no_corte}"
+            numero_pt = f"PT-{instance.folio_orden or instance.folio_generado()}-C{detalle.no_corte}"
             ProductoTerminado.objects.create(
                 orden=instance,
                 detalle_slitter=detalle,
@@ -53,7 +53,7 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
         for detalle in instance.detalles_fleje.all():
             if not detalle.peso_descarga:
                 continue
-            numero_pt = f"PT-{instance.folio_orden}-F{detalle.no_fleje}"
+            numero_pt = f"PT-{instance.folio_orden or instance.folio_generado()}-F{detalle.no_fleje}"
             ProductoTerminado.objects.create(
                 orden=instance,
                 detalle_fleje=detalle,
@@ -64,8 +64,12 @@ def crear_producto_terminado(sender, instance, created, **kwargs):
                 peso_kg=detalle.peso_descarga,
             )
     else:
-        # Para corte_liso, mini_slitter y otros: un PT por orden
-        numero_pt = f"PT-{instance.folio_orden}" if instance.folio_orden else f"PT-{instance.pk}"
+        # Para corte_liso y otros: un PT por orden. Si la orden se acaba de
+        # crear ya como 'terminado', este signal corre antes de que save()
+        # le asigne su folio automático: se usa el mismo folio que va a
+        # quedar (antes salía "PT-2" en vez de "PT-ORD-2026-0002").
+        folio = instance.folio_orden or instance.folio_generado()
+        numero_pt = f"PT-{folio}"
         tipo_producto = TIPO_PRODUCTO_MAP.get(instance.tipo_proceso, 'otro')
 
         ProductoTerminado.objects.create(

@@ -478,3 +478,68 @@ class CerosRealesSeMuestranTests(TestCase):
         self.assertIn('Rendimiento:</strong> 0.00', detalle)
         lista = self.client.get(reverse('lista_ordenes')).content.decode()
         self.assertIn('0.00%', lista)
+
+
+class CapturaProcesosTests(TestCase):
+    """Registro correcto de los 4 procesos (reutiliza los helpers de
+    RendimientoCapturaTests sin volver a correr sus pruebas)."""
+    setUp = RendimientoCapturaTests.setUp
+    _datos = RendimientoCapturaTests._datos
+    _ultima = RendimientoCapturaTests._ultima
+    _cinta = RendimientoCapturaTests._cinta
+
+    def _renglones_vacios(self, datos, prefijo, campo, desde, hasta):
+        # Imita la pantalla: los renglones extra llegan con el No. pre-llenado.
+        datos[f'{prefijo}-TOTAL_FORMS'] = str(hasta)
+        for i in range(desde, hasta):
+            datos[f'{prefijo}-{i}-{campo}'] = str(i + 1)
+            if prefijo == 'detalles':
+                datos[f'{prefijo}-{i}-clasificacion'] = 'normal'
+        return datos
+
+    def test_slitter_no_guarda_renglones_vacios(self):
+        mp = crear_mp(cliente=self.cliente, peso=1000)
+        datos = self._datos('slitter', mp=mp.id, peso_usado=1000, cortes=[{'no': 1, 'peso': 490}, {'no': 2, 'peso': 490}])
+        self._renglones_vacios(datos, 'detalles', 'no_corte', 2, 5)
+        self.client.post(reverse('captura_orden'), datos)
+        self.assertEqual(list(self._ultima().detalles_slitter.values_list('no_corte', flat=True)), [1, 2])
+
+    def test_fleje_no_guarda_tiras_vacias(self):
+        cinta = self._cinta(1000)
+        datos = self._datos('fleje', pt_origen=cinta.id, peso_usado=500, descargas=[245, 245])
+        self._renglones_vacios(datos, 'detalles_fleje', 'no_fleje', 2, 15)
+        self.client.post(reverse('captura_orden'), datos)
+        self.assertEqual(self._ultima().detalles_fleje.count(), 2)
+
+    def test_mini_slitter_guarda_cortes_y_una_cinta_por_corte(self):
+        mp = crear_mp(cliente=self.cliente, peso=1000)
+        self.client.post(reverse('captura_orden'), self._datos(
+            'mini_slitter', mp=mp.id, peso_usado=800, estado='terminado',
+            cortes=[{'no': 1, 'peso': 390}, {'no': 2, 'peso': 390}]))
+        orden = self._ultima()
+        self.assertEqual(orden.detalles_slitter.count(), 2)
+        self.assertEqual(orden.peso_producido, Decimal('780.00'))
+        pts = sorted(ProductoTerminado.objects.filter(orden=orden).values_list('numero_pt', flat=True))
+        self.assertEqual(pts, [f'PT-{orden.folio_orden}-C1', f'PT-{orden.folio_orden}-C2'])
+
+    def test_corte_liso_capturado_terminado_nombra_bien_su_cinta(self):
+        mp = crear_mp(cliente=self.cliente, peso=1000)
+        self.client.post(reverse('captura_orden'), self._datos(
+            'corte_liso', mp=mp.id, peso_usado=600, peso_producido=590, estado='terminado'))
+        orden = self._ultima()
+        self.assertEqual(ProductoTerminado.objects.get(orden=orden).numero_pt, f'PT-{orden.folio_orden}')
+
+    def test_editar_quita_renglones_vacios_que_ya_existian(self):
+        orden = crear_orden_slitter(peso_usado=500, cortes=[{'no_corte': 1, 'peso': 480}])
+        vacio = DetalleSlitter.objects.create(orden=orden, no_corte=2)
+        d = orden.detalles_slitter.get(no_corte=1)
+        datos = self._datos('slitter', mp=orden.mp_id, peso_usado=500)
+        datos.update({
+            'detalles-TOTAL_FORMS': '2', 'detalles-INITIAL_FORMS': '2',
+            'detalles-0-id': str(d.id), 'detalles-0-orden': str(orden.id), 'detalles-0-no_corte': '1',
+            'detalles-0-peso': '480', 'detalles-0-clasificacion': 'normal',
+            'detalles-1-id': str(vacio.id), 'detalles-1-orden': str(orden.id), 'detalles-1-no_corte': '2',
+            'detalles-1-clasificacion': 'normal',
+        })
+        self.client.post(reverse('editar_orden', args=[orden.id]), datos)
+        self.assertEqual(list(orden.detalles_slitter.values_list('no_corte', flat=True)), [1])
